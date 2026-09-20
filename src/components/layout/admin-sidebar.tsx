@@ -6,6 +6,7 @@ import {
   Building2,
   ClipboardList,
   FileBarChart,
+  FolderTree,
   LayoutDashboard,
   Lock,
   Megaphone,
@@ -60,6 +61,12 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   {
     label: "คอร์สและการประเมิน",
     items: [
+      {
+        href: "/admin/categories",
+        label: "หมวดหมู่คอร์ส",
+        icon: FolderTree,
+        roles: [Role.SUPER_ADMIN],
+      },
       { href: "/admin/courses", label: "คอร์สเรียน", icon: ClipboardList, phase: "เฟส 1" },
       { href: "/admin/assessment", label: "การประเมินผล", icon: FileBarChart, phase: "เฟส 2" },
     ],

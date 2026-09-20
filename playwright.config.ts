@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { STUDENT_STATE } from "./tests/e2e/constants";
 
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
@@ -18,8 +19,26 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
-    { name: "mobile", use: { ...devices["Pixel 5"], viewport: { width: 375, height: 812 } } },
+    // ล็อกอินครั้งเดียวแล้วส่ง session ต่อให้ทุก project (ดูเหตุผลใน tests/e2e/auth.setup.ts)
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    {
+      name: "desktop",
+      dependencies: ["setup"],
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 800 },
+        storageState: STUDENT_STATE,
+      },
+    },
+    {
+      name: "mobile",
+      dependencies: ["setup"],
+      use: {
+        ...devices["Pixel 5"],
+        viewport: { width: 375, height: 812 },
+        storageState: STUDENT_STATE,
+      },
+    },
   ],
   webServer: process.env.E2E_BASE_URL
     ? undefined

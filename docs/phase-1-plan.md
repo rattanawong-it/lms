@@ -56,13 +56,39 @@
 - MinIO ตอบ `NotImplemented` กับ `PutBucketCors` เพราะอนุญาตทุก origin อยู่แล้ว
 - **ทั้งสองข้อต้องตั้งเองบน Cloudflare R2 ตอน deploy** สคริปต์พิมพ์เตือนไว้ทุกครั้งที่รัน
 
-### ขั้น 2 — M03 Catalog & Category
+### ขั้น 2 — M03 Catalog & Category — ✅ เสร็จ 2026-09-20
 - FR-03.1 CRUD หมวดหมู่ (`/admin/categories`)
 - FR-03.2 `/courses` — ค้นหา, กรองหมวด/คณะ/ระดับ, เรียง 3 แบบ, pagination
 - FR-03.3 `/courses/[slug]` — ปก, คำอธิบาย, ผู้สอน, สารบัญ, ปุ่มลงทะเบียน
 - FR-03.4 visibility: `PUBLIC` เห็นได้โดยไม่ล็อกอิน · `INTERNAL` ต้องล็อกอิน
 - FR-03.5 `generateMetadata` + OpenGraph
 - **จุดที่ต้องระวัง:** catalog เป็นหน้าสาธารณะที่โดนถี่ที่สุด → ใช้ `"use cache"` + `cacheTag('catalog')` แล้ว revalidate ตอน publish (NFR §9 Performance)
+
+**สิ่งที่ทำจริง**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `src/features/categories/` | CRUD หมวดหมู่ + `/admin/categories` (SUPER_ADMIN) |
+| `src/features/catalog/queries.ts` | `listCourses` (ค้นหา/กรอง/เรียง/แบ่งหน้า) · `getCourseBySlug` · `catalogFilterOptions` |
+| `src/features/catalog/schemas.ts` | แปลง query string ด้วย Zod แบบ `.catch()` — URL ที่ผู้ใช้แก้เองไม่ทำให้หน้าพัง |
+| `src/components/shared/rich-text.tsx` | render Tiptap JSON ตาม allowlist ไม่มี `dangerouslySetInnerHTML` |
+| `src/app/(public)/page.tsx` | หน้าแรกจริง (เดิม `src/app/page.tsx` ยังเป็น boilerplate และอยู่นอกกลุ่ม `(public)` ทำให้ layout สาธารณะไม่เคยถูกใช้) |
+| `src/app/(public)/courses/` | คลังคอร์ส + หน้ารายละเอียด + `generateMetadata`/OpenGraph |
+| `src/app/not-found.tsx` | หน้า 404 ภาษาไทย (เดิมเป็นหน้า default ภาษาอังกฤษของ Next) |
+
+**เรื่องที่ต้องบันทึกไว้**
+- การเรียงตาม "คะแนนรีวิว" ใช้ค่าเฉลี่ยของตารางลูกซึ่ง Prisma สั่ง `orderBy` ไม่ได้
+  จึงดึงเฉพาะ id ของคอร์สที่ตรงเงื่อนไขมาจัดอันดับในแอปแล้วค่อยแบ่งหน้า
+  เลือกวิธีนี้แทน raw SQL เพื่อไม่ให้มี where สองชุดที่หลุดกันได้ และแทนการ denormalize
+  `ratingAvg` ลง `Course` ซึ่งเป็นการแก้ schema ที่ต้องขออนุมัติก่อน
+- `"use cache"` **ยังไม่ได้ใช้** เพราะต้องเปิด `cacheComponents` ซึ่งเปลี่ยนพฤติกรรมทั้งแอป
+  (ทุก dynamic API ต้องอยู่ใน Suspense) ควรเปิดเป็นงานแยกพร้อมตรวจทั้งระบบ ไม่ใช่แทรกกลางเฟส
+- `loading.tsx` ที่ระดับ segment `courses/` ทำให้ `notFound()` ของ `/courses/[slug]` ตอบ HTTP 200
+  (soft 404) เพราะ response เริ่ม stream ไปก่อน แก้โดยย้าย skeleton เข้าไปไว้ใน `<Suspense>`
+  ของหน้ารายการเอง
+- e2e เดิมล็อกอินซ้ำทุกเทสต์จนชน rate limit ของตัวเอง (FR-01.7 · 5 ครั้ง/15 นาที) แก้เป็น
+  setup project ที่ล็อกอินครั้งเดียวแล้วแชร์ `storageState`
+- **ยังค้าง:** `/privacy` มีลิงก์ใน footer แต่ยังไม่มีหน้า — เป็นเนื้อหาเชิงนโยบายที่ต้องให้เจ้าของระบบเขียน
 
 ### ขั้น 3 — M04 Course Builder ✋ *จุดตรวจที่ 1*
 - FR-04.1 ฟอร์มข้อมูลคอร์ส (ซ่อนช่อง `price` ไว้จนเฟส 2)

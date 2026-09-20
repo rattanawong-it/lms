@@ -82,7 +82,7 @@ async function main() {
       db.department.upsert({ where: { code: d.code }, update: { name: d.name }, create: d }),
     ),
   );
-  const [sci] = departments;
+  const [sci, bus, hr] = departments;
 
   // ── หมวดหมู่คอร์ส (M03) ──
   const categories = await Promise.all(
@@ -94,7 +94,7 @@ async function main() {
       db.category.upsert({ where: { slug: c.slug }, update: { name: c.name }, create: c }),
     ),
   );
-  const [it] = categories;
+  const [it, business, general] = categories;
 
   // ── บัญชีผู้ใช้ตั้งต้น ──
   const admin = await upsertUser({
@@ -189,12 +189,88 @@ async function main() {
     });
   }
 
+  // ── คอร์สเพิ่มเติมสำหรับทดสอบตัวกรองของคลังคอร์ส (M03) ──
+  const moreCourses = [
+    {
+      slug: "data-analysis-basics",
+      title: "พื้นฐานการวิเคราะห์ข้อมูลด้วยสเปรดชีต",
+      summary: "เริ่มจากการจัดระเบียบข้อมูล ไปจนถึงสร้างแดชบอร์ดสรุปผลที่อ่านง่าย",
+      level: "เบื้องต้น",
+      visibility: Visibility.PUBLIC,
+      departmentId: sci.id,
+      categoryId: it.id,
+    },
+    {
+      slug: "digital-marketing",
+      title: "การตลาดดิจิทัลสำหรับธุรกิจขนาดเล็ก",
+      summary: "วางแผนคอนเทนต์ เลือกช่องทาง และวัดผลแคมเปญด้วยงบประมาณจำกัด",
+      level: "ปานกลาง",
+      visibility: Visibility.PUBLIC,
+      departmentId: bus!.id,
+      categoryId: business!.id,
+    },
+    {
+      slug: "academic-writing",
+      title: "การเขียนเชิงวิชาการและการอ้างอิง",
+      summary: "โครงสร้างบทความวิจัย การอ้างอิงที่ถูกต้อง และการหลีกเลี่ยงการคัดลอกผลงาน",
+      level: "ปานกลาง",
+      visibility: Visibility.INTERNAL,
+      departmentId: sci.id,
+      categoryId: general!.id,
+    },
+    {
+      slug: "workplace-safety",
+      title: "ความปลอดภัยในที่ทำงานสำหรับบุคลากรใหม่",
+      summary: "หลักสูตรบังคับสำหรับบุคลากรที่เพิ่งเริ่มงาน ใช้เวลาเรียนประมาณ 2 ชั่วโมง",
+      level: "เบื้องต้น",
+      visibility: Visibility.INTERNAL,
+      departmentId: hr!.id,
+      categoryId: general!.id,
+    },
+  ];
+
+  for (const data of moreCourses) {
+    const extraCourse = await db.course.upsert({
+      where: { slug: data.slug },
+      update: {},
+      create: {
+        ...data,
+        status: CourseStatus.PUBLISHED,
+        enrollPolicy: EnrollPolicy.OPEN,
+        publishedAt: new Date(),
+      },
+    });
+
+    await db.courseInstructor.upsert({
+      where: { courseId_userId: { courseId: extraCourse.id, userId: instructor.id } },
+      update: {},
+      create: { courseId: extraCourse.id, userId: instructor.id, role: InstructorRole.OWNER },
+    });
+
+    const sectionCount = await db.section.count({ where: { courseId: extraCourse.id } });
+    if (sectionCount === 0) {
+      await db.section.create({
+        data: {
+          courseId: extraCourse.id,
+          title: "บทนำ",
+          position: 1,
+          lessons: {
+            create: [
+              { title: "ภาพรวมของคอร์ส", type: LessonType.TEXT, position: 1, isPreview: true },
+              { title: "สิ่งที่ต้องเตรียมก่อนเรียน", type: LessonType.TEXT, position: 2 },
+            ],
+          },
+        },
+      });
+    }
+  }
+
   console.log("seed เสร็จแล้ว:");
   console.log(`  คณะ/หน่วยงาน ${departments.length} รายการ · หมวดหมู่ ${categories.length} รายการ`);
   console.log(`  Super Admin : ${admin.email}`);
   console.log(`  ผู้สอน      : ${instructor.email}`);
   console.log(`  ผู้เรียน     : ${student.email}`);
-  console.log(`  คอร์สตัวอย่าง: ${course.slug}`);
+  console.log(`  คอร์สตัวอย่าง: ${course.slug} และอีก ${moreCourses.length} คอร์ส`);
   console.log(`  รหัสผ่านเริ่มต้นทุกบัญชี: ${ADMIN_PASSWORD} (เปลี่ยนทันทีหลัง login ครั้งแรก)`);
 }
 
