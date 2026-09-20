@@ -67,7 +67,7 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
         icon: FolderTree,
         roles: [Role.SUPER_ADMIN],
       },
-      { href: "/admin/courses", label: "คอร์สเรียน", icon: ClipboardList, phase: "เฟส 1" },
+      { href: "/admin/courses", label: "คอร์สรออนุมัติ", icon: ClipboardList },
       { href: "/admin/assessment", label: "การประเมินผล", icon: FileBarChart, phase: "เฟส 2" },
     ],
   },

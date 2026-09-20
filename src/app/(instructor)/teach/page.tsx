@@ -1,22 +1,121 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { BookOpen, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
-import { PhaseNotice } from "@/components/shared/phase-notice";
+import { EmptyState } from "@/components/shared/empty-state";
+import { listTeachCourses } from "@/features/courses/queries";
+import { COURSE_STATUS_LABEL, COURSE_STATUS_TONE } from "@/features/courses/lib/labels";
+import { formatDate } from "@/lib/dates";
+import type { CourseStatus } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "ห้องผู้สอน" };
 
-export default function TeachPage() {
+/** M04 · FR-04.1 — รายการคอร์สที่ผู้ใช้ดูแลได้ */
+export default async function TeachPage() {
+  const courses = await listTeachCourses();
+
   return (
     <>
-      <PageHeader title="ห้องผู้สอน" description="M04 · สร้างและจัดการคอร์สของคุณ" />
-      <PhaseNotice
-        phase="Phase 1 – MVP"
-        title="เครื่องมือผู้สอนกำลังพัฒนา"
-        items={[
-          "FR-04.1 สร้าง/แก้ไขข้อมูลคอร์ส",
-          "FR-04.2 จัดการ Section และ Lesson พร้อมลากเรียงลำดับ",
-          "FR-04.6 ส่งคอร์สให้คณะอนุมัติเผยแพร่",
-        ]}
+      <PageHeader
+        title="ห้องผู้สอน"
+        description="คอร์สที่คุณเป็นผู้สอน หรืออยู่ในคณะที่คุณดูแล"
+        actions={
+          <Button asChild>
+            <Link href="/teach/courses/new">
+              <Plus className="size-4" /> สร้างคอร์ส
+            </Link>
+          </Button>
+        }
       />
+
+      {courses.length === 0 ? (
+        <EmptyState
+          icon={<BookOpen className="size-6" />}
+          title="ยังไม่มีคอร์สของคุณ"
+          description="สร้างคอร์สแรก แล้วเพิ่มบทเรียนเข้าไป เมื่อพร้อมจึงส่งให้คณะอนุมัติเผยแพร่"
+          action={
+            <Button asChild>
+              <Link href="/teach/courses/new">
+                <Plus className="size-4" /> สร้างคอร์สแรก
+              </Link>
+            </Button>
+          }
+        />
+      ) : (
+        <div className="bg-card border-border overflow-hidden rounded-xl border">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-[13px]">
+              <caption className="sr-only">รายการคอร์สที่คุณดูแลได้</caption>
+              <thead className="bg-background border-line text-muted-foreground border-b">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    คอร์ส
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    สถานะ
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                    บทเรียน
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                    ผู้เรียน
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    แก้ไขล่าสุด
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                    จัดการ
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {courses.map((course) => (
+                  <tr key={course.id} className="border-line border-b last:border-0">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/teach/courses/${course.id}`}
+                        className="hover:text-ring font-medium"
+                      >
+                        {course.title}
+                      </Link>
+                      <p className="text-muted-foreground mt-0.5 text-[11.5px]">
+                        {course.categoryName ?? "ยังไม่จัดหมวด"}
+                        {course.departmentName ? ` · ${course.departmentName}` : ""}
+                        {course.isOwnCourse ? "" : " · คอร์สในคณะที่คุณดูแล"}
+                      </p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge
+                        variant="secondary"
+                        className={COURSE_STATUS_TONE[course.status as CourseStatus]}
+                      >
+                        {COURSE_STATUS_LABEL[course.status as CourseStatus]}
+                      </Badge>
+                    </td>
+                    <td className="num px-4 py-3 text-right">{course.lessonCount}</td>
+                    <td className="num px-4 py-3 text-right">{course.enrollmentCount}</td>
+                    <td className="num text-muted-foreground px-4 py-3">
+                      {formatDate(course.updatedAt)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/teach/courses/${course.id}/curriculum`}>สารบัญ</Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="sm">
+                          <Link href={`/teach/courses/${course.id}`}>ตั้งค่า</Link>
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </>
   );
 }

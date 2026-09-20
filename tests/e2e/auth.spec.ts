@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { ANONYMOUS, STUDENT } from "./constants";
+import { ACCOUNTS, ANONYMOUS } from "./constants";
 
 /**
  * M01 — เส้นทางเข้าสู่ระบบ (ใช้บัญชีจาก prisma/seed.ts)
@@ -21,10 +21,13 @@ test.describe("ผู้ที่ยังไม่ล็อกอิน", () =>
     expect(overflow).toBeLessThanOrEqual(1);
   });
 
-  test("ผู้เรียนล็อกอินแล้วเข้าหน้าแดชบอร์ดได้ (FR-01.1)", async ({ page }) => {
+  test("ผู้เรียนล็อกอินแล้วเข้าหน้าแดชบอร์ดได้ (FR-01.1)", async ({ page }, testInfo) => {
+    // รันเฉพาะ desktop เพื่อไม่ให้ยอดล็อกอินต่อรอบชนลิมิต 5 ครั้ง/15 นาที (FR-01.7)
+    test.skip(testInfo.project.name !== "desktop", "ล็อกอินจริงรันครั้งเดียวพอ");
+
     await page.goto("/login");
-    await page.getByLabel("อีเมล", { exact: true }).fill(STUDENT.email);
-    await page.getByLabel("รหัสผ่าน", { exact: true }).fill(STUDENT.password);
+    await page.getByLabel("อีเมล", { exact: true }).fill(ACCOUNTS.student.email);
+    await page.getByLabel("รหัสผ่าน", { exact: true }).fill(ACCOUNTS.student.password);
     await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
   });
