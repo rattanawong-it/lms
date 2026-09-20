@@ -25,13 +25,36 @@
 ออกแบบให้แต่ละขั้น **จบแล้วเห็นผลได้จริงบนหน้าจอ** และขั้นถัดไปพึ่งขั้นก่อนหน้าเท่านั้น
 ทุกขั้นจบด้วย lint + typecheck + test + commit และหยุดให้ตรวจที่จุด ✋
 
-### ขั้น 1 — Storage layer (พื้นฐานของ M05/M15)
+### ขั้น 1 — Storage layer (พื้นฐานของ M05/M15) — ✅ เสร็จ 2026-09-20
 - `src/lib/storage.ts`: presign PUT, presign GET (อายุสั้น), multipart (create/sign part/complete/abort), delete
 - `POST /api/upload/presign`, `POST /api/upload/complete` — ตรวจสิทธิ์ผู้สอนก่อนออก URL ทุกครั้ง
 - ตรวจ MIME จาก **magic bytes** หลังอัปโหลดเสร็จ (NFR §9 Security) ไม่เชื่อ `Content-Type` จาก client
 - สร้าง bucket + lifecycle policy อัตโนมัติตอน dev ผ่าน script
 - เพิ่ม env: `S3_FORCE_PATH_STYLE` (MinIO ต้องใช้ path-style, R2 ไม่ต้อง)
 - **Test:** unit ของ key generator + MIME sniffing · ยังไม่มี UI
+
+**สิ่งที่ทำจริงและผลการทดสอบกับ MinIO**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `src/lib/storage.ts` | จุดเดียวที่รู้จัก endpoint/bucket — presign PUT/GET, multipart, stat, readHead, delete |
+| `src/lib/object-key.ts` | สร้าง key `<kind>/<ปี>/<เดือน>/<uuid><.ext>` (แยกออกมาให้ทดสอบได้ เพราะ storage.ts เป็น server-only) |
+| `src/lib/file-type.ts` | ตรวจ magic bytes 16 ไบต์แรก · รู้จัก PDF/PNG/JPEG/WEBP/MP4/WEBM/ZIP/OLE |
+| `src/lib/upload-limits.ts` | เพดานขนาดและ allowlist ของ MIME ต่อ `AssetKind` |
+| `src/features/uploads/` | Zod schema + ตัวช่วยตรวจสิทธิ์ของ Route Handler |
+| `/api/upload/presign`, `/part`, `/complete` | เริ่ม · ขอ URL ของ part ใหม่ · ปิดงาน (complete/abort) |
+| `scripts/storage-init.ts` | `pnpm storage:init` — สร้าง bucket, lifecycle, CORS |
+
+ทดสอบกับ MinIO จริงแล้ว: ผู้เรียนขอ presign ได้ 403 · ผู้สอนอัปโหลด PDF ผ่าน single PUT สำเร็จ ·
+ไฟล์ 25 MB ผ่าน multipart 3 part แบบขนานแล้ว complete สำเร็จ · ไฟล์ที่ปลอมชนิด (เนื้อเป็น PDF แจ้งว่า `video/mp4`)
+ถูกปฏิเสธและลบทิ้ง · PDF 80 MB ถูกปฏิเสธตั้งแต่ขอ presign · signed URL อายุ 300 วินาทีตาม FR-15.7 ·
+เรียก object ตรงโดยไม่มีลายเซ็นหรือลายเซ็นปลอมได้ 403 · ชื่อไฟล์ภาษาไทยเก็บครบถ้วน
+
+**ข้อจำกัดของ MinIO ที่เจอระหว่างทาง (ไม่กระทบ R2)**
+- MinIO ปฏิเสธ lifecycle rule ที่มีแต่ `AbortIncompleteMultipartUpload` (ต้องพ่วง `Expiration` ด้วย)
+  ผมเลือก**ไม่**พ่วง เพราะนั่นเท่ากับตั้งนโยบายลบไฟล์ที่ไม่มีใครสั่ง — MinIO ล้าง stale upload ให้เองใน 24 ชม. อยู่แล้ว
+- MinIO ตอบ `NotImplemented` กับ `PutBucketCors` เพราะอนุญาตทุก origin อยู่แล้ว
+- **ทั้งสองข้อต้องตั้งเองบน Cloudflare R2 ตอน deploy** สคริปต์พิมพ์เตือนไว้ทุกครั้งที่รัน
 
 ### ขั้น 2 — M03 Catalog & Category
 - FR-03.1 CRUD หมวดหมู่ (`/admin/categories`)

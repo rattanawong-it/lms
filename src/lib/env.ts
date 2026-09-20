@@ -13,6 +13,15 @@ const serverEnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
 
+  // Storage (D-01) — MinIO ระหว่างพัฒนา, Cloudflare R2 ตอน deploy
+  S3_ENDPOINT: z.url("S3_ENDPOINT ต้องเป็น URL ที่ถูกต้อง"),
+  S3_REGION: z.string().default("auto"),
+  S3_BUCKET: z.string().min(1, "ต้องกำหนด S3_BUCKET"),
+  S3_ACCESS_KEY_ID: z.string().min(1, "ต้องกำหนด S3_ACCESS_KEY_ID"),
+  S3_SECRET_ACCESS_KEY: z.string().min(1, "ต้องกำหนด S3_SECRET_ACCESS_KEY"),
+  // MinIO ต้องใช้ path-style (http://host/bucket/key) ส่วน R2 ใช้ virtual-host
+  S3_FORCE_PATH_STYLE: z.stringbool().default(true),
+
   EMAIL_PROVIDER: z.enum(["smtp", "resend"]).default("smtp"),
   SMTP_URL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
