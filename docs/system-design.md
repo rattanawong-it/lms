@@ -1230,7 +1230,15 @@ flowchart LR
 
 ---
 
-## 10. Deployment Options (ยังไม่ได้เลือก — D-01)
+## 10. Deployment Options (Hosting ยังไม่เลือก · Storage ตัดสินใจแล้ว — D-01)
+
+> **D-01 (2026-09-20):** Storage ใช้ **MinIO** ตลอดการพัฒนา Phase 1 (มีใน `docker-compose.yml` อยู่แล้ว)
+> แล้วสลับเป็น **Cloudflare R2** ตอน deploy โดยเปลี่ยนเฉพาะ `S3_*` ใน env — โค้ดฝั่งแอปคุยผ่าน S3 API
+> ตัวเดียวกัน จึงต้องไม่มีที่ไหนอ้าง endpoint หรือ bucket ของ MinIO ตรง ๆ นอกจาก `src/lib/storage.ts`
+>
+> **D-04 (2026-09-20):** Phase 1 เสิร์ฟวิดีโอเป็น **MP4 ไฟล์เดียว** ผ่าน signed URL (progressive + HTTP range)
+> ยังไม่ทำ transcode/HLS — ค่อยพิจารณาเมื่อพบปัญหาแบนด์วิดท์จริง `Asset` มีช่องเก็บ metadata พอสำหรับ
+> เพิ่ม rendition ภายหลังโดยไม่ต้อง migrate ใหญ่
 
 | | ตัวเลือก A: Managed | ตัวเลือก B: Self-host (Server สถาบัน) |
 |---|---|---|

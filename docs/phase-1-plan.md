@@ -1,0 +1,118 @@
+# Phase 1 — MVP: สร้างคอร์ส เรียน และป้องกันเนื้อหา
+
+> **สถานะ: ร่างรออนุมัติ** · จัดทำ 2026-09-20 · ต่อจาก Phase 0 (commit `38e6963`)
+> ขอบเขตตาม spec.md §6 — **M03, M04, M05, M06, M15, M11 (เฉพาะ in-app)**
+> ทุกโมดูลต้องผ่าน DoD 7 ข้อตาม spec.md §3.0
+
+---
+
+## 1. การตัดสินใจที่ใช้เป็นฐานของแผนนี้
+
+| # | เรื่อง | ข้อสรุป | ผลต่อการออกแบบ |
+|---|---|---|---|
+| D-01 | Storage | MinIO ตลอด Phase 1 → สลับเป็น Cloudflare R2 ตอน deploy ด้วยการเปลี่ยน `S3_*` | โค้ดทั้งหมดคุยผ่าน S3 API · `src/lib/storage.ts` เป็นที่เดียวที่รู้จัก endpoint/bucket |
+| D-04 | วิดีโอ | MP4 ไฟล์เดียว (progressive + HTTP range) ยังไม่ transcode/HLS | ไม่ต้องมี worker/ffmpeg ใน Phase 1 · `Asset` มีที่ว่างพอสำหรับเพิ่ม rendition ภายหลัง |
+
+**สิ่งที่ตามมาจาก D-01/D-04 และต้องยอมรับร่วมกัน**
+- MinIO บน `localhost:9000` ยังไม่มี TLS — ใช้เฉพาะเครื่องพัฒนา ไม่ใช่ค่า default ของ production
+- ไฟล์ MP4 ที่ผู้สอนอัปโหลดจะถูกเสิร์ฟตามขนาดจริง ผู้เรียนเน็ตช้าจะโหลดช้า เป็นข้อแลกเปลี่ยนที่รับไว้แล้ว
+- ต้องกำหนด **เพดานขนาดไฟล์** ตั้งแต่ต้น (ข้อเสนอ: วิดีโอ 2 GB, PDF 50 MB, ไฟล์แนบ 25 MB) — รอยืนยัน
+
+---
+
+## 2. ลำดับงาน (7 ขั้น)
+
+ออกแบบให้แต่ละขั้น **จบแล้วเห็นผลได้จริงบนหน้าจอ** และขั้นถัดไปพึ่งขั้นก่อนหน้าเท่านั้น
+ทุกขั้นจบด้วย lint + typecheck + test + commit และหยุดให้ตรวจที่จุด ✋
+
+### ขั้น 1 — Storage layer (พื้นฐานของ M05/M15)
+- `src/lib/storage.ts`: presign PUT, presign GET (อายุสั้น), multipart (create/sign part/complete/abort), delete
+- `POST /api/upload/presign`, `POST /api/upload/complete` — ตรวจสิทธิ์ผู้สอนก่อนออก URL ทุกครั้ง
+- ตรวจ MIME จาก **magic bytes** หลังอัปโหลดเสร็จ (NFR §9 Security) ไม่เชื่อ `Content-Type` จาก client
+- สร้าง bucket + lifecycle policy อัตโนมัติตอน dev ผ่าน script
+- เพิ่ม env: `S3_FORCE_PATH_STYLE` (MinIO ต้องใช้ path-style, R2 ไม่ต้อง)
+- **Test:** unit ของ key generator + MIME sniffing · ยังไม่มี UI
+
+### ขั้น 2 — M03 Catalog & Category
+- FR-03.1 CRUD หมวดหมู่ (`/admin/categories`)
+- FR-03.2 `/courses` — ค้นหา, กรองหมวด/คณะ/ระดับ, เรียง 3 แบบ, pagination
+- FR-03.3 `/courses/[slug]` — ปก, คำอธิบาย, ผู้สอน, สารบัญ, ปุ่มลงทะเบียน
+- FR-03.4 visibility: `PUBLIC` เห็นได้โดยไม่ล็อกอิน · `INTERNAL` ต้องล็อกอิน
+- FR-03.5 `generateMetadata` + OpenGraph
+- **จุดที่ต้องระวัง:** catalog เป็นหน้าสาธารณะที่โดนถี่ที่สุด → ใช้ `"use cache"` + `cacheTag('catalog')` แล้ว revalidate ตอน publish (NFR §9 Performance)
+
+### ขั้น 3 — M04 Course Builder ✋ *จุดตรวจที่ 1*
+- FR-04.1 ฟอร์มข้อมูลคอร์ส (ซ่อนช่อง `price` ไว้จนเฟส 2)
+- FR-04.2 จัดการ Section/Lesson + **ลากเรียงลำดับ** (dnd-kit) → บันทึก `position` เป็นชุดใน transaction เดียว
+- FR-04.3 ฟอร์มแยกตามประเภทบทเรียนทั้ง 6
+- FR-04.4 ติ๊กบทเรียน preview
+- FR-04.5 เพิ่ม/ลบผู้สอนร่วม (`CourseInstructor`)
+- FR-04.6 workflow `DRAFT → PENDING_REVIEW → PUBLISHED → ARCHIVED` + หน้าอนุมัติของ Dept Admin
+- FR-04.7 ฟอร์มเงื่อนไขจบคอร์ส (เก็บลง `completionRule` JSON)
+- **ต้องเพิ่มใน DAL:** `assertCourseAccess(userId, courseId, "teach" | "manage")` ตามที่ system-design §4.2 ระบุไว้แต่ยังไม่ได้เขียน
+
+### ขั้น 4 — M05 Content Delivery (ฝั่งผู้สอน)
+- FR-05.1 อัปโหลดวิดีโอ multipart พร้อมแถบความคืบหน้า, ยกเลิกได้, กู้คืนเมื่อ part ล้ม
+- FR-05.4 Tiptap editor (หัวข้อ, รูป, ตาราง, โค้ด, ลิงก์, วิดีโอฝัง) → เก็บเป็น JSON
+- FR-05.5 ฟอร์มบทเรียน Live
+- FR-05.7 ไฟล์ประกอบ + ธง `downloadable`
+- **จุดที่ต้องระวัง:** render Tiptap JSON เป็น HTML ต้องผ่าน allowlist ฝั่ง server เท่านั้น (NFR §9) ห้าม `dangerouslySetInnerHTML` กับ JSON ดิบ
+
+### ขั้น 5 — M06 Enrollment & Progress
+- FR-06.1 นโยบาย `OPEN` / `APPROVAL` / `INVITE_ONLY` + หน้าคำขออนุมัติ
+- FR-06.2 ลงทะเบียนกลุ่ม (เลือกผู้ใช้ / CSV — ใช้ `features/users/lib/csv.ts` เดิมได้) + วันหมดสิทธิ์
+- FR-06.3 บันทึกความคืบหน้า: ดูวิดีโอเกิน 90% หรือกด "เรียนจบบทนี้" → คำนวณ `progressPct` ใน transaction
+- FR-06.4 "เรียนต่อ" จาก `lastLessonId` + `lastPositionSec`
+- FR-06.5 บังคับเรียนตามลำดับ (ตรวจฝั่ง server ไม่ใช่แค่ซ่อนปุ่ม)
+- FR-06.6 `/my-courses` แยก กำลังเรียน / เรียนจบ / หมดอายุ
+- **Test:** unit ของสูตรคำนวณ % และกติกา sequential เป็นหัวใจ — เขียนก่อน UI
+
+### ขั้น 6 — M15 Content Protection + M05 ฝั่งผู้เรียน ✋ *จุดตรวจที่ 2*
+- `<ProtectedViewer>` ตาม system-design §6.2 ครอบ `<VideoPlayer>` / `<PdfCanvasViewer>` / `<RichTextRenderer>`
+- FR-15.1–15.4 บล็อกคลิกขวา/เลือก/คัดลอก/ลาก, ดักคีย์, เบลอเมื่อเสียโฟกัส, `@media print`
+- FR-15.5 dynamic watermark + `MutationObserver` สร้างกลับเมื่อถูกลบ
+- FR-15.6 DevTools heuristic
+- FR-15.7 signed URL ≤ 5 นาที ออกให้หลังตรวจ enrollment แล้วเท่านั้น
+- FR-15.8 `POST /api/events/screen` — รวม event debounce 5 วิ ส่งด้วย `sendBeacon` + rate limit
+- FR-15.9 สวิตช์เปิด/ปิดระดับระบบ (`SystemSetting`) และระดับคอร์ส (`Course.protectionEnabled`)
+- FR-05.2, 05.3, 05.6 — player, pdf.js canvas, หน้าเรียนพร้อมสารบัญ (drawer บนมือถือ)
+- **ต้องแก้ CSP ใน `next.config.ts`:** ตอนนี้ยังไม่มี CSP เลย ต้องเพิ่มให้อนุญาต frame เฉพาะ youtube/vimeo และ media จากโดเมน storage
+
+### ขั้น 7 — M11 in-app + ปิดเฟส
+- FR-11.1 ประกาศ 3 ระดับ + ปักหมุด
+- FR-11.2 กระดิ่ง + จำนวนยังไม่อ่าน + หน้ารวม + ทำเครื่องหมายอ่านแล้ว
+- `src/lib/notify/index.ts` เป็นจุดเดียวที่ยิง notification (เตรียมรับ email/LINE ในเฟส 3)
+- **ยังไม่ทำในเฟสนี้:** FR-11.3 (email) และ FR-11.4 (ตั้งค่าช่องทาง) — อยู่ Phase 3 ตาม roadmap
+- e2e ปิดเฟส: สร้างคอร์ส → อนุมัติ → ลงทะเบียน → เรียน → ความคืบหน้าขึ้น → watermark ปรากฏ
+
+---
+
+## 3. สิ่งที่ต้องเพิ่มนอกเหนือจากโค้ดฟีเจอร์
+
+| รายการ | เหตุผล | ขั้นที่ |
+|---|---|---|
+| `assertCourseAccess()` ใน `lib/rbac.ts` | system-design §4.2 ระบุไว้แล้วแต่ Phase 0 ยังไม่ได้เขียน | 3 |
+| CSP header ใน `next.config.ts` | NFR §9 กำหนดไว้ แต่ Phase 0 ใส่แค่ 6 header อื่น | 6 |
+| `src/lib/storage.ts` + `S3_FORCE_PATH_STYLE` | MinIO ต้องใช้ path-style ส่วน R2 ไม่ต้อง | 1 |
+| `pnpm db:seed` เพิ่มบทเรียนครบ 6 ประเภท | ให้ทดสอบ player ได้ทุกชนิดโดยไม่ต้องสร้างมือ | 4 |
+| dnd-kit, pdf.js, Tiptap | dependency ใหม่ 3 ตัว | 3, 4, 6 |
+
+---
+
+## 4. ความเสี่ยงที่มองเห็นตอนนี้
+
+| ความเสี่ยง | ผลกระทบ | แนวทาง |
+|---|---|---|
+| Watermark บน fullscreen ของวิดีโอ | ถ้าใช้ fullscreen ของ `<video>` watermark จะหาย = ตามรอยไม่ได้ | สั่ง fullscreen ที่ container ตาม §6.2 และเขียน e2e ยืนยัน |
+| pdf.js worker กับ Turbopack | ตั้งค่า worker ผิดจะ render ไม่ขึ้นเฉพาะ production build | ทดสอบบน `next build` ไม่ใช่แค่ `next dev` |
+| Multipart upload ล้มกลางคัน | เหลือ part ค้างใน bucket กินพื้นที่ | `abort` เมื่อยกเลิก + lifecycle rule ล้าง multipart ค้างเกิน 24 ชม. |
+| M15 กระทบ a11y | ปิดการเลือกข้อความ/คีย์ลัดอาจชนกับ screen reader และ DoD ข้อ A11y | จำกัดขอบเขตไว้เฉพาะพื้นที่เนื้อหา ไม่ครอบทั้งหน้า และทดสอบ keyboard navigation |
+| ขนาดงานรวม | 6 โมดูล P0 ในเฟสเดียว | หยุดให้ตรวจ 2 จุด (หลังขั้น 3 และขั้น 6) เพื่อไม่ให้หลุดทิศไปไกล |
+
+---
+
+## 5. ข้อที่ต้องการคำยืนยันก่อนเริ่มขั้น 1
+
+1. **เพดานขนาดไฟล์** — วิดีโอ 2 GB / PDF 50 MB / ไฟล์แนบ 25 MB ใช้ได้ไหม
+2. **ลำดับงาน** — ตามขั้น 1–7 ข้างบน หรืออยากให้ดัน M15 (ป้องกันเนื้อหา) ขึ้นมาก่อน M06
+3. **จุดหยุดตรวจ** — 2 จุดพอไหม หรืออยากตรวจทุกขั้น
