@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+    body { margin:0; background:#F1F3F4; }
+    a { color:#1A73E8; text-decoration:none; }
+    a:hover { color:#174EA6; text-decoration:underline; }
+  </style>
+</helmet>
+
+<div style="width:1280px;margin:0 auto;background:#F8F9FA;font-family:'Inter','Anuphan',system-ui,sans-serif;color:#202124;padding-bottom:72px">
+
+  <div style="background:#FFFFFF;border-bottom:1px solid #DADCE0;padding:52px 60px 44px;position:relative;overflow:hidden">
+    <div style="position:absolute;left:0;top:0;right:0;height:5px;display:flex">
+      <div style="flex:1;background:#4285F4"></div><div style="flex:1;background:#EA4335"></div><div style="flex:1;background:#FBBC04"></div><div style="flex:1;background:#34A853"></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:30px">
+      <div style="width:46px;height:46px;border-radius:12px;background:#1A73E8;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(60,64,67,.3)">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"></path><path d="M6.5 10.5V15.5C6.5 15.5 8.5 18 12 18C15.5 18 17.5 15.5 17.5 15.5V10.5"></path><path d="M21.5 8.9V14"></path></svg>
+      </div>
+      <div>
+        <div style="color:#80868B;font-size:11.5px;letter-spacing:.2em;font-weight:600">DESIGN SYSTEM · v1.0</div>
+        <div style="color:#3C4043;font-size:14px;letter-spacing:.02em;margin-top:3px">KRIRK LMS · LEARNING MANAGEMENT SYSTEM</div>
+      </div>
+    </div>
+    <h1 style="font-size:48px;font-weight:700;letter-spacing:-.025em;margin:0 0 14px;line-height:1.08;max-width:820px">คู่มือระบบดีไซน์ <span style="color:#1A73E8">KRIRK LMS</span></h1>
+    <p style="color:#5F6368;font-size:16px;margin:0 0 28px;max-width:680px;line-height:1.7">สี ตัวอักษร ไอคอน และส่วนประกอบ UI ทั้งหมดของระบบบริหารจัดการการเรียนรู้ — สร้างบน Next.js 16 · Tailwind CSS v4 · shadcn/ui ตามข้อกำหนดใน SRS v1.0</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:baseline;gap:7px;background:#F1F3F4;border:1px solid #DADCE0;border-radius:8px;padding:8px 15px"><span style="font-size:17px;font-weight:700">30</span><span style="font-size:13px;color:#5F6368">สี</span></div>
+      <div style="display:flex;align-items:baseline;gap:7px;background:#F1F3F4;border:1px solid #DADCE0;border-radius:8px;padding:8px 15px"><span style="font-size:17px;font-weight:700">2</span><span style="font-size:13px;color:#5F6368">ฟอนต์</span></div>
+      <div style="display:flex;align-items:baseline;gap:7px;background:#F1F3F4;border:1px solid #DADCE0;border-radius:8px;padding:8px 15px"><span style="font-size:17px;font-weight:700">44</span><span style="font-size:13px;color:#5F6368">ไอคอน</span></div>
+      <div style="display:flex;align-items:baseline;gap:7px;background:#F1F3F4;border:1px solid #DADCE0;border-radius:8px;padding:8px 15px"><span style="font-size:17px;font-weight:700">9</span><span style="font-size:13px;color:#5F6368">หมวดส่วนประกอบ</span></div>
+      <div style="display:flex;align-items:baseline;gap:7px;background:#E8F0FE;border:1px solid #1A73E8;border-radius:8px;padding:8px 15px"><span style="font-size:13px;font-weight:600;color:#174EA6">4 Roles · 18 Modules · Light + Dark</span></div>
+    </div>
+  </div>
+
+  <div style="padding:0 60px">
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">01</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">สีในระบบ — Color Palette</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">สีหลักดึงจากชุดสีแบรนด์ Google (Blue · Red · Yellow · Green) ส่วนสีรอง โทนกลาง สีตามความหมาย และชุด Dark mode ต่อยอดให้อยู่บนระนาบสีเดียวกัน</p>
+      {{ colorsBlock }}
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">02</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">ตัวอักษร — Typography</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">Inter สำหรับภาษาอังกฤษและตัวเลข · Anuphan สำหรับภาษาไทย · ใช้ font stack เดียวกันทั้งระบบ</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+            <span style="font-size:62px;font-weight:700;font-family:'Inter',sans-serif;color:#1A73E8;line-height:1">Aa</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#5F6368;background:#F1F3F4;border-radius:6px;padding:3px 8px">--font-sans</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">Inter</div>
+          <div style="font-size:12.5px;color:#80868B;margin-bottom:12px;line-height:1.55">ภาษาอังกฤษ ตัวเลข รหัสคอร์ส คะแนน เปอร์เซ็นต์ และวันที่</div>
+          <div style="font-family:'Inter',sans-serif;font-size:20px;color:#3C4043">0123456789 · LMS · 87.5%</div>
+          <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap">
+            <span style="font-family:'Inter';font-weight:400;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">400</span>
+            <span style="font-family:'Inter';font-weight:500;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">500</span>
+            <span style="font-family:'Inter';font-weight:600;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">600</span>
+            <span style="font-family:'Inter';font-weight:700;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">700</span>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+            <span style="font-size:62px;font-weight:700;font-family:'Anuphan',sans-serif;color:#1A73E8;line-height:1">กข</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#5F6368;background:#F1F3F4;border-radius:6px;padding:3px 8px">--font-thai</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;margin-bottom:4px">Anuphan</div>
+          <div style="font-size:12.5px;color:#80868B;margin-bottom:12px;line-height:1.55">ภาษาไทยทั้งหมด · หัวเรื่อง เนื้อหาบทเรียน และ label ใน UI</div>
+          <div style="font-family:'Anuphan',sans-serif;font-size:20px;color:#3C4043">ระบบจัดการการเรียนรู้</div>
+          <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap">
+            <span style="font-family:'Anuphan';font-weight:300;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">300</span>
+            <span style="font-family:'Anuphan';font-weight:400;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">400</span>
+            <span style="font-family:'Anuphan';font-weight:500;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">500</span>
+            <span style="font-family:'Anuphan';font-weight:600;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">600</span>
+            <span style="font-family:'Anuphan';font-weight:700;font-size:12.5px;background:#F1F3F4;border-radius:6px;padding:4px 10px">700</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+        <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:14px;letter-spacing:.06em">TYPE SCALE · ลำดับขนาด</div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">Display</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">36px · 700 · 1.15</span></div>
+          <div style="flex:1;font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1.15;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">ยินดีต้อนรับกลับมา</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">Hero · หน้า landing</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">H1 / Page</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">28px · 700 · 1.2</span></div>
+          <div style="flex:1;font-size:28px;font-weight:700;letter-spacing:-.018em;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">จัดการคอร์สเรียน</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">ชื่อหน้าใน dashboard</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">H2 / Section</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">22px · 600 · 1.35</span></div>
+          <div style="flex:1;font-size:22px;font-weight:600;line-height:1.35;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">บทที่ 3 · การวิเคราะห์ข้อมูล</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">หัวข้อกลุ่ม · section</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">H3 / Card</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">18px · 600 · 1.45</span></div>
+          <div style="flex:1;font-size:18px;font-weight:600;line-height:1.45;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">สถิติการเรียนรายสัปดาห์</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">หัวการ์ด · dialog title</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">Body L</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">16px · 400 · 1.75</span></div>
+          <div style="flex:1;font-size:16px;line-height:1.75;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">เนื้อหาบทเรียนแบบ rich text ที่อ่านต่อเนื่องได้สบายตา</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">เนื้อหาบทเรียน · article</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">Body</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">14px · 400 · 1.65</span></div>
+          <div style="flex:1;font-size:14px;line-height:1.65;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">ข้อความทั่วไปในตาราง ฟอร์ม และรายการ — ขนาดมาตรฐานของ UI</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">ค่าเริ่มต้นของ UI</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">Label</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">13px · 500 · 1.5</span></div>
+          <div style="flex:1;font-size:13px;font-weight:500;line-height:1.5;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">ชื่อคอร์ส · อีเมลผู้เรียน</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">label ของ field · ปุ่ม</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0;border-bottom:1px solid #E8EAED">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">Caption</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">12px · 400 · 1.5</span></div>
+          <div style="flex:1;font-size:12px;color:#5F6368;line-height:1.5;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">อัปเดตล่าสุด 19 ก.ย. 2569 เวลา 14:32 น.</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">คำอธิบาย · timestamp</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:20px;padding:12px 0">
+          <div style="width:118px;flex-shrink:0"><div style="font-size:12.5px;font-weight:600">Micro</div><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B">11px · 600 · 1.4</span></div>
+          <div style="flex:1;font-size:11px;font-weight:600;letter-spacing:.04em;line-height:1.4">เผยแพร่แล้ว · PUBLISHED</div>
+          <div style="width:186px;flex-shrink:0;font-size:11.5px;color:#80868B;text-align:right">badge · tag</div>
+        </div>
+        <div style="margin-top:16px;padding:12px 14px;background:#FEF7E0;border:1px solid #FBBC04;border-radius:8px;font-size:12.5px;color:#B06000;line-height:1.65">ข้อความภาษาไทยใช้ <strong>line-height 1.65–1.75</strong> เสมอ เพื่อไม่ให้สระบนและวรรณยุกต์ชนกัน — ขนาดเล็กสุดใน UI คือ 11px และใช้เฉพาะ badge เท่านั้น</div>
+      </div>
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">03</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">ไอคอน — Icon Library</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">Hugeicons Stroke Rounded (แพ็กเกจฟรี) · viewBox 24×24 · stroke 1.5 · linecap/linejoin แบบ round ทั้งหมด</p>
+      {{ iconsBlock }}
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">04</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">ปุ่ม — Buttons</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">ตรงกับ variant ของ shadcn/ui: default · secondary · outline · ghost · destructive · link</p>
+
+      <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">VARIANTS</div>
+        <div style="display:flex;gap:32px;flex-wrap:wrap;row-gap:22px">
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:12px;font-weight:600;color:#3C4043">default</span>
+            <button style="background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px;box-shadow:0 1px 2px rgba(60,64,67,.3)" style-hover="background:#174EA6">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5V19"></path><path d="M19 12L5 12"></path></svg>สร้างคอร์สใหม่</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">bg-primary h-10 rounded-lg</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:12px;font-weight:600;color:#3C4043">secondary</span>
+            <button style="background:#F1F3F4;color:#202124;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit" style-hover="background:#E8EAED">บันทึกฉบับร่าง</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">bg-secondary</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:12px;font-weight:600;color:#3C4043">outline</span>
+            <button style="background:#fff;color:#1A73E8;border:1px solid #DADCE0;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px" style-hover="background:#E8F0FE;border-color:#1A73E8">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1A73E8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5H21"></path><path d="M6 12H18"></path><path d="M10 19H14"></path></svg>ตัวกรอง</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">border bg-background</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:12px;font-weight:600;color:#3C4043">ghost</span>
+            <button style="background:transparent;color:#3C4043;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit" style-hover="background:#F1F3F4">ยกเลิก</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">hover:bg-accent</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:12px;font-weight:600;color:#3C4043">destructive</span>
+            <button style="background:#EA4335;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:8px" style-hover="background:#C5221F">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6H21"></path><path d="M19 6L18.3 17.5C18.2 19.4 16.6 21 14.7 21H9.3C7.4 21 5.8 19.4 5.7 17.5L5 6"></path><path d="M9 6V4.5C9 3.4 9.9 2.5 11 2.5H13C14.1 2.5 15 3.4 15 4.5V6"></path></svg>ลบคอร์ส</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">bg-destructive</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:12px;font-weight:600;color:#3C4043">link</span>
+            <button style="background:none;border:none;color:#1A73E8;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;height:40px;padding:0;text-decoration:underline;text-underline-offset:3px">ดูรายละเอียดทั้งหมด</button>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">text-primary underline</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:16px">
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">SIZES · ขนาด</div>
+          <div style="display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px"><button style="background:#1A73E8;color:#fff;border:none;border-radius:6px;padding:0 12px;height:32px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer">sm</button><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">h-8</span></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px"><button style="background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;font-family:inherit;cursor:pointer">default</button><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">h-10</span></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px"><button style="background:#1A73E8;color:#fff;border:none;border-radius:10px;padding:0 24px;height:48px;font-size:15px;font-weight:500;font-family:inherit;cursor:pointer">lg</button><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">h-12 · touch 44px+</span></div>
+            <div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px"><button style="background:#fff;border:1px solid #DADCE0;border-radius:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#F1F3F4"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3C4043" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5H12.01M12 12H12.01M12 18.5H12.01"></path></svg></button><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#80868B">icon</span></div>
+          </div>
+          <div style="height:1px;background:#E8EAED;margin:20px 0"></div>
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:14px;letter-spacing:.06em">STATES · สถานะ</div>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+            <button style="background:#174EA6;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;font-family:inherit">hover</button>
+            <button style="background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;font-family:inherit;outline:2px solid #1A73E8;outline-offset:2px">focus</button>
+            <button style="background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;font-family:inherit;display:flex;align-items:center;gap:9px"><span style="width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:block;animation:spin .7s linear infinite"></span>กำลังบันทึก</button>
+            <button style="background:#1A73E8;color:#fff;border:none;border-radius:8px;padding:0 18px;height:40px;font-size:14px;font-weight:500;font-family:inherit;opacity:.45">disabled</button>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">AUTH · เข้าสู่ระบบ</div>
+          <div style="display:flex;flex-direction:column;gap:11px;max-width:330px">
+            <button style="background:#fff;color:#3C4043;border:1px solid #DADCE0;border-radius:8px;height:44px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:11px" style-hover="background:#F8F9FA;border-color:#80868B">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path></svg>ดำเนินการต่อด้วย Google</button>
+            <button style="background:#06C755;color:#fff;border:none;border-radius:8px;height:44px;font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:11px" style-hover="background:#05A948">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M24 10c9.94 0 18 6.27 18 14 0 2.86-1.07 5.52-2.92 7.75-2.7 3.4-8.73 7.54-10.1 8.13-1.36.58-1.18-.37-1.12-.69l.18-1.11c.04-.32.09-.82-.03-1.14-.14-.35-.7-.54-1.11-.62C19.15 45.4 11 38.74 11 30.5 11 22.77 17.06 16.5 24 16.5"></path></svg>ผูกบัญชี LINE</button>
+            <div style="display:flex;align-items:center;gap:12px;margin:2px 0"><div style="flex:1;height:1px;background:#E8EAED"></div><span style="font-size:12px;color:#80868B">หรือ</span><div style="flex:1;height:1px;background:#E8EAED"></div></div>
+            <button style="background:#1A73E8;color:#fff;border:none;border-radius:8px;height:44px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;width:100%">เข้าสู่ระบบด้วยอีเมล</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">05</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">ฟอร์ม — Inputs &amp; Controls</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">ทุก field มี label, helper text และ error state ภาษาไทย (ข้อความจาก Zod schema) · touch target ≥ 44px บนมือถือ</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">TEXT INPUT · 4 STATES</div>
+          <div style="display:flex;flex-direction:column;gap:17px">
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:6px">ชื่อคอร์ส</div>
+              <div style="background:#fff;border:1px solid #DADCE0;border-radius:8px;height:42px;padding:0 13px;display:flex;align-items:center;font-size:14px;color:#80868B">พิมพ์ชื่อคอร์ส…</div>
+              <div style="font-size:11.5px;color:#80868B;margin-top:5px">ชื่อที่จะแสดงใน catalog</div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:6px">อีเมลสถาบัน</div>
+              <div style="background:#fff;border:2px solid #1A73E8;border-radius:8px;height:42px;padding:0 12px;display:flex;align-items:center;gap:9px">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#5F6368" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6L8.91 9.92C11.46 11.36 12.54 11.36 15.09 9.92L22 6"></path><path d="M2.02 13.48C2.08 16.54 2.11 18.07 3.24 19.21C4.38 20.34 5.95 20.38 9.1 20.46C11.04 20.51 12.96 20.51 14.9 20.46C18.05 20.38 19.62 20.34 20.76 19.21C21.89 18.07 21.92 16.54 21.98 13.48C22.01 12.49 22.01 11.51 21.98 10.52C21.92 7.46 21.89 5.93 20.76 4.79C19.62 3.66 18.05 3.62 14.9 3.54C12.96 3.49 11.04 3.49 9.1 3.54C5.95 3.62 4.38 3.66 3.24 4.79C2.11 5.93 2.08 7.46 2.02 10.52C1.99 11.51 1.99 12.49 2.02 13.48Z"></path></svg>
+                <span style="flex:1;font-size:14px;color:#202124">somchai@krirk.ac.th</span>
+                <span style="width:1.5px;height:18px;background:#1A73E8;display:block;animation:pulse 1.1s ease-in-out infinite"></span>
+              </div>
+              <div style="font-size:11.5px;color:#1A73E8;margin-top:5px">focus · ring 2px primary</div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:6px">รหัสผ่าน</div>
+              <div style="background:#fff;border:1px solid #EA4335;border-radius:8px;height:42px;padding:0 12px;display:flex;align-items:center;gap:9px">
+                <span style="flex:1;font-size:14px;letter-spacing:.2em">••••••</span>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#5F6368" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8C22 8 18 14 12 14C6 14 2 8 2 8"></path><path d="M15 13.5L16.5 16"></path><path d="M20 11L22 13"></path><path d="M2 13L4 11"></path><path d="M9 13.5L7.5 16"></path></svg>
+              </div>
+              <div style="font-size:11.5px;color:#C5221F;margin-top:5px;display:flex;align-items:center;gap:5px">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#C5221F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M15 9L9 15M9 9L15 15"></path></svg>รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร</div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:6px;color:#80868B">รหัสนักศึกษา (อ่านอย่างเดียว)</div>
+              <div style="background:#F1F3F4;border:1px solid #E8EAED;border-radius:8px;height:42px;padding:0 13px;display:flex;align-items:center;font-size:14px;color:#80868B">6512345678</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">SELECT · SWITCH · CHOICE</div>
+          <div style="display:flex;flex-direction:column;gap:17px">
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:6px">คณะ / หน่วยงาน</div>
+              <div style="background:#fff;border:1px solid #DADCE0;border-radius:8px;height:42px;padding:0 13px;display:flex;align-items:center;justify-content:space-between;font-size:14px">
+                <span>คณะบริหารธุรกิจ</span>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#5F6368" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9C6 9 10.42 15 12 15C13.58 15 18 9 18 9"></path></svg>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div><div style="font-size:13.5px;font-weight:500">เปิดระบบป้องกันการ capture</div><div style="font-size:11.5px;color:#80868B;margin-top:2px">FR-15.9 · ตั้งค่าได้รายคอร์ส</div></div>
+                <div style="width:44px;height:24px;border-radius:14px;background:#1A73E8;position:relative;flex-shrink:0"><div style="position:absolute;top:3px;left:23px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div><div style="font-size:13.5px;font-weight:500">บังคับเรียนตามลำดับ</div><div style="font-size:11.5px;color:#80868B;margin-top:2px">FR-06.5</div></div>
+                <div style="width:44px;height:24px;border-radius:14px;background:#DADCE0;position:relative;flex-shrink:0"><div style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)"></div></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:13px;font-weight:500;margin-bottom:9px">นโยบายการลงทะเบียน</div>
+              <div style="display:flex;flex-direction:column;gap:9px">
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border-radius:50%;border:5px solid #1A73E8;background:#fff;flex-shrink:0"></div><span style="font-size:13.5px">OPEN · สมัครเองได้ทันที</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border-radius:50%;border:1.5px solid #DADCE0;flex-shrink:0"></div><span style="font-size:13.5px;color:#3C4043">APPROVAL · ต้องอนุมัติ</span></div>
+                <div style="display:flex;align-items:center;gap:10px"><div style="width:18px;height:18px;border-radius:50%;border:1.5px solid #DADCE0;flex-shrink:0"></div><span style="font-size:13.5px;color:#3C4043">INVITE_ONLY · แอดมินเพิ่มให้</span></div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:10px">
+              <div style="width:18px;height:18px;border-radius:4px;background:#1A73E8;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13L9 17L19 7"></path></svg></div>
+              <span style="font-size:13px;line-height:1.55">ยอมรับ <a href="#">นโยบายความเป็นส่วนตัว (PDPA)</a> และข้อกำหนดการใช้งาน</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+        <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">SEARCH · TABS · CHIPS · UPLOAD</div>
+        <div style="display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start">
+          <div style="width:300px">
+            <div style="background:#fff;border:1px solid #DADCE0;border-radius:22px;height:42px;padding:0 15px;display:flex;align-items:center;gap:10px">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#5F6368" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 17L21 21"></path><path d="M19 11C19 6.58 15.42 3 11 3C6.58 3 3 6.58 3 11C3 15.42 6.58 19 11 19C15.42 19 19 15.42 19 11Z"></path></svg>
+              <span style="font-size:14px;color:#80868B">ค้นหาคอร์ส ผู้เรียน หรือคำสั่ง…</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#80868B;border:1px solid #DADCE0;border-radius:4px;padding:2px 6px">⌘K</span>
+            </div>
+          </div>
+          <div style="display:flex;border-bottom:1px solid #DADCE0">
+            <span style="font-size:13.5px;font-weight:600;color:#1A73E8;padding:0 16px 10px;border-bottom:2px solid #1A73E8;margin-bottom:-1px">ทั้งหมด <span style="color:#80868B;font-weight:400">248</span></span>
+            <span style="font-size:13.5px;color:#5F6368;padding:0 16px 10px">เผยแพร่ <span style="color:#80868B">180</span></span>
+            <span style="font-size:13.5px;color:#5F6368;padding:0 16px 10px">รออนุมัติ <span style="color:#80868B">12</span></span>
+            <span style="font-size:13.5px;color:#5F6368;padding:0 16px 10px">ฉบับร่าง <span style="color:#80868B">56</span></span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span style="background:#1A73E8;color:#fff;border-radius:16px;padding:6px 14px;font-size:12.5px;font-weight:500">ทั้งหมด</span>
+            <span style="background:#fff;color:#3C4043;border:1px solid #DADCE0;border-radius:16px;padding:6px 14px;font-size:12.5px">บริหารธุรกิจ</span>
+            <span style="background:#fff;color:#3C4043;border:1px solid #DADCE0;border-radius:16px;padding:6px 14px;font-size:12.5px">นิเทศศาสตร์</span>
+            <span style="background:#fff;color:#3C4043;border:1px solid #DADCE0;border-radius:16px;padding:6px 14px;font-size:12.5px">+ 6 คณะ</span>
+          </div>
+          <div style="width:300px;border:1.5px dashed #DADCE0;border-radius:10px;padding:20px;display:flex;flex-direction:column;align-items:center;gap:8px;background:#F8F9FA">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#1A73E8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3"></path><path d="M8 7L12 3L16 7"></path><path d="M3 15V17C3 19.21 4.79 21 7 21H17C19.21 21 21 19.21 21 17V15"></path></svg>
+            <span style="font-size:13px;font-weight:500">ลากไฟล์มาวาง หรือ <span style="color:#1A73E8">เลือกไฟล์</span></span>
+            <span style="font-size:11.5px;color:#80868B">MP4, PDF, CSV · สูงสุด 2 GB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">06</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">การ์ด สถานะ และข้อมูล — Cards, Badges, Data</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">การ์ดคอร์ส ป้ายสถานะ ตาราง ความคืบหน้า และข้อความแจ้งเตือน</p>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;overflow:hidden">
+          <div style="height:112px;background:#E8F0FE;display:flex;align-items:center;justify-content:center;position:relative">
+            <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="#1A73E8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.55"><rect x="2" y="5" width="14" height="14" rx="3"></rect><path d="M16 10.5L20.24 8.14C21 7.72 22 8.27 22 9.14V14.86C22 15.73 21 16.28 20.24 15.86L16 13.5"></path></svg>
+            <span style="position:absolute;top:10px;left:10px;background:#E6F4EA;color:#1E8E3E;font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:5px">เผยแพร่แล้ว</span>
+            <span style="position:absolute;top:10px;right:10px;background:rgba(32,33,36,.72);color:#fff;font-size:10.5px;font-weight:500;padding:4px 9px;border-radius:5px">PUBLIC</span>
+          </div>
+          <div style="padding:14px 16px 16px">
+            <div style="font-size:11px;color:#80868B;margin-bottom:5px;font-weight:500">คณะบริหารธุรกิจ · 12 บทเรียน</div>
+            <div style="font-size:15px;font-weight:600;line-height:1.45;margin-bottom:8px">การวิเคราะห์ข้อมูลธุรกิจด้วย Python</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+              <div style="width:22px;height:22px;border-radius:50%;background:#FBBC04;color:#202124;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center">ส</div>
+              <span style="font-size:12px;color:#5F6368">ดร.สมชาย ใจดี</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid #E8EAED">
+              <span style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:500"><svg viewBox="0 0 24 24" width="14" height="14" fill="#FBBC04" stroke="#FBBC04" stroke-width="1.5" stroke-linejoin="round"><path d="M12 3L14.78 8.63L21 9.54L16.5 13.92L17.56 20.11L12 17.19L6.44 20.11L7.5 13.92L3 9.54L9.22 8.63L12 3Z"></path></svg>4.8 <span style="color:#80868B;font-weight:400">(126)</span></span>
+              <span style="font-size:12.5px;color:#5F6368">342 ผู้เรียน</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:18px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:14px;letter-spacing:.06em">PROGRESS · ความคืบหน้า</div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><span style="font-weight:500">ความคืบหน้าคอร์ส</span><span style="color:#1A73E8;font-weight:600">68%</span></div>
+            <div style="height:8px;background:#E8EAED;border-radius:4px;overflow:hidden"><div style="width:68%;height:100%;background:#1A73E8;border-radius:4px"></div></div>
+            <div style="font-size:11.5px;color:#80868B;margin-top:6px">เรียนแล้ว 8 จาก 12 บทเรียน</div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px"><span style="font-weight:500">อัตราการเรียนจบ</span><span style="color:#1E8E3E;font-weight:600">92%</span></div>
+            <div style="height:8px;background:#E8EAED;border-radius:4px;overflow:hidden"><div style="width:92%;height:100%;background:#34A853;border-radius:4px"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;padding-top:14px;border-top:1px solid #E8EAED">
+            <div style="position:relative;width:62px;height:62px;flex-shrink:0">
+              <svg width="62" height="62" viewBox="0 0 62 62"><circle cx="31" cy="31" r="26" fill="none" stroke="#E8EAED" stroke-width="8"></circle><circle cx="31" cy="31" r="26" fill="none" stroke="#1A73E8" stroke-width="8" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="52.3" transform="rotate(-90 31 31)"></circle></svg>
+              <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">68%</span>
+            </div>
+            <div><div style="font-size:13px;font-weight:500">Ring progress</div><div style="font-size:11.5px;color:#80868B;line-height:1.5;margin-top:3px">ใช้ในการ์ดสรุปและ dashboard</div></div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:18px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:14px;letter-spacing:.06em">ALERTS · ข้อความแจ้ง</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:10px;background:#E6F4EA;border-left:3px solid #34A853;border-radius:0 8px 8px 0;padding:11px 13px">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#1E8E3E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"></circle><path d="M8 12.5L10.5 15L16 9"></path></svg>
+              <div><div style="font-size:13px;font-weight:600;color:#1E8E3E">อนุมัติคอร์สเรียบร้อย</div><div style="font-size:12px;color:#3C4043;margin-top:2px;line-height:1.55">คอร์สถูกเผยแพร่ใน catalog แล้ว</div></div>
+            </div>
+            <div style="display:flex;gap:10px;background:#FEF7E0;border-left:3px solid #FBBC04;border-radius:0 8px 8px 0;padding:11px 13px">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#B06000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M10.28 3.9L2.66 17.1C1.89 18.43 2.85 20.1 4.38 20.1H19.62C21.15 20.1 22.11 18.43 21.34 17.1L13.72 3.9C12.95 2.57 11.05 2.57 10.28 3.9Z"></path><path d="M12 9V13M12 16.5H12.01"></path></svg>
+              <div><div style="font-size:13px;font-weight:600;color:#B06000">มี 12 คอร์สรออนุมัติ</div><div style="font-size:12px;color:#3C4043;margin-top:2px;line-height:1.55">รอเกิน 3 วัน 4 รายการ</div></div>
+            </div>
+            <div style="display:flex;gap:10px;background:#FCE8E6;border-left:3px solid #EA4335;border-radius:0 8px 8px 0;padding:11px 13px">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#C5221F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"></circle><path d="M15 9L9 15M9 9L15 15"></path></svg>
+              <div><div style="font-size:13px;font-weight:600;color:#C5221F">ตรวจพบการพยายาม capture</div><div style="font-size:12px;color:#3C4043;margin-top:2px;line-height:1.55">ผู้ใช้ 3 คน · ดูใน ScreenEventLog</div></div>
+            </div>
+            <div style="display:flex;gap:10px;background:#E8F0FE;border-left:3px solid #1A73E8;border-radius:0 8px 8px 0;padding:11px 13px">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#174EA6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"></circle><path d="M12 16V11M12 8H12.01"></path></svg>
+              <div><div style="font-size:13px;font-weight:600;color:#174EA6">สำรองข้อมูลอัตโนมัติ</div><div style="font-size:12px;color:#3C4043;margin-top:2px;line-height:1.55">ทุกวัน 02:00 น. เก็บ 14 วัน</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:16px;letter-spacing:.06em">BADGES · ป้ายสถานะทั้งระบบ</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px">
+          <div>
+            <div style="font-size:11.5px;color:#80868B;margin-bottom:9px">สถานะคอร์ส · Course</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <span style="background:#F1F3F4;color:#5F6368;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">ฉบับร่าง</span>
+              <span style="background:#FEF7E0;color:#B06000;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">รออนุมัติ</span>
+              <span style="background:#E6F4EA;color:#1E8E3E;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">เผยแพร่แล้ว</span>
+              <span style="background:#F1F3F4;color:#80868B;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">เก็บถาวร</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11.5px;color:#80868B;margin-bottom:9px">บทบาท · Role</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <span style="background:#FCE8E6;color:#C5221F;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">SUPER_ADMIN</span>
+              <span style="background:#F3E8FD;color:#7627BB;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">DEPT_ADMIN</span>
+              <span style="background:#E8F0FE;color:#174EA6;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">INSTRUCTOR</span>
+              <span style="background:#F1F3F4;color:#3C4043;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">STUDENT</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11.5px;color:#80868B;margin-bottom:9px">ประเภทบทเรียน · Lesson</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <span style="background:#E8F0FE;color:#174EA6;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">VIDEO</span>
+              <span style="background:#FCE8E6;color:#C5221F;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">PDF</span>
+              <span style="background:#F1F3F4;color:#3C4043;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">TEXT</span>
+              <span style="background:#E4F7FB;color:#007B83;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">LIVE</span>
+              <span style="background:#F3E8FD;color:#7627BB;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">QUIZ</span>
+              <span style="background:#FEF7E0;color:#B06000;font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px">ASSIGNMENT</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11.5px;color:#80868B;margin-bottom:9px">มี dot · ใช้ในรายการ</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;gap:6px;background:#E6F4EA;color:#1E8E3E;font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px"><span style="width:6px;height:6px;border-radius:50%;background:#34A853"></span>ออนไลน์</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;background:#FEF7E0;color:#B06000;font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px"><span style="width:6px;height:6px;border-radius:50%;background:#FBBC04"></span>รอตรวจ</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;background:#FCE8E6;color:#C5221F;font-size:11px;font-weight:600;padding:4px 10px;border-radius:14px"><span style="width:6px;height:6px;border-radius:50%;background:#EA4335"></span>ระงับบัญชี</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;overflow:hidden">
+        <div style="padding:18px 22px 14px;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;letter-spacing:.06em">TABLE · ตารางข้อมูล</div>
+          <span style="font-size:12px;color:#80868B">เลือกแล้ว 1 รายการ</span>
+        </div>
+        <div style="display:grid;grid-template-columns:36px 2.2fr 1.2fr 1fr 1fr 96px;padding:10px 22px;background:#F8F9FA;border-top:1px solid #E8EAED;border-bottom:1px solid #E8EAED;font-size:11.5px;font-weight:600;color:#5F6368;letter-spacing:.02em">
+          <span></span><span>ผู้ใช้</span><span>คณะ</span><span>บทบาท</span><span>สถานะ</span><span style="text-align:right">จัดการ</span>
+        </div>
+        <div style="display:grid;grid-template-columns:36px 2.2fr 1.2fr 1fr 1fr 96px;padding:12px 22px;align-items:center;background:#E8F0FE;border-bottom:1px solid #E8EAED">
+          <div style="width:16px;height:16px;border-radius:3px;background:#1A73E8;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13L9 17L19 7"></path></svg></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:#34A853;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">ป</div><div><div style="font-size:13.5px;font-weight:500">ผศ.ปรียา วงศ์ทอง</div><div style="font-size:11.5px;color:#80868B">preeya@krirk.ac.th</div></div></div>
+          <span style="font-size:13px;color:#3C4043">นิเทศศาสตร์</span>
+          <span><span style="background:#E8F0FE;color:#174EA6;font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px">INSTRUCTOR</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#1E8E3E"><span style="width:6px;height:6px;border-radius:50%;background:#34A853"></span>ใช้งานอยู่</span></span>
+          <div style="display:flex;gap:4px;justify-content:flex-end">
+            <span style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#5F6368" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.07 3.89C14.82 3.08 15.19 2.67 15.59 2.44C16.54 1.87 17.72 1.85 18.69 2.39C19.09 2.62 19.48 3.01 20.25 3.79C21.01 4.58 21.4 4.97 21.62 5.38C22.14 6.37 22.13 7.57 21.57 8.55C21.34 8.96 20.94 9.34 20.15 10.1L10.75 19.15C9.25 20.6 8.5 21.32 7.57 21.68C6.63 22.05 5.6 22.02 3.55 21.97L3.27 21.96C2.64 21.94 2.33 21.94 2.14 21.73C1.96 21.52 1.99 21.2 2.04 20.57L2.06 20.22C2.2 18.42 2.27 17.53 2.62 16.72C2.97 15.91 3.58 15.26 4.79 13.94L14.07 3.89Z"></path></svg></span>
+            <span style="width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#5F6368" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5H12.01M12 12H12.01M12 18.5H12.01"></path></svg></span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:36px 2.2fr 1.2fr 1fr 1fr 96px;padding:12px 22px;align-items:center;border-bottom:1px solid #E8EAED">
+          <div style="width:16px;height:16px;border-radius:3px;border:1.5px solid #DADCE0"></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:#A142F4;color:#fff;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">ธ</div><div><div style="font-size:13.5px;font-weight:500">ธนพล ศรีสุข</div><div style="font-size:11.5px;color:#80868B">thanapon@krirk.ac.th</div></div></div>
+          <span style="font-size:13px;color:#3C4043">บริหารธุรกิจ</span>
+          <span><span style="background:#F3E8FD;color:#7627BB;font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px">DEPT_ADMIN</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#1E8E3E"><span style="width:6px;height:6px;border-radius:50%;background:#34A853"></span>ใช้งานอยู่</span></span>
+          <div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:36px 2.2fr 1.2fr 1fr 1fr 96px;padding:12px 22px;align-items:center">
+          <div style="width:16px;height:16px;border-radius:3px;border:1.5px solid #DADCE0"></div>
+          <div style="display:flex;align-items:center;gap:10px"><div style="width:30px;height:30px;border-radius:50%;background:#E8EAED;color:#5F6368;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">ก</div><div><div style="font-size:13.5px;font-weight:500;color:#80868B">กานต์ มีสุข</div><div style="font-size:11.5px;color:#80868B">kan@krirk.ac.th</div></div></div>
+          <span style="font-size:13px;color:#80868B">วิศวกรรมศาสตร์</span>
+          <span><span style="background:#F1F3F4;color:#3C4043;font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px">STUDENT</span></span>
+          <span><span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#C5221F"><span style="width:6px;height:6px;border-radius:50%;background:#EA4335"></span>ถูกระงับ</span></span>
+          <div></div>
+        </div>
+        <div style="padding:12px 22px;border-top:1px solid #E8EAED;display:flex;align-items:center;justify-content:space-between;background:#F8F9FA">
+          <span style="font-size:12.5px;color:#5F6368">แสดง 1–3 จาก 1,284 รายการ</span>
+          <div style="display:flex;gap:5px;align-items:center">
+            <span style="width:30px;height:30px;border:1px solid #DADCE0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#80868B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6C15 6 9 10.42 9 12C9 13.58 15 18 15 18"></path></svg></span>
+            <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#1A73E8;color:#fff;font-size:13px;font-weight:600">1</span>
+            <span style="width:30px;height:30px;border:1px solid #DADCE0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;font-size:13px">2</span>
+            <span style="width:30px;height:30px;border:1px solid #DADCE0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff;font-size:13px">3</span>
+            <span style="width:30px;height:30px;border:1px solid #DADCE0;border-radius:6px;display:flex;align-items:center;justify-content:center;background:#fff"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#3C4043" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6C9 6 15 10.42 15 12C15 13.58 9 18 9 18"></path></svg></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">07</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">การนำทาง — Navigation &amp; Sidebar</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">Slide menu แบบ multi-level ขยาย/ยุบได้ 3 ระดับ — <strong style="color:#3C4043">คลิกทดลองได้จริง</strong> · ย่อเป็นโหมดไอคอนได้ · เก็บสถานะที่เปิดไว้ใน localStorage</p>
+
+      <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #E8EAED">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;letter-spacing:.06em">MULTI-LEVEL SIDEBAR · โครงเมนูจริงของระบบ</div>
+          <button onClick="{{ toggleCollapse }}" style="background:#F1F3F4;border:none;border-radius:7px;height:32px;padding:0 13px;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:7px" style-hover="background:#E8EAED">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#3C4043" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6H20M4 12H20M4 18H20"></path></svg>{{ collapseLabel }}</button>
+        </div>
+        <div style="display:flex;min-height:520px;background:#F8F9FA">
+          <div style="width:{{ sidebarWidth }};background:#fff;border-right:1px solid #E8EAED;padding:14px 0;flex-shrink:0;transition:width .18s ease">
+            <div style="display:flex;align-items:center;gap:11px;padding:0 16px 14px;border-bottom:1px solid #E8EAED;margin-bottom:10px">
+              <div style="width:32px;height:32px;border-radius:8px;background:#1A73E8;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"></path><path d="M6.5 10.5V15.5C6.5 15.5 8.5 18 12 18C15.5 18 17.5 15.5 17.5 15.5V10.5"></path></svg>
+              </div>
+              <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+                <div style="min-width:0"><div style="font-size:13.5px;font-weight:600;white-space:nowrap">KRIRK LMS</div><div style="font-size:11px;color:#80868B;white-space:nowrap">ผู้ดูแลระบบสูงสุด</div></div>
+              </sc-if>
+            </div>
+            <sc-for list="{{ navRows }}" as="row" hint-placeholder-count="12">
+              <div onClick="{{ row.onClick }}" style="display:flex;align-items:center;gap:10px;margin:1px 8px;border-radius:8px;cursor:pointer;height:{{ row.h }};padding-right:10px;padding-left:{{ row.pad }};background:{{ row.bg }};color:{{ row.fg }};font-size:{{ row.fs }};font-weight:{{ row.fw }}" style-hover="background:#F1F3F4">
+                <span style="flex-shrink:0;display:flex">{{ row.iconEl }}</span>
+                <sc-if value="{{ expanded }}" hint-placeholder-val="{{ true }}">
+                  <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ row.label }}</span>
+                </sc-if>
+                <sc-if value="{{ row.badge }}">
+                  <span style="background:#EA4335;color:#fff;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:9px;flex-shrink:0">{{ row.badge }}</span>
+                </sc-if>
+                <sc-if value="{{ row.chevEl }}">
+                  <span style="flex-shrink:0;display:flex;opacity:.7">{{ row.chevEl }}</span>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <div style="height:60px;background:#fff;border-bottom:1px solid #E8EAED;display:flex;align-items:center;justify-content:space-between;padding:0 22px;flex-shrink:0">
+              <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:#5F6368">
+                <span>ระบบ</span>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#DADCE0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6C9 6 15 10.42 15 12C15 13.58 9 18 9 18"></path></svg>
+                <span style="color:#202124;font-weight:500">{{ activeLabel }}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="background:#F1F3F4;border-radius:20px;height:36px;width:230px;padding:0 14px;display:flex;align-items:center;gap:9px">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#5F6368" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 17L21 21"></path><path d="M19 11C19 6.58 15.42 3 11 3C6.58 3 3 6.58 3 11C3 15.42 6.58 19 11 19C15.42 19 19 15.42 19 11Z"></path></svg>
+                  <span style="font-size:13px;color:#80868B">ค้นหา…</span>
+                </div>
+                <div style="position:relative;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#F1F3F4">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#3C4043" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 18.5L18.35 7.93C17.86 4.81 15.17 2.5 12 2.5C8.83 2.5 6.14 4.81 5.65 7.93L4 18.5"></path><path d="M20 18.5C20 16.84 16.42 15.5 12 15.5C7.58 15.5 4 16.84 4 18.5C4 20.16 7.58 21.5 12 21.5C16.42 21.5 20 20.16 20 18.5Z"></path><path d="M13 18.5H11"></path></svg>
+                  <span style="position:absolute;top:5px;right:6px;width:8px;height:8px;border-radius:50%;background:#EA4335;border:1.5px solid #F1F3F4"></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:32px;height:32px;border-radius:50%;background:#1A73E8;color:#fff;font-size:12.5px;font-weight:600;display:flex;align-items:center;justify-content:center">อ</div>
+                  <div><div style="font-size:12.5px;font-weight:500;line-height:1.3">อธิการ ก.</div><div style="font-size:10.5px;color:#80868B">SUPER_ADMIN</div></div>
+                </div>
+              </div>
+            </div>
+            <div style="flex:1;padding:26px 22px;display:flex;flex-direction:column;gap:14px">
+              <div>
+                <div style="font-size:20px;font-weight:700;margin-bottom:4px">{{ activeLabel }}</div>
+                <div style="font-size:13px;color:#80868B">พื้นที่เนื้อหาของหน้าที่เลือก — คลิกเมนูด้านซ้ายเพื่อสลับ</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+                <div style="background:#fff;border:1px solid #DADCE0;border-radius:10px;padding:16px"><div style="font-size:11.5px;color:#80868B;margin-bottom:6px">ผู้ใช้ทั้งหมด</div><div style="font-size:24px;font-weight:700">1,284</div><div style="font-size:11.5px;color:#1E8E3E;margin-top:4px">+48 เดือนนี้</div></div>
+                <div style="background:#fff;border:1px solid #DADCE0;border-radius:10px;padding:16px"><div style="font-size:11.5px;color:#80868B;margin-bottom:6px">คอร์สที่เผยแพร่</div><div style="font-size:24px;font-weight:700">180</div><div style="font-size:11.5px;color:#B06000;margin-top:4px">12 รออนุมัติ</div></div>
+                <div style="background:#fff;border:1px solid #DADCE0;border-radius:10px;padding:16px"><div style="font-size:11.5px;color:#80868B;margin-bottom:6px">อัตราการเรียนจบ</div><div style="font-size:24px;font-weight:700">74.2%</div><div style="font-size:11.5px;color:#1E8E3E;margin-top:4px">+3.1% จากเทอมก่อน</div></div>
+              </div>
+              <div style="flex:1;border:1.5px dashed #DADCE0;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#80868B;font-size:13px;min-height:120px">พื้นที่เนื้อหาโมดูล</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+        <div style="background:#fff;border:1px solid #DADCE0;border-radius:12px;padding:22px">
+          <div style="font-size:12px;font-weight:700;color:#5F6368;margin-bottom:14px;letter-spacing:.06em">กติกาของเมนู · Sidebar rules</div>
+          <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.65;color:#3C4043">
+            <div style="display:flex;gap:9px"><span style="color:#1A73E8;font-weight:700">01</span><span>ลึกได้สูงสุด <strong>3 ระดับ</strong> — ระดับ 1 มีไอคอน ระดับ 2–3 ใช้ระยะเยื้อง 16px ต่อชั้นแทนไอคอน</span></div>
+            <div style="display:flex;gap:9px"><span style="color:#1A73E8;font-weight:700">02</span><span>คลิกหัวข้อที่มีลูก = ขยาย/ยุบ · คลิกใบสุดท้าย = เปลี่ยนหน้า (ไม่ยุบเมนูที่เปิดอยู่)</span></div>
+            <div style="display:flex;gap:9px"><span style="color:#1A73E8;font-weight:700">03</span><span>รายการ active ใช้พื้น <span style="background:#E8F0FE;color:#174EA6;padding:1px 6px;border-radius:4px;font-weight:600">#E8F0FE</span> + ตัวอักษร primary</span></div>
+            <div style="display:flex;gap:9px"><span style="color:#1A73E8;font-weight:700">04</span><span>โหมดย่อ (72px) แสดงเฉพาะไอคอนระดับ 1 · เมนูย่อยเด้งเป็น flyout ตอน hover</span></div>
+            <div style="display:flex;gap:9px"><span style="color:#1A73E8;font-weight:700">05</span><span>บนจอ &lt; 1024px เมนูกลายเป็น drawer เลื่อนเข้าจากซ้าย พร้อม backdrop</span></div>
+          </div>
+        </div>
+        <div style="background:#202124;border-radius:12px;padding:22px;overflow:hidden">
+          <div style="font-size:12px;font-weight:700;color:#9AA0A6;margin-bottom:14px;letter-spacing:.06em">DARK MODE · แถบเมนูโหมดมืด</div>
+          <div style="background:#292A2D;border:1px solid #3C4043;border-radius:10px;padding:10px 8px">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#9AA0A6;font-size:13.5px">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7.5" height="7.5" rx="2"></rect><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"></rect><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"></rect><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"></rect></svg>แดชบอร์ด</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:#1A3050;color:#8AB4F8;font-size:13.5px;font-weight:500">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#8AB4F8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17H6.5C5.12 17 4 18.12 4 19.5C4 20.88 5.12 22 6.5 22H20V2H6.5C5.12 2 4 3.12 4 4.5V19.5"></path><path d="M8 7H16"></path></svg>คอร์สเรียน</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px 8px 40px;border-radius:8px;color:#E8EAED;font-size:13px">คอร์สทั้งหมด</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 12px 8px 40px;border-radius:8px;color:#9AA0A6;font-size:13px">รออนุมัติ <span style="background:#EA4335;color:#fff;font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:9px;margin-left:auto">12</span></div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:#9AA0A6;font-size:13.5px">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#9AA0A6" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"></circle><path d="M2.5 20C2.5 16.41 5.41 14 9 14C12.59 14 15.5 16.41 15.5 20"></path><path d="M16 4.5C17.93 4.93 19.37 6.65 19.37 8.7C19.37 10.75 17.93 12.47 16 12.9"></path><path d="M18 15C20.1 15.6 21.5 17.1 21.5 19.5"></path></svg>ผู้ใช้และคณะ</div>
+          </div>
+          <div style="font-size:11.5px;color:#9AA0A6;margin-top:13px;line-height:1.6">โหมดมืดสลับด้วย class <span style="font-family:'JetBrains Mono',monospace;color:#8AB4F8">.dark</span> บน &lt;html&gt; — สี active เปลี่ยนเป็น <span style="font-family:'JetBrains Mono',monospace;color:#8AB4F8">#8AB4F8</span> บนพื้น <span style="font-family:'JetBrains Mono',monospace;color:#8AB4F8">#1A3050</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#202124;color:#fff;font-size:13px;font-weight:700">08</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">โทเคน — Radius, Elevation, Spacing</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">ค่ามาตรฐานทั้งหมด พร้อมไฟล์ theme สำหรับ Tailwind CSS v4 (<span style="font-family:'JetBrains Mono',monospace;font-size:12px">@theme</span>) และตัวแปรของ shadcn/ui</p>
+      {{ tokensBlock }}
+    </div>
+
+    <div style="padding:48px 0 0">
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:6px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:#1A73E8;color:#fff;font-size:13px;font-weight:700">09</span>
+        <h2 style="font-size:26px;font-weight:700;margin:0;letter-spacing:-.015em">แผนผังระบบ — Information Architecture</h2>
+      </div>
+      <p style="color:#80868B;font-size:13.5px;margin:0 0 22px;padding-left:45px;line-height:1.6">18 โมดูลจาก SRS แมปเป็นหน้าจอจริง — ใช้เป็นสารบัญของงานออกแบบหน้าจอชุดถัดไป</p>
+      {{ iaBlock }}
+    </div>
+
+    <div style="margin-top:56px;padding:24px 0;border-top:1px solid #DADCE0;display:flex;align-items:center;justify-content:space-between;color:#80868B;font-size:12.5px">
+      <span>KRIRK LMS · Design System v1.0 · 19 ก.ย. 2569</span>
+      <span>Next.js 16 · Tailwind CSS v4 · shadcn/ui · Hugeicons Stroke Rounded</span>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280},&quot;iconStroke&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:1.5,&quot;min&quot;:1,&quot;max&quot;:2.5,&quot;step&quot;:0.1,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;ไอคอน&quot;}}">
+class Component extends DCLogic {
+  state = {
+    open: { courses: true, system: true, assess: false, comm: false, users: false, reports: false },
+    active: 'protection',
+    collapsed: false,
+  };
+
+  C = {
+    blue:'#1A73E8', blueLt:'#4285F4', blueDk:'#174EA6', blueBg:'#E8F0FE',
+    red:'#EA4335', redBg:'#FCE8E6', redTx:'#C5221F',
+    yellow:'#FBBC04', yellowBg:'#FEF7E0', yellowTx:'#B06000',
+    green:'#34A853', greenBg:'#E6F4EA', greenTx:'#1E8E3E',
+    teal:'#12B5CB', tealBg:'#E4F7FB', tealTx:'#007B83',
+    purple:'#A142F4', purpleBg:'#F3E8FD', purpleTx:'#7627BB',
+    ink:'#202124', ink2:'#3C4043', mid:'#5F6368', sub:'#80868B',
+    border:'#DADCE0', line:'#E8EAED', muted:'#F1F3F4', bg:'#F8F9FA', card:'#FFFFFF',
+  };
+  mono = "'JetBrains Mono',monospace";
+
+  P = {
+    dashboard: [["rect",{"x":3,"y":3,"width":7.5,"height":7.5,"rx":2}],["rect",{"x":13.5,"y":3,"width":7.5,"height":7.5,"rx":2}],["rect",{"x":3,"y":13.5,"width":7.5,"height":7.5,"rx":2}],["rect",{"x":13.5,"y":13.5,"width":7.5,"height":7.5,"rx":2}]],
+    book: [["path",{"d":"M20 17H6.5C5.12 17 4 18.12 4 19.5C4 20.88 5.12 22 6.5 22H20V2H6.5C5.12 2 4 3.12 4 4.5V19.5"}],["path",{"d":"M8 7H16"}]],
+    video: [["rect",{"x":2,"y":5,"width":14,"height":14,"rx":3}],["path",{"d":"M16 10.5L20.24 8.14C21 7.72 22 8.27 22 9.14V14.86C22 15.73 21 16.28 20.24 15.86L16 13.5"}]],
+    play: [["circle",{"cx":12,"cy":12,"r":10}],["path",{"d":"M10.2 9.2L15 12L10.2 14.8V9.2Z"}]],
+    pdf: [["path",{"d":"M13 21.5V21C13 18.17 13 16.76 13.88 15.88C14.76 15 16.17 15 19 15H19.5M20 13.34V10C20 6.23 20 4.34 18.83 3.17C17.66 2 15.77 2 12 2C8.23 2 6.34 2 5.17 3.17C4 4.34 4 6.23 4 10V14.54C4 17.79 4 19.41 4.89 20.51C5.07 20.73 5.27 20.93 5.49 21.11C6.59 22 8.21 22 11.46 22C12.16 22 12.51 22 12.84 21.89C12.9 21.86 12.97 21.83 13.03 21.8C13.34 21.66 13.59 21.41 14.09 20.91L18.83 16.17C19.41 15.59 19.7 15.3 19.85 14.94C20 14.57 20 14.16 20 13.34Z"}],["path",{"d":"M8 7H16M8 11H12"}]],
+    text: [["path",{"d":"M4 6H20"}],["path",{"d":"M4 10.5H20"}],["path",{"d":"M4 15H16"}],["path",{"d":"M4 19.5H11"}]],
+    live: [["circle",{"cx":12,"cy":12,"r":2.5}],["path",{"d":"M7.76 7.76C5.41 10.11 5.41 13.89 7.76 16.24"}],["path",{"d":"M16.24 16.24C18.59 13.89 18.59 10.11 16.24 7.76"}],["path",{"d":"M4.93 4.93C1.02 8.84 1.02 15.16 4.93 19.07"}],["path",{"d":"M19.07 19.07C22.98 15.16 22.98 8.84 19.07 4.93"}]],
+    quiz: [["rect",{"x":5,"y":3,"width":14,"height":18,"rx":2.5}],["path",{"d":"M9 3.5C9 2.67 9.67 2 10.5 2H13.5C14.33 2 15 2.67 15 3.5V4.5H9V3.5Z"}],["path",{"d":"M9 12.5L11 14.5L15.5 10"}]],
+    assignment: [["rect",{"x":4,"y":3,"width":16,"height":18,"rx":2.5}],["path",{"d":"M8 8.5H16"}],["path",{"d":"M8 12.5H16"}],["path",{"d":"M8 16.5H13"}]],
+    grade: [["path",{"d":"M3 3V18C3 19.66 4.34 21 6 21H21"}],["path",{"d":"M7 16.5V11.5"}],["path",{"d":"M12 16.5V7"}],["path",{"d":"M17 16.5V13"}]],
+    certificate: [["circle",{"cx":12,"cy":9,"r":6}],["path",{"d":"M8.5 14L7 22L12 19.5L17 22L15.5 14"}]],
+    users: [["circle",{"cx":9,"cy":8,"r":4}],["path",{"d":"M2.5 20C2.5 16.41 5.41 14 9 14C12.59 14 15.5 16.41 15.5 20"}],["path",{"d":"M16 4.5C17.93 4.93 19.37 6.65 19.37 8.7C19.37 10.75 17.93 12.47 16 12.9"}],["path",{"d":"M18 15C20.1 15.6 21.5 17.1 21.5 19.5"}]],
+    user: [["path",{"d":"M17 8.5C17 5.74 14.76 3.5 12 3.5C9.24 3.5 7 5.74 7 8.5C7 11.26 9.24 13.5 12 13.5C14.76 13.5 17 11.26 17 8.5Z"}],["path",{"d":"M19 20.5C19 16.63 15.87 13.5 12 13.5C8.13 13.5 5 16.63 5 20.5"}]],
+    building: [["path",{"d":"M3 21H21"}],["path",{"d":"M5 21V5C5 3.9 5.9 3 7 3H13C14.1 3 15 3.9 15 5V21"}],["path",{"d":"M15 9H18C19.1 9 20 9.9 20 11V21"}],["path",{"d":"M8 7H12M8 11H12M8 15H12"}]],
+    chart: [["path",{"d":"M3 3V18C3 19.66 4.34 21 6 21H21"}],["path",{"d":"M6.5 15L10 10.5L13.5 13.5L18.5 7"}]],
+    bell: [["path",{"d":"M20 18.5L18.35 7.93C17.86 4.81 15.17 2.5 12 2.5C8.83 2.5 6.14 4.81 5.65 7.93L4 18.5"}],["path",{"d":"M20 18.5C20 16.84 16.42 15.5 12 15.5C7.58 15.5 4 16.84 4 18.5C4 20.16 7.58 21.5 12 21.5C16.42 21.5 20 20.16 20 18.5Z"}],["path",{"d":"M13 18.5H11"}]],
+    megaphone: [["path",{"d":"M3 11.5C3 9.84 4.34 8.5 6 8.5H8L15 4V19L8 14.5H6C4.34 14.5 3 13.16 3 11.5Z"}],["path",{"d":"M18.5 9C19.4 9.8 20 10.83 20 12C20 13.17 19.4 14.2 18.5 15"}],["path",{"d":"M7.5 14.5L8.5 20.5H11.5L10.5 14.5"}]],
+    message: [["path",{"d":"M3 11.5C3 7.08 7.03 3.5 12 3.5C16.97 3.5 21 7.08 21 11.5C21 15.92 16.97 19.5 12 19.5C10.94 19.5 9.92 19.34 8.97 19.04L4.5 20.5L5.6 16.86C3.99 15.47 3 13.6 3 11.5Z"}],["path",{"d":"M9 11H15"}]],
+    star: [["path",{"d":"M12 3L14.78 8.63L21 9.54L16.5 13.92L17.56 20.11L12 17.19L6.44 20.11L7.5 13.92L3 9.54L9.22 8.63L12 3Z"}]],
+    shield: [["path",{"d":"M18.71 3.5C16.82 2.55 14.5 2 12 2C9.5 2 7.18 2.55 5.29 3.5C4.36 3.96 3.9 4.19 3.45 4.91C3 5.64 3 6.34 3 7.75V11.24C3 16.92 7.54 20.08 10.17 21.43C10.91 21.81 11.27 22 12 22C12.73 22 13.09 21.81 13.83 21.43C16.46 20.08 21 16.92 21 11.24V7.75C21 6.34 21 5.64 20.55 4.91C20.1 4.19 19.64 3.96 18.71 3.5Z"}],["path",{"d":"M9 11.5L11 13.5L15 9.5"}]],
+    lock: [["path",{"d":"M4.27 18.84C4.49 20.51 5.88 21.82 7.56 21.9C8.98 21.97 10.42 22 12 22C13.58 22 15.02 21.97 16.44 21.9C18.12 21.82 19.51 20.51 19.73 18.84C19.88 17.75 20 16.64 20 15.5C20 14.36 19.88 13.25 19.73 12.16C19.51 10.49 18.12 9.18 16.44 9.1C15.02 9.03 13.58 9 12 9C10.42 9 8.98 9.03 7.56 9.1C5.88 9.18 4.49 10.49 4.27 12.16C4.12 13.25 4 14.36 4 15.5C4 16.64 4.12 17.75 4.27 18.84Z"}],["path",{"d":"M7.5 9V6.5C7.5 4.01 9.51 2 12 2C14.49 2 16.5 4.01 16.5 6.5V9"}]],
+    eye: [["path",{"d":"M21.54 11.05C21.85 11.47 22 11.68 22 12C22 12.32 21.85 12.53 21.54 12.96C20.18 14.87 16.69 19 12 19C7.31 19 3.82 14.87 2.46 12.96C2.15 12.53 2 12.32 2 12C2 11.68 2.15 11.47 2.46 11.05C3.82 9.13 7.31 5 12 5C16.69 5 20.18 9.13 21.54 11.05Z"}],["path",{"d":"M15 12C15 10.34 13.66 9 12 9C10.34 9 9 10.34 9 12C9 13.66 10.34 15 12 15C13.66 15 15 13.66 15 12Z"}]],
+    eyeOff: [["path",{"d":"M22 8C22 8 18 14 12 14C6 14 2 8 2 8"}],["path",{"d":"M15 13.5L16.5 16"}],["path",{"d":"M20 11L22 13"}],["path",{"d":"M2 13L4 11"}],["path",{"d":"M9 13.5L7.5 16"}]],
+    search: [["path",{"d":"M17 17L21 21"}],["path",{"d":"M19 11C19 6.58 15.42 3 11 3C6.58 3 3 6.58 3 11C3 15.42 6.58 19 11 19C15.42 19 19 15.42 19 11Z"}]],
+    filter: [["path",{"d":"M3 5H21"}],["path",{"d":"M6 12H18"}],["path",{"d":"M10 19H14"}]],
+    calendar: [["path",{"d":"M16 2V6M8 2V6"}],["path",{"d":"M13 4H11C7.23 4 5.34 4 4.17 5.17C3 6.34 3 8.23 3 12V14C3 17.77 3 19.66 4.17 20.83C5.34 22 7.23 22 11 22H13C16.77 22 18.66 22 19.83 20.83C21 19.66 21 17.77 21 14V12C21 8.23 21 6.34 19.83 5.17C18.66 4 16.77 4 13 4Z"}],["path",{"d":"M3 10H21"}]],
+    clock: [["circle",{"cx":12,"cy":12,"r":10}],["path",{"d":"M12 7.5V12L14.5 14.5"}]],
+    mail: [["path",{"d":"M2 6L8.91 9.92C11.46 11.36 12.54 11.36 15.09 9.92L22 6"}],["path",{"d":"M2.02 13.48C2.08 16.54 2.11 18.07 3.24 19.21C4.38 20.34 5.95 20.38 9.1 20.46C11.04 20.51 12.96 20.51 14.9 20.46C18.05 20.38 19.62 20.34 20.76 19.21C21.89 18.07 21.92 16.54 21.98 13.48C22.01 12.49 22.01 11.51 21.98 10.52C21.92 7.46 21.89 5.93 20.76 4.79C19.62 3.66 18.05 3.62 14.9 3.54C12.96 3.49 11.04 3.49 9.1 3.54C5.95 3.62 4.38 3.66 3.24 4.79C2.11 5.93 2.08 7.46 2.02 10.52C1.99 11.51 1.99 12.49 2.02 13.48Z"}]],
+    line: [["path",{"d":"M21 10.5C21 6.36 16.97 3 12 3C7.03 3 3 6.36 3 10.5C3 14.22 6.2 17.32 10.5 17.9C10.82 17.97 11.25 18.11 11.36 18.38C11.46 18.63 11.42 19.01 11.39 19.26L11.25 20.1C11.21 20.35 11.05 21.07 12 20.67C12.95 20.27 17.15 17.63 19.03 15.47C20.33 14.05 21 12.6 21 10.5Z"}]],
+    settings: [["path",{"d":"M4 6H9M13 6H20"}],["path",{"d":"M4 12H13M17 12H20"}],["path",{"d":"M4 18H8M12 18H20"}],["circle",{"cx":11,"cy":6,"r":2}],["circle",{"cx":15,"cy":12,"r":2}],["circle",{"cx":10,"cy":18,"r":2}]],
+    audit: [["path",{"d":"M4 6.5C4 4.57 5.57 3 7.5 3H16.5C18.43 3 20 4.57 20 6.5V17.5C20 19.43 18.43 21 16.5 21H7.5C5.57 21 4 19.43 4 17.5V6.5Z"}],["path",{"d":"M8 8H16M8 12H16M8 16H12"}]],
+    upload: [["path",{"d":"M12 16V3"}],["path",{"d":"M8 7L12 3L16 7"}],["path",{"d":"M3 15V17C3 19.21 4.79 21 7 21H17C19.21 21 21 19.21 21 17V15"}]],
+    download: [["path",{"d":"M12 3V16"}],["path",{"d":"M8 12L12 16L16 12"}],["path",{"d":"M3 15V17C3 19.21 4.79 21 7 21H17C19.21 21 21 19.21 21 17V15"}]],
+    trash: [["path",{"d":"M3 6H21"}],["path",{"d":"M19 6L18.3 17.5C18.2 19.4 16.6 21 14.7 21H9.3C7.4 21 5.8 19.4 5.7 17.5L5 6"}],["path",{"d":"M9 6V4.5C9 3.4 9.9 2.5 11 2.5H13C14.1 2.5 15 3.4 15 4.5V6"}],["path",{"d":"M10 11V16M14 11V16"}]],
+    edit: [["path",{"d":"M14.07 3.89C14.82 3.08 15.19 2.67 15.59 2.44C16.54 1.87 17.72 1.85 18.69 2.39C19.09 2.62 19.48 3.01 20.25 3.79C21.01 4.58 21.4 4.97 21.62 5.38C22.14 6.37 22.13 7.57 21.57 8.55C21.34 8.96 20.94 9.34 20.15 10.1L10.75 19.15C9.25 20.6 8.5 21.32 7.57 21.68C6.63 22.05 5.6 22.02 3.55 21.97L3.27 21.96C2.64 21.94 2.33 21.94 2.14 21.73C1.96 21.52 1.99 21.2 2.04 20.57L2.06 20.22C2.2 18.42 2.27 17.53 2.62 16.72C2.97 15.91 3.58 15.26 4.79 13.94L14.07 3.89Z"}],["path",{"d":"M13 4L20 11"}]],
+    plus: [["path",{"d":"M12 5V19"}],["path",{"d":"M19 12L5 12"}]],
+    check: [["path",{"d":"M5 13L9 17L19 7"}]],
+    checkCircle: [["circle",{"cx":12,"cy":12,"r":10}],["path",{"d":"M8 12.5L10.5 15L16 9"}]],
+    xCircle: [["circle",{"cx":12,"cy":12,"r":10}],["path",{"d":"M15 9L9 15M9 9L15 15"}]],
+    alert: [["path",{"d":"M10.28 3.9L2.66 17.1C1.89 18.43 2.85 20.1 4.38 20.1H19.62C21.15 20.1 22.11 18.43 21.34 17.1L13.72 3.9C12.95 2.57 11.05 2.57 10.28 3.9Z"}],["path",{"d":"M12 9V13M12 16.5H12.01"}]],
+    info: [["circle",{"cx":12,"cy":12,"r":10}],["path",{"d":"M12 16V11M12 8H12.01"}]],
+    chevronD: [["path",{"d":"M6 9C6 9 10.42 15 12 15C13.58 15 18 9 18 9"}]],
+    chevronR: [["path",{"d":"M9 6C9 6 15 10.42 15 12C15 13.58 9 18 9 18"}]],
+    chevronL: [["path",{"d":"M15 6C15 6 9 10.42 9 12C9 13.58 15 18 15 18"}]],
+    menu: [["path",{"d":"M4 6H20M4 12H20M4 18H20"}]],
+    more: [["path",{"d":"M12 5.5H12.01M12 12H12.01M12 18.5H12.01"}]],
+    drag: [["path",{"d":"M9 6H9.01M15 6H15.01M9 12H9.01M15 12H15.01M9 18H9.01M15 18H15.01"}]],
+    logout: [["path",{"d":"M18 18C18 18.46 18 18.7 17.98 18.89C17.8 20.51 16.51 21.8 14.89 21.98C14.7 22 14.46 22 14 22H11C7.7 22 6.05 22 5.03 20.97C4 19.95 4 18.3 4 15V9C4 5.7 4 4.05 5.03 3.03C6.05 2 7.7 2 11 2H14C14.46 2 14.7 2 14.89 2.02C16.51 2.2 17.8 3.49 17.98 5.11C18 5.3 18 5.54 18 6"}],["path",{"d":"M9 12H20M20 12L17 9M20 12L17 15"}]],
+    globe: [["circle",{"cx":12,"cy":12,"r":10}],["path",{"d":"M2.5 9H21.5M2.5 15H21.5"}],["path",{"d":"M12 2C9.5 4.5 8.5 8 8.5 12C8.5 16 9.5 19.5 12 22C14.5 19.5 15.5 16 15.5 12C15.5 8 14.5 4.5 12 2Z"}]],
+    sun: [["circle",{"cx":12,"cy":12,"r":4.5}],["path",{"d":"M12 2V4M12 20V22M22 12H20M4 12H2M19.07 4.93L17.66 6.34M6.34 17.66L4.93 19.07M19.07 19.07L17.66 17.66M6.34 6.34L4.93 4.93"}]],
+    moon: [["path",{"d":"M21.5 14.08C20.3 14.72 18.93 15.08 17.48 15.08C12.75 15.08 8.92 11.25 8.92 6.52C8.92 5.07 9.28 3.7 9.92 2.5C5.67 3.5 2.5 7.32 2.5 11.87C2.5 17.19 6.81 21.5 12.13 21.5C16.68 21.5 20.5 18.33 21.5 14.08Z"}]],
+    folder: [["path",{"d":"M3 8.5C3 6.29 4.79 4.5 7 4.5H9.17C9.7 4.5 10.2 4.71 10.58 5.09L12 6.5H17C19.21 6.5 21 8.29 21 10.5V15.5C21 17.71 19.21 19.5 17 19.5H7C4.79 19.5 3 17.71 3 15.5V8.5Z"}]],
+    link: [["path",{"d":"M10 14C11.3 15.3 13.5 15.3 14.8 14L18.3 10.5C19.6 9.2 19.6 7 18.3 5.7C17 4.4 14.8 4.4 13.5 5.7L12.5 6.7"}],["path",{"d":"M14 10C12.7 8.7 10.5 8.7 9.2 10L5.7 13.5C4.4 14.8 4.4 17 5.7 18.3C7 19.6 9.2 19.6 10.5 18.3L11.5 17.3"}]],
+    graduation: [["path",{"d":"M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"}],["path",{"d":"M6.5 10.5V15.5C6.5 15.5 8.5 18 12 18C15.5 18 17.5 15.5 17.5 15.5V10.5"}],["path",{"d":"M21.5 8.9V14"}]],
+    watermark: [["rect",{"x":3,"y":4,"width":18,"height":16,"rx":3}],["path",{"d":"M7 15L10 10.5L12.5 13.5L15 9.5L17.5 15"}],["path",{"d":"M3.5 20L20.5 4"}]],
+    creditCard: [["path",{"d":"M2 12C2 8.46 2 6.69 3.05 5.51C3.22 5.32 3.41 5.15 3.61 4.99C4.86 4 6.74 4 10.5 4H13.5C17.26 4 19.14 4 20.39 4.99C20.59 5.15 20.78 5.32 20.95 5.51C22 6.69 22 8.46 22 12C22 15.54 22 17.31 20.95 18.49C20.78 18.68 20.59 18.85 20.39 19.01C19.14 20 17.26 20 13.5 20H10.5C6.74 20 4.86 20 3.61 19.01C3.41 18.85 3.22 18.68 3.05 18.49C2 17.31 2 15.54 2 12Z"}],["path",{"d":"M2 9H22"}],["path",{"d":"M10 16H11.5M14.5 16H18"}]],
+  };
+
+  HUGE = { dashboard:'DashboardSquare01', book:'Book02', video:'VideoReplay', play:'PlayCircle', pdf:'File01', text:'TextAlignLeft', live:'Wifi01', quiz:'TaskDone01', assignment:'Assignment', grade:'ChartColumn', certificate:'Award01', users:'UserMultiple02', user:'User', building:'Building03', chart:'Analytics01', bell:'Notification03', megaphone:'Megaphone01', message:'Comment01', star:'StarFilled', shield:'Shield02', lock:'SquareLock02', eye:'View', eyeOff:'ViewOff', search:'Search01', filter:'FilterHorizontal', calendar:'Calendar03', clock:'Clock01', mail:'Mail01', line:'Chatting01', settings:'Settings02', audit:'DocumentValidation', upload:'Upload03', download:'Download03', trash:'Delete02', edit:'Edit02', plus:'Add01', check:'Tick01', checkCircle:'CheckmarkCircle02', xCircle:'CancelCircle', alert:'Alert02', info:'InformationCircle', chevronD:'ArrowDown01', chevronR:'ArrowRight01', chevronL:'ArrowLeft01', menu:'Menu01', more:'MoreVertical', drag:'DragDropVertical', logout:'Logout03', globe:'Global', sun:'Sun03', moon:'Moon02', folder:'Folder01', link:'Link02', graduation:'MortarBoard', watermark:'ImageNotFound01', creditCard:'CreditCard' };
+
+  ic(name, size, color, sw, key) {
+    const h = React.createElement;
+    return h('svg', { key, viewBox:'0 0 24 24', width:size||24, height:size||24, fill:'none', stroke:color||'currentColor', strokeWidth:sw||1.5, strokeLinecap:'round', strokeLinejoin:'round', style:{display:'block',flexShrink:0} },
+      ...(this.P[name]||[]).map((p,i)=>h(p[0],{key:i,...p[1]})));
+  }
+
+  card(children, pad) {
+    return React.createElement('div',{style:{background:'#fff',border:'1px solid #DADCE0',borderRadius:12,padding:pad||22}},children);
+  }
+  sub(t) {
+    return React.createElement('div',{style:{fontSize:12,fontWeight:700,color:this.C.mid,marginBottom:16,letterSpacing:'.06em'}},t);
+  }
+
+  swatch(hex, name, role, token) {
+    const h = React.createElement;
+    const light = ['#FFFFFF','#F8F9FA','#F1F3F4','#E8EAED','#DADCE0','#E8F0FE','#FCE8E6','#FEF7E0','#E6F4EA','#E4F7FB','#F3E8FD'].indexOf(hex.toUpperCase()) >= 0;
+    return h('div',{key:hex+name,style:{borderRadius:10,overflow:'hidden',border:'1px solid #DADCE0',background:'#fff'}},
+      h('div',{style:{height:66,background:hex,borderBottom:light?'1px solid #DADCE0':'none'}}),
+      h('div',{style:{padding:'9px 11px 11px'}},
+        h('div',{style:{fontSize:12.5,fontWeight:600,marginBottom:2}},name),
+        h('div',{style:{fontSize:10.5,color:this.C.sub,marginBottom:6,lineHeight:1.4,minHeight:15}},role),
+        h('div',{style:{fontFamily:this.mono,fontSize:10.5,color:this.C.mid}},hex),
+        token?h('div',{style:{fontFamily:this.mono,fontSize:9.5,color:this.C.sub,marginTop:2}},token):null));
+  }
+  grid(items, cols) {
+    return React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat('+(cols||5)+',1fr)',gap:11}}, items.map(it=>this.swatch(it[0],it[1],it[2],it[3])));
+  }
+
+  renderColors() {
+    const h = React.createElement, C = this.C;
+    return h('div',{style:{display:'flex',flexDirection:'column',gap:16}},
+      this.card([
+        this.sub('BRAND · สีหลักจาก Google'),
+        this.grid([
+          ['#1A73E8','Primary','ปุ่มหลัก ลิงก์ เมนู active','--primary'],
+          ['#4285F4','Blue 500','กราฟ ไฮไลต์','--brand-blue'],
+          ['#174EA6','Primary Dark','hover · pressed','--primary-700'],
+          ['#EA4335','Brand Red','ลบ · แจ้งเตือนร้ายแรง','--destructive'],
+          ['#FBBC04','Brand Yellow','รอดำเนินการ · เตือน','--warning'],
+          ['#34A853','Brand Green','สำเร็จ · เผยแพร่','--success'],
+        ],6),
+        h('div',{style:{marginTop:14,padding:'11px 13px',background:C.blueBg,borderRadius:8,fontSize:12.5,color:'#174EA6',lineHeight:1.65}},
+          '#1A73E8 ใช้แทน #4285F4 เป็นสี action หลัก เพราะให้ contrast 4.6:1 กับพื้นขาว ผ่าน WCAG AA สำหรับข้อความ ส่วน #4285F4 สงวนไว้สำหรับกราฟ พื้นหลัง และงานตกแต่ง')
+      ]),
+      this.card([
+        this.sub('EXTENDED · สีที่คิดต่อให้เข้าชุดกัน'),
+        this.grid([
+          ['#12B5CB','Teal','บทเรียน LIVE · ปฏิทิน','--info'],
+          ['#A142F4','Purple','Quiz · บทบาท Dept Admin','--accent-2'],
+          ['#F29900','Orange','งานที่ใกล้ครบกำหนด','--accent-3'],
+          ['#E8F0FE','Blue Tint','พื้น active ของเมนู','--primary-50'],
+          ['#F3E8FD','Purple Tint','พื้น badge Quiz','--accent-2-50'],
+          ['#E4F7FB','Teal Tint','พื้น badge Live','--info-50'],
+        ],6)
+      ]),
+      this.card([
+        this.sub('NEUTRAL · โทนกลางและพื้นผิว'),
+        this.grid([
+          ['#FFFFFF','Surface','การ์ด · sidebar','--card'],
+          ['#F8F9FA','Background','พื้นหลังหน้า','--background'],
+          ['#F1F3F4','Muted','พื้น hover · chip','--muted'],
+          ['#E8EAED','Line','เส้นคั่นในการ์ด','--border-subtle'],
+          ['#DADCE0','Border','ขอบ input · การ์ด','--border'],
+          ['#80868B','Text Subtle','caption · placeholder','--muted-foreground'],
+          ['#5F6368','Text Medium','ข้อความรอง','--secondary-foreground'],
+          ['#3C4043','Text Body','เนื้อหา','--foreground-80'],
+          ['#202124','Text Strong','หัวข้อ','--foreground'],
+        ],9)
+      ]),
+      this.card([
+        this.sub('SEMANTIC · สีตามความหมาย (fg / bg / text)'),
+        h('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:13}},
+          ...[
+            ['Success · สำเร็จ','#34A853','#E6F4EA','#1E8E3E','เผยแพร่แล้ว · เรียนจบ · อนุมัติ'],
+            ['Warning · รอ','#FBBC04','#FEF7E0','#B06000','รออนุมัติ · ใกล้ครบกำหนด'],
+            ['Error · ผิดพลาด','#EA4335','#FCE8E6','#C5221F','ถูกระงับ · เกินกำหนด · capture'],
+            ['Info · ข้อมูล','#1A73E8','#E8F0FE','#174EA6','ประกาศ · คำแนะนำระบบ'],
+          ].map((s,i)=>h('div',{key:i,style:{borderRadius:10,border:'1px solid #DADCE0',overflow:'hidden'}},
+            h('div',{style:{background:s[2],padding:'13px 13px 12px'}},
+              h('span',{style:{display:'inline-flex',alignItems:'center',gap:6,background:'#fff',color:s[3],fontSize:11,fontWeight:600,padding:'4px 11px',borderRadius:14}},
+                h('span',{style:{width:6,height:6,borderRadius:'50%',background:s[1],display:'block'}}),'Badge')),
+            h('div',{style:{padding:'10px 12px 12px',background:'#fff'}},
+              h('div',{style:{fontSize:12.5,fontWeight:600,marginBottom:5}},s[0]),
+              h('div',{style:{fontSize:11,color:C.sub,marginBottom:8,lineHeight:1.5,minHeight:32}},s[4]),
+              h('div',{style:{display:'flex',gap:4,flexWrap:'wrap'}},[s[1],s[2],s[3]].map((p,j)=>
+                h('span',{key:j,style:{fontFamily:this.mono,fontSize:9.5,color:C.mid,background:C.muted,borderRadius:4,padding:'2px 5px'}},p)))))))
+      ]),
+      h('div',{style:{background:'#202124',borderRadius:12,padding:22}},
+        h('div',{style:{fontSize:12,fontWeight:700,color:'#9AA0A6',marginBottom:16,letterSpacing:'.06em'}},'DARK MODE · ชุดสีโหมดมืด'),
+        h('div',{style:{display:'grid',gridTemplateColumns:'repeat(8,1fr)',gap:11}},
+          ...[
+            ['#8AB4F8','Primary','--primary'],['#202124','Background','--background'],['#292A2D','Surface','--card'],['#35363A','Elevated','--popover'],
+            ['#3C4043','Border','--border'],['#E8EAED','Foreground','--foreground'],['#9AA0A6','Muted fg','--muted-foreground'],['#1A3050','Primary tint','--primary-50'],
+          ].map((s,i)=>h('div',{key:i},
+            h('div',{style:{height:54,background:s[0],borderRadius:8,border:'1px solid rgba(255,255,255,.1)'}}),
+            h('div',{style:{fontSize:11.5,fontWeight:600,color:'#E8EAED',marginTop:7}},s[1]),
+            h('div',{style:{fontFamily:this.mono,fontSize:9.5,color:'#9AA0A6',marginTop:2}},s[0]),
+            h('div',{style:{fontFamily:this.mono,fontSize:9,color:'#5F6368',marginTop:1}},s[2])))),
+        h('div',{style:{marginTop:14,fontSize:12,color:'#9AA0A6',lineHeight:1.65}},
+          'สี semantic ในโหมดมืดใช้ step ที่สว่างขึ้น: Success #81C995 · Warning #FDD663 · Error #F28B82 · Info #8AB4F8 — พื้น tint ใช้ความทึบ 18% ของสีนั้นบน #202124'))
+    );
+  }
+
+  renderIcons() {
+    const h = React.createElement, C = this.C;
+    const names = Object.keys(this.P);
+    const sw = this.props.iconStroke ?? 1.5;
+    return h('div',{style:{display:'flex',flexDirection:'column',gap:16}},
+      this.card([
+        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:10}},
+          h('div',{style:{display:'flex',alignItems:'center',gap:9}},
+            h('span',{style:{width:8,height:8,borderRadius:'50%',background:C.green,display:'block'}}),
+            h('span',{style:{fontSize:13,fontWeight:600}},'@hugeicons/core-free-icons'),
+            h('span',{style:{fontSize:12,color:C.sub}},'· Stroke Rounded · '+names.length+' ไอคอนที่ใช้ในระบบ')),
+          h('span',{style:{fontFamily:this.mono,fontSize:11,color:C.mid,background:C.muted,borderRadius:6,padding:'4px 10px'}},'24×24 · stroke '+sw)),
+        h('div',{style:{display:'grid',gridTemplateColumns:'repeat(9,1fr)',gap:9}},
+          ...names.map(n=>h('div',{key:n,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:7,padding:'13px 3px 9px',borderRadius:9,background:C.bg,border:'1px solid '+C.line}},
+            this.ic(n,24,C.blue,sw),
+            h('span',{style:{fontFamily:this.mono,fontSize:9,fontWeight:500,textAlign:'center',wordBreak:'break-word',lineHeight:1.25}},this.HUGE[n]||n),
+            h('span',{style:{fontSize:9,color:C.sub,textAlign:'center'}},n))))
+      ]),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1.25fr 1fr',gap:16}},
+        this.card([
+          this.sub('USAGE · วิธีเรียกใช้ใน React'),
+          h('div',{style:{background:'#202124',borderRadius:10,padding:'15px 17px',fontFamily:this.mono,fontSize:12,lineHeight:1.75,color:'#E8EAED',overflowX:'auto'}},
+            h('div',{},h('span',{style:{color:'#9AA0A6'}},'// pnpm add @hugeicons/react @hugeicons/core-free-icons')),
+            h('div',{},h('span',{style:{color:'#C58AF9'}},'import'),' { HugeiconsIcon } ',h('span',{style:{color:'#C58AF9'}},'from'),' ',h('span',{style:{color:'#81C995'}},"'@hugeicons/react'")),
+            h('div',{},h('span',{style:{color:'#C58AF9'}},'import'),' { Book02Icon } ',h('span',{style:{color:'#C58AF9'}},'from'),' ',h('span',{style:{color:'#81C995'}},"'@hugeicons/core-free-icons'")),
+            h('div',{style:{height:10}}),
+            h('div',{},h('span',{style:{color:'#8AB4F8'}},'<HugeiconsIcon')),
+            h('div',{style:{paddingLeft:18}},h('span',{style:{color:'#FDD663'}},'icon'),'={Book02Icon}'),
+            h('div',{style:{paddingLeft:18}},h('span',{style:{color:'#FDD663'}},'size'),'={20} ',h('span',{style:{color:'#FDD663'}},'strokeWidth'),'={1.5}'),
+            h('div',{style:{paddingLeft:18}},h('span',{style:{color:'#FDD663'}},'className'),'=',h('span',{style:{color:'#81C995'}},'"text-primary"')),
+            h('div',{},h('span',{style:{color:'#8AB4F8'}},'/>'))),
+          h('div',{style:{marginTop:12,fontSize:12,color:C.mid,lineHeight:1.65}},'ทุกไอคอนใช้ชุด strokeRounded เท่านั้น — ห้ามผสมชุด solid หรือ duotone ในหน้าเดียวกัน')
+        ]),
+        h('div',{style:{display:'flex',flexDirection:'column',gap:16}},
+          this.card([
+            this.sub('SIZES · ขนาดที่ใช้'),
+            h('div',{style:{display:'flex',alignItems:'flex-end',gap:22,flexWrap:'wrap'}},
+              ...[['14','badge'],['16','inline'],['18','เมนู · ปุ่ม'],['20','list'],['24','หัวข้อ'],['32','empty state']].map((s,i)=>
+                h('div',{key:i,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:7}},
+                  this.ic('shield',Number(s[0]),C.blue,sw),
+                  h('span',{style:{fontSize:11,fontWeight:600}},s[0]),
+                  h('span',{style:{fontSize:9.5,color:C.sub}},s[1]))))
+          ]),
+          this.card([
+            this.sub('COLOR · การใช้สีกับไอคอน'),
+            h('div',{style:{display:'flex',gap:12,flexWrap:'wrap'}},
+              ...[['Primary',C.blue,C.blueBg],['Success',C.greenTx,C.greenBg],['Warning',C.yellowTx,C.yellowBg],['Error',C.redTx,C.redBg],['Neutral',C.mid,C.muted],['On dark','#8AB4F8','#202124']].map((s,i)=>
+                h('div',{key:i,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:6}},
+                  h('div',{style:{width:40,height:40,borderRadius:9,background:s[2],display:'flex',alignItems:'center',justifyContent:'center'}},this.ic('book',20,s[1],sw)),
+                  h('span',{style:{fontSize:10,color:C.sub}},s[0]))))
+          ])
+        )
+      )
+    );
+  }
+
+  renderTokens() {
+    const h = React.createElement, C = this.C;
+    const radii = [['4','checkbox · dot'],['6','ปุ่ม sm · chip'],['8','ปุ่ม · input · เมนู'],['10','การ์ดย่อย'],['12','การ์ด · dialog'],['16','โมดัลใหญ่'],['999','avatar · pill']];
+    const shadows = [['xs','0 1px 2px rgba(60,64,67,.3)','ปุ่ม primary'],['sm','0 1px 3px rgba(60,64,67,.15)','การ์ด'],['md','0 4px 12px rgba(60,64,67,.15)','dropdown · popover'],['lg','0 8px 28px rgba(60,64,67,.22)','dialog · drawer']];
+    const spaces = [['4','xs · ช่องไฟในป้าย'],['8','sm · ไอคอนกับข้อความ'],['12','md · ในการ์ด'],['16','lg · ระหว่างการ์ด'],['24','xl · ขอบหน้า'],['32','2xl · ระหว่าง section'],['48','3xl · หัวหน้า']];
+    return h('div',{style:{display:'flex',flexDirection:'column',gap:16}},
+      h('div',{style:{display:'grid',gridTemplateColumns:'1.3fr 1fr',gap:16}},
+        this.card([
+          this.sub('BORDER RADIUS · มุมโค้ง'),
+          h('div',{style:{display:'flex',gap:18,flexWrap:'wrap'}},
+            ...radii.map((r,i)=>h('div',{key:i,style:{display:'flex',flexDirection:'column',alignItems:'center',gap:7}},
+              h('div',{style:{width:54,height:54,background:C.blue,borderRadius:Number(r[0])}}),
+              h('span',{style:{fontFamily:this.mono,fontSize:11,fontWeight:600}},r[0]+'px'),
+              h('span',{style:{fontSize:9.5,color:C.sub}},r[1]))))
+        ]),
+        this.card([
+          this.sub('ELEVATION · เงา'),
+          h('div',{style:{display:'flex',flexDirection:'column',gap:15}},
+            ...shadows.map((s,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:14}},
+              h('div',{style:{width:48,height:34,background:'#fff',borderRadius:8,boxShadow:s[1],flexShrink:0}}),
+              h('div',{},h('div',{style:{fontSize:12.5,fontWeight:600}},'shadow-'+s[0]+' · '+s[2]),
+                h('span',{style:{fontFamily:this.mono,fontSize:9.5,color:C.sub}},s[1])))))
+        ])
+      ),
+      h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1.6fr',gap:16}},
+        this.card([
+          this.sub('SPACING · ระยะห่าง (4px base)'),
+          h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+            ...spaces.map((s,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:13}},
+              h('div',{style:{width:Number(s[0]),height:13,background:C.blueLt,borderRadius:2,flexShrink:0}}),
+              h('span',{style:{fontFamily:this.mono,fontSize:11.5,fontWeight:600,width:36}},s[0]),
+              h('span',{style:{fontSize:11.5,color:C.sub}},s[1]))))
+        ]),
+        this.card([
+          this.sub('TAILWIND v4 · app/globals.css'),
+          h('div',{style:{background:'#202124',borderRadius:10,padding:'15px 17px',fontFamily:this.mono,fontSize:11.5,lineHeight:1.7,color:'#E8EAED',overflowX:'auto'}},
+            h('div',{},h('span',{style:{color:'#C58AF9'}},'@import'),' ',h('span',{style:{color:'#81C995'}},'"tailwindcss"'),';'),
+            h('div',{style:{height:8}}),
+            h('div',{},h('span',{style:{color:'#C58AF9'}},'@theme'),' {'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--font-sans'),': Inter, Anuphan, sans-serif;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-primary'),': #1A73E8;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-success'),': #34A853;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-warning'),': #FBBC04;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-destructive'),': #EA4335;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-background'),': #F8F9FA;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-border'),': #DADCE0;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--radius'),': 0.5rem;'),
+            h('div',{},'}'),
+            h('div',{style:{height:8}}),
+            h('div',{},h('span',{style:{color:'#9AA0A6'}},'/* โหมดมืด — สลับด้วย class .dark บน <html> */')),
+            h('div',{},h('span',{style:{color:'#8AB4F8'}},'.dark'),' {'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-primary'),': #8AB4F8;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-background'),': #202124;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-card'),': #292A2D;'),
+            h('div',{style:{paddingLeft:16}},h('span',{style:{color:'#FDD663'}},'--color-border'),': #3C4043;'),
+            h('div',{},'}'))
+        ])
+      )
+    );
+  }
+
+  renderIA() {
+    const h = React.createElement, C = this.C;
+    const groups = [
+      ['ผู้เยี่ยมชม · Guest', C.teal, [
+        ['M03','หน้าแรก + Catalog','ค้นหา กรอง เรียงลำดับ · SEO'],
+        ['M03','รายละเอียดคอร์ส','สารบัญ รีวิว ปุ่มลงทะเบียน'],
+        ['M01','เข้าสู่ระบบ / สมัคร','Google OAuth · Email · PDPA'],
+        ['M10','ตรวจสอบใบประกาศ','/verify/[code] · QR'],
+      ]],
+      ['ผู้เรียน · Student', C.blue, [
+        ['M16','แดชบอร์ดผู้เรียน','คอร์สที่เรียน งานใกล้ครบ Live'],
+        ['M06','คอร์สของฉัน','กำลังเรียน / จบ / หมดอายุ'],
+        ['M05','หน้าเรียน (Player)','วิดีโอ PDF Text Live + watermark'],
+        ['M07','ทำแบบทดสอบ','จับเวลา · auto-submit'],
+        ['M08','ส่งงาน','ไฟล์ + ข้อความ · ส่งซ้ำได้'],
+        ['M09','คะแนนของฉัน','รายการคะแนน + เกรด'],
+        ['M13','ถาม-ตอบ','กระทู้รายคอร์ส/บทเรียน'],
+      ]],
+      ['ผู้สอน · Instructor', C.purple, [
+        ['M16','แดชบอร์ดผู้สอน','ผู้เรียน · งานรอตรวจ · Q&A'],
+        ['M04','Course Builder','Section/Lesson ลากเรียง'],
+        ['M05','อัปโหลดเนื้อหา','presigned URL · multipart'],
+        ['M07','คลังข้อสอบ + สร้างข้อสอบ','สุ่มตาม tag · นำเข้า CSV'],
+        ['M08','ตรวจงาน','ให้คะแนน + feedback'],
+        ['M09','สมุดคะแนน','น้ำหนัก % · ตัดเกรด · export'],
+        ['M11','ประกาศระดับคอร์ส','ปักหมุดได้'],
+      ]],
+      ['ผู้ดูแลระบบ · Admin', C.red, [
+        ['M02','ผู้ใช้ · บทบาท · คณะ','CSV import · ban/unban'],
+        ['M03','หมวดหมู่คอร์ส','CRUD + ลำดับชั้น'],
+        ['M04','อนุมัติเผยแพร่คอร์ส','คิว PENDING_REVIEW'],
+        ['M15','ความปลอดภัยเนื้อหา','watermark · ScreenEventLog'],
+        ['M16','รายงานและ Dashboard','แยกตามคณะ · export CSV'],
+        ['M17','ตั้งค่าระบบ · Audit log','SMTP · LINE · PDPA'],
+        ['M12','LINE Notification','ผูกบัญชี · cron แจ้งเตือน'],
+        ['M18','การชำระเงิน (เฟส 2)','schema พร้อม · UI ซ่อน'],
+      ]],
+    ];
+    return h('div',{style:{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,alignItems:'start'}},
+      ...groups.map((g,i)=>h('div',{key:i,style:{background:'#fff',border:'1px solid #DADCE0',borderRadius:12,overflow:'hidden'}},
+        h('div',{style:{padding:'13px 16px',borderBottom:'1px solid '+C.line,display:'flex',alignItems:'center',gap:9}},
+          h('span',{style:{width:8,height:8,borderRadius:2,background:g[1],display:'block'}}),
+          h('span',{style:{fontSize:13,fontWeight:600}},g[0])),
+        h('div',{style:{padding:'6px 0'}},
+          ...g[2].map((r,j)=>h('div',{key:j,style:{padding:'9px 16px',display:'flex',gap:9,alignItems:'flex-start'}},
+            h('span',{style:{fontFamily:this.mono,fontSize:9.5,fontWeight:500,color:g[1],background:C.bg,border:'1px solid '+C.line,borderRadius:4,padding:'2px 5px',flexShrink:0,marginTop:1}},r[0]),
+            h('div',{style:{minWidth:0}},
+              h('div',{style:{fontSize:12.5,fontWeight:500,lineHeight:1.4}},r[1]),
+              h('div',{style:{fontSize:11,color:C.sub,lineHeight:1.5,marginTop:2}},r[2]))))))));
+  }
+
+  tree = [
+    { id:'dash', label:'แดชบอร์ด', icon:'dashboard' },
+    { id:'courses', label:'คอร์สเรียน', icon:'book', children:[
+      { id:'c-all', label:'คอร์สทั้งหมด' },
+      { id:'c-new', label:'สร้างคอร์สใหม่' },
+      { id:'c-review', label:'รออนุมัติเผยแพร่', badge:'12' },
+      { id:'c-cat', label:'หมวดหมู่คอร์ส' },
+    ]},
+    { id:'assess', label:'การประเมินผล', icon:'quiz', children:[
+      { id:'a-quiz', label:'แบบทดสอบ', children:[
+        { id:'a-bank', label:'คลังข้อสอบ' },
+        { id:'a-result', label:'ผลการสอบ' },
+        { id:'a-import', label:'นำเข้าข้อสอบ' },
+      ]},
+      { id:'a-assign', label:'งานที่มอบหมาย' },
+      { id:'a-grade', label:'สมุดคะแนน' },
+      { id:'a-cert', label:'ใบประกาศนียบัตร' },
+    ]},
+    { id:'users', label:'ผู้ใช้และคณะ', icon:'users', children:[
+      { id:'u-list', label:'รายชื่อผู้ใช้' },
+      { id:'u-role', label:'บทบาทและสิทธิ์' },
+      { id:'u-dept', label:'คณะ / หน่วยงาน' },
+      { id:'u-import', label:'นำเข้าผู้ใช้ (CSV)' },
+    ]},
+    { id:'comm', label:'การสื่อสาร', icon:'megaphone', children:[
+      { id:'m-ann', label:'ประกาศ' },
+      { id:'m-noti', label:'การแจ้งเตือน' },
+      { id:'m-line', label:'LINE Official' },
+      { id:'m-qa', label:'ถาม-ตอบ (Q&A)', badge:'5' },
+      { id:'m-review', label:'รีวิวและคะแนน' },
+    ]},
+    { id:'reports', label:'รายงาน', icon:'chart', children:[
+      { id:'r-overview', label:'ภาพรวมทั้งสถาบัน' },
+      { id:'r-dept', label:'รายงานรายคณะ' },
+      { id:'r-learner', label:'ความคืบหน้ารายผู้เรียน' },
+    ]},
+    { id:'system', label:'ระบบ', icon:'settings', children:[
+      { id:'protection', label:'ความปลอดภัยเนื้อหา' },
+      { id:'s-audit', label:'Audit Log' },
+      { id:'s-setting', label:'ตั้งค่าระบบ' },
+      { id:'s-pdpa', label:'PDPA · ข้อมูลส่วนบุคคล' },
+    ]},
+  ];
+
+  toggle = (id) => this.setState(s => ({ open: { ...s.open, [id]: !s.open[id] } }));
+  select = (id) => this.setState({ active: id });
+
+  flatten(nodes, depth, out) {
+    const C = this.C, exp = !this.state.collapsed;
+    nodes.forEach(n => {
+      const kids = n.children;
+      const isOpen = !!this.state.open[n.id];
+      const isActive = this.state.active === n.id;
+      out.push({
+        key: n.id,
+        label: n.label,
+        badge: (exp && n.badge) ? n.badge : null,
+        pad: (exp ? (12 + depth * 16) : 12) + 'px',
+        h: depth === 0 ? '40px' : '34px',
+        fs: depth === 0 ? '13.5px' : '13px',
+        fw: isActive ? '600' : (depth === 0 ? '500' : '400'),
+        bg: isActive ? C.blueBg : 'transparent',
+        fg: isActive ? C.blueDk : (depth === 0 ? C.ink2 : C.mid),
+        iconEl: n.icon ? this.ic(n.icon, 18, isActive ? C.blue : C.mid, 1.6, n.id)
+                       : React.createElement('span',{style:{width:exp?6:18,height:6,display:'block'}},
+                           React.createElement('span',{style:{width:5,height:5,borderRadius:'50%',background:isActive?C.blue:C.border,display:'block',marginTop:-3}})),
+        chevEl: (kids && exp) ? this.ic(isOpen ? 'chevronD' : 'chevronR', 15, C.sub, 1.8, n.id+'-c') : null,
+        onClick: kids ? () => this.toggle(n.id) : () => this.select(n.id),
+      });
+      if (kids && isOpen && exp) this.flatten(kids, depth + 1, out);
+    });
+    return out;
+  }
+
+  findLabel(nodes, id) {
+    for (const n of nodes) {
+      if (n.id === id) return n.label;
+      if (n.children) { const r = this.findLabel(n.children, id); if (r) return r; }
+    }
+    return null;
+  }
+
+  renderVals() {
+    return {
+      colorsBlock: this.renderColors(),
+      iconsBlock: this.renderIcons(),
+      tokensBlock: this.renderTokens(),
+      iaBlock: this.renderIA(),
+      navRows: this.flatten(this.tree, 0, []),
+      expanded: !this.state.collapsed,
+      sidebarWidth: this.state.collapsed ? '72px' : '262px',
+      collapseLabel: this.state.collapsed ? 'ขยายเมนู' : 'ย่อเมนู',
+      activeLabel: this.findLabel(this.tree, this.state.active) || 'แดชบอร์ด',
+      toggleCollapse: () => this.setState(s => ({ collapsed: !s.collapsed })),
+    };
+  }
+}
+</script>
+</body>
+</html>

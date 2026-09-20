@@ -1,0 +1,59 @@
+## KRIRK LMS — บริการสำหรับพัฒนาบนเครื่อง (dev only)
+## อ้างอิง system-design §10 · ใช้ชุดเดียวกับ .env.example
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lms-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lms
+      POSTGRES_PASSWORD: lms
+      POSTGRES_DB: lms
+      TZ: Asia/Bangkok
+    ports:
+      - "5436:5432"
+    volumes:
+      - lms-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lms -d lms"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # S3-compatible storage สำหรับวิดีโอ/PDF/ไฟล์แนบ (ใช้จริงใน Phase 1 · M05)
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: lms-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: lmsadmin
+      MINIO_ROOT_PASSWORD: lmsadmin123
+    ports:
+      - "9000:9000" # S3 API
+      - "9001:9001" # Web console
+    volumes:
+      - lms-miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  # กล่องจดหมายจำลอง — อีเมลยืนยันตัวตน/รีเซ็ตรหัสผ่านจะเข้าที่ http://localhost:8026
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: lms-mailpit
+    restart: unless-stopped
+    ports:
+      - "1026:1025" # SMTP
+      - "8026:8025" # Web UI
+    environment:
+      MP_MAX_MESSAGES: 500
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  lms-pgdata:
+  lms-miniodata:

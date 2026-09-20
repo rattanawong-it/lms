@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/industry-72f19c0e-45ad-4e59-8a19-60f15ce29d47/styles.css">
+  <script src="_ds/industry-72f19c0e-45ad-4e59-8a19-60f15ce29d47/_ds_bundle.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; background:var(--color-bg); text-wrap:pretty; }
+    a { color:var(--color-accent-700); text-decoration:none; }
+    a:hover { color:var(--color-accent); }
+    .btn { font-family:'Barlow Condensed','IBM Plex Sans Thai',system-ui,sans-serif; white-space:nowrap; }
+  </style>
+</helmet>
+
+<div style="--color-accent:#1F8A4C;--color-accent-100:#E8F5EC;--color-accent-200:#CBE8D5;--color-accent-300:#A3D6B6;--color-accent-400:#63B483;--color-accent-500:#2F9159;--color-accent-600:#1C7A45;--color-accent-700:#156236;--color-accent-800:#0F4826;--color-accent-900:#0C3A20;background:var(--color-bg);color:var(--color-text);font-family:'Barlow','IBM Plex Sans Thai',system-ui,sans-serif">
+
+  <nav class="nav" style="position:sticky;top:0;z-index:20;background:var(--color-bg);border-bottom:1px solid var(--color-divider);padding:14px clamp(20px,4vw,56px)">
+    <span class="nav-brand" style="font-family:'Barlow Condensed','IBM Plex Sans Thai',sans-serif;letter-spacing:.02em">KRIRK LMS</span>
+    <a href="#what">ระบบทำอะไร</a>
+    <a href="#courses">คอร์สแนะนำ</a>
+    <a href="#roles">บทบาท</a>
+    <a href="#start" class="btn btn-primary" style="min-height:36px;padding:8px 16px">เข้าสู่ระบบ</a>
+  </nav>
+
+  <div style="max-width:1160px;margin:0 auto;padding:0 clamp(20px,4vw,56px)">
+
+    <section style="display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(24px,4vw,64px);align-items:end;padding:clamp(40px,5vw,76px) 0 clamp(28px,3vw,44px)">
+      <div>
+        <span style="display:block;font-family:'Barlow Condensed','IBM Plex Sans Thai',sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-700);margin-bottom:14px">ระบบจัดการเรียนรู้ · มหาวิทยาลัยเกริก</span>
+        <h1 style="font-family:'Barlow Condensed','IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:clamp(38px,5.4vw,66px);line-height:1.08;letter-spacing:-.015em;margin:0;max-width:15ch">เรียน สอน และดูแลคุณภาพ ในระบบเดียว</h1>
+        <p style="font-size:16px;line-height:1.7;max-width:48ch;margin:20px 0 0;color:color-mix(in srgb, var(--color-text) 80%, transparent)">บทเรียน งาน คะแนน และเส้นทางอนุมัติคอร์ส ทำงานต่อเนื่องกันทั้งบนเว็บและมือถือ</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:26px">
+          <a href="#start" class="btn btn-primary" style="min-height:40px;padding:10px 18px">เข้าสู่ระบบด้วยบัญชีมหาวิทยาลัย</a>
+          <a href="#courses" class="btn btn-secondary" style="min-height:40px;padding:10px 18px">ดูคอร์สแนะนำ</a>
+        </div>
+      </div>
+      <div class="blueprint" style="padding:22px 24px">
+        <i class="corner tl"></i><i class="corner tr"></i><i class="corner bl"></i><i class="corner br"></i>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 18px">{{ stats }}</div>
+      </div>
+    </section>
+
+    <section id="what" style="padding:clamp(28px,3vw,48px) 0;border-top:1px solid var(--color-divider)">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:clamp(20px,3vw,40px)">{{ features }}</div>
+    </section>
+
+    <section id="courses" style="padding:clamp(32px,4vw,56px) 0;border-top:1px solid var(--color-divider)">
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:12px 24px;margin-bottom:18px">
+        <h2 style="font-family:'Barlow Condensed','IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:clamp(24px,2.8vw,34px);line-height:1.15;letter-spacing:-.015em;margin:0">คอร์สแนะนำภาคเรียนที่ 1/2569</h2>
+        <a href="KRIRK LMS Learner.dc.html" style="font-size:14px;font-weight:500">ดูแคตตาล็อกทั้งหมด →</a>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px">{{ courseFilters }}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:22px">{{ courses }}</div>
+    </section>
+
+    <section id="roles" style="padding:clamp(32px,4vw,56px) 0;border-top:1px solid var(--color-divider)">
+      <h2 style="font-family:'Barlow Condensed','IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:clamp(24px,2.8vw,34px);line-height:1.15;letter-spacing:-.015em;margin:0 0 24px">เข้าใช้งานตามบทบาท</h2>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:22px">{{ roles }}</div>
+    </section>
+
+    <section id="start" style="padding:clamp(32px,4vw,56px) 0 clamp(40px,5vw,72px);border-top:1px solid var(--color-divider)">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px 32px">
+        <div>
+          <h2 style="font-family:'Barlow Condensed','IBM Plex Sans Thai',sans-serif;font-weight:600;font-size:clamp(24px,2.8vw,34px);line-height:1.15;letter-spacing:-.015em;margin:0">ใช้บัญชี @krirk.ac.th เดิมได้ทันที</h2>
+          <p style="font-size:15px;line-height:1.7;margin:10px 0 0;max-width:52ch;color:color-mix(in srgb, var(--color-text) 78%, transparent)">ไม่ต้องสมัครใหม่ · ผูก LINE เพื่อรับแจ้งเตือนกำหนดส่งงานและประกาศ</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="KRIRK LMS Auth.dc.html" class="btn btn-primary" style="min-height:42px;padding:11px 20px">เข้าสู่ระบบ</a>
+          <a href="KRIRK LMS Approval Flow.dc.html" class="btn btn-secondary" style="min-height:42px;padding:11px 20px">เส้นทางอนุมัติคอร์ส</a>
+        </div>
+      </div>
+    </section>
+
+    <footer style="display:flex;flex-wrap:wrap;gap:10px 28px;justify-content:space-between;padding:20px 0 40px;border-top:1px solid var(--color-divider);font-size:12.5px;color:color-mix(in srgb, var(--color-text) 60%, transparent)">
+      <span>มหาวิทยาลัยเกริก · ฝ่ายเทคโนโลยีการศึกษา</span>
+      <span style="display:flex;gap:18px;flex-wrap:wrap">
+        <a href="KRIRK LMS Handoff.dc.html">เอกสารส่งต่อทีมพัฒนา</a>
+        <a href="KRIRK LMS States.dc.html">คู่มือสถานะหน้าจอ</a>
+      </span>
+    </footer>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { filter:'ทั้งหมด' };
+
+  STATS = [['12,480','ผู้เรียนภาคเรียนนี้'],['328','คอร์สออนไลน์'],['7','คณะ'],['99.2%','ความพร้อมใช้งาน']];
+  FEATURES = [
+    ['01','เรียนต่อได้ทุกที่','วิดีโอ เอกสาร แบบทดสอบ อยู่ในบทเรียนเดียว ซิงก์ข้ามอุปกรณ์ และดาวน์โหลดไว้เรียนออฟไลน์'],
+    ['02','ตรวจงานด้วยเกณฑ์เดียวกัน','ผู้เรียนเห็นเกณฑ์ก่อนส่ง ผู้สอนให้คะแนนจากมือถือ คะแนนเข้าสมุดคะแนนทันที'],
+    ['03','คุณภาพคอร์สตรวจได้','คณะและผู้ดูแลอนุมัติตามเส้นทางเดียวกัน ทุกการตัดสินใจมีบันทึกย้อนหลัง'],
+  ];
+  FILTERS = ['ทั้งหมด','บริหารธุรกิจ','นิติศาสตร์','ศิลปศาสตร์','นานาชาติ'];
+  COURSES = [
+    ['BUS-215','การวิเคราะห์ข้อมูลทางธุรกิจ','บริหารธุรกิจ','อ. ปิยะดา มั่นคง','10 บทเรียน · 3 หน่วยกิต','เปิดรับ 120 ที่นั่ง','ยอดนิยม'],
+    ['LAW-220','กฎหมายคุ้มครองข้อมูลส่วนบุคคล','นิติศาสตร์','ผศ. วีรชัย ธรรมรัตน์','8 บทเรียน · 2 หน่วยกิต','เปิดรับ 80 ที่นั่ง','เปิดใหม่'],
+    ['ART-104','การสื่อสารภาษาจีนเพื่อธุรกิจ','นานาชาติ','อ. Li Wen','12 บทเรียน · 3 หน่วยกิต','เปิดรับ 60 ที่นั่ง','สอนเป็นภาษาจีน'],
+    ['BUS-302','การจัดการทรัพยากรมนุษย์ยุคดิจิทัล','บริหารธุรกิจ','ผศ.ดร. ธนกฤต วงศ์ไทย','12 บทเรียน · 3 หน่วยกิต','เปิด 1 ต.ค. 2569','เร็ว ๆ นี้'],
+    ['ART-118','ทักษะการเขียนเชิงวิชาการ','ศิลปศาสตร์','อ. สุนิสา พูนทรัพย์','9 บทเรียน · 2 หน่วยกิต','เปิดรับ 100 ที่นั่ง','เรียนได้ทุกคณะ'],
+    ['LAW-131','กฎหมายธุรกิจเบื้องต้น','นิติศาสตร์','อ. ชนกันต์ บุญมี','10 บทเรียน · 3 หน่วยกิต','เปิดรับ 90 ที่นั่ง','พื้นฐาน'],
+  ];
+  ROLES = [
+    ['ผู้เรียน','7 หน้าจอ','บทเรียน แบบทดสอบ ใบรับรอง','KRIRK LMS Learner.dc.html'],
+    ['ผู้สอน','6 หน้าจอ','ตรวจงาน ถาม-ตอบ วิเคราะห์ผล','KRIRK LMS Instructor.dc.html'],
+    ['เจ้าหน้าที่คณะ','5 หน้าจอ','นำเข้ารายชื่อ ความพร้อมคอร์ส','KRIRK LMS Dept Admin.dc.html'],
+    ['ผู้ดูแลระบบ','26 หน้าจอ','สิทธิ์ ข้อสอบ รายงาน PDPA','KRIRK LMS Admin.dc.html'],
+  ];
+
+  stats() {
+    const h = React.createElement;
+    return this.STATS.map(s=>h('div',{key:s[1]},
+      h('div',{style:{fontFamily:"'Barlow Condensed', sans-serif",fontWeight:600,fontSize:34,lineHeight:1.05,letterSpacing:'-.01em',color:'var(--color-accent-700)',fontFeatureSettings:'"tnum" 1'}},s[0]),
+      h('div',{style:{fontSize:12,letterSpacing:'.06em',textTransform:'uppercase',color:'color-mix(in srgb, var(--color-text) 62%, transparent)',marginTop:6}},s[1])));
+  }
+
+  features() {
+    const h = React.createElement;
+    return this.FEATURES.map(f=>h('div',{key:f[0]},
+      h('div',{style:{fontFamily:"'Barlow Condensed', sans-serif",fontWeight:600,fontSize:12,letterSpacing:'.12em',color:'var(--color-accent-700)',marginBottom:10,fontFeatureSettings:'"tnum" 1'}},f[0]),
+      h('h3',{style:{fontFamily:"'Barlow Condensed','IBM Plex Sans Thai',sans-serif",fontWeight:600,fontSize:21,lineHeight:1.25,margin:'0 0 8px'}},f[1]),
+      h('p',{style:{fontSize:14.5,lineHeight:1.75,margin:0,color:'color-mix(in srgb, var(--color-text) 78%, transparent)'}},f[2])));
+  }
+
+  courseFilters() {
+    const h = React.createElement;
+    return this.FILTERS.map(f=>{
+      const on = this.state.filter===f;
+      return h('span',{key:f,onClick:()=>this.setState({filter:f}),
+        style:{cursor:'pointer',fontSize:13.5,padding:'7px 14px',minHeight:34,display:'inline-flex',alignItems:'center',
+          border:'1px solid '+(on?'var(--color-accent)':'var(--color-divider)'),
+          background:on?'var(--color-accent-100)':'transparent',
+          color:on?'var(--color-accent-800)':'color-mix(in srgb, var(--color-text) 72%, transparent)'}},f);
+    });
+  }
+
+  courses() {
+    const h = React.createElement;
+    const f = this.state.filter;
+    const list = f==='ทั้งหมด' ? this.COURSES : this.COURSES.filter(c=>c[2]===f);
+    if (!list.length) return h('div',{style:{padding:'28px 0',fontSize:14,color:'color-mix(in srgb, var(--color-text) 60%, transparent)'}},'ยังไม่มีคอร์สแนะนำในคณะนี้ · ดูแคตตาล็อกทั้งหมดเพื่อค้นหาคอร์สอื่น');
+    return list.map(c=>h('a',{key:c[0],href:'KRIRK LMS Learner.dc.html',className:'card blueprint',
+      style:{padding:'18px 18px 16px',textDecoration:'none',color:'var(--color-text)',gap:9,minHeight:170}},
+      h('i',{className:'corner tl'}),h('i',{className:'corner tr'}),h('i',{className:'corner bl'}),h('i',{className:'corner br'}),
+      h('span',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}},
+        h('span',{style:{fontFamily:"'Barlow Condensed', sans-serif",fontWeight:600,fontSize:13,letterSpacing:'.08em',color:'var(--color-accent-700)',fontFeatureSettings:'"tnum" 1'}},c[0]),
+        h('span',{className:'tag tag-accent',style:{background:'var(--color-accent-100)',color:'var(--color-accent-800)'}},c[6])),
+      h('span',{style:{fontFamily:"'Barlow Condensed','IBM Plex Sans Thai',sans-serif",fontWeight:600,fontSize:20,lineHeight:1.25}},c[1]),
+      h('span',{style:{fontSize:13.5,lineHeight:1.65,color:'color-mix(in srgb, var(--color-text) 75%, transparent)',flex:1}},c[3]+' · คณะ'+c[2]),
+      h('span',{style:{display:'flex',flexWrap:'wrap',gap:'4px 12px',fontSize:12.5,paddingTop:10,borderTop:'1px solid var(--color-divider)',color:'color-mix(in srgb, var(--color-text) 62%, transparent)'}},
+        h('span',{},c[4]), h('span',{style:{color:'var(--color-accent-700)'}},c[5]))));
+  }
+
+  roles() {
+    const h = React.createElement;
+    return this.ROLES.map(r=>h('a',{key:r[0],href:r[3],className:'card blueprint',
+      style:{padding:'18px 18px 16px',textDecoration:'none',color:'var(--color-text)',gap:8,minHeight:130}},
+      h('i',{className:'corner tl'}),h('i',{className:'corner tr'}),h('i',{className:'corner bl'}),h('i',{className:'corner br'}),
+      h('span',{className:'card-kicker',style:{color:'var(--color-accent-700)'}},r[1]),
+      h('span',{className:'card-title',style:{fontFamily:"'Barlow Condensed','IBM Plex Sans Thai',sans-serif",fontSize:20}},r[0]),
+      h('span',{style:{fontSize:13.5,lineHeight:1.65,flex:1,color:'color-mix(in srgb, var(--color-text) 75%, transparent)'}},r[2]),
+      h('span',{style:{fontSize:13,fontWeight:500,color:'var(--color-accent-700)'}},'เปิดหน้าจอ →')));
+  }
+
+  renderVals() {
+    return { stats:this.stats(), features:this.features(), courseFilters:this.courseFilters(), courses:this.courses(), roles:this.roles() };
+  }
+}
+</script>
+</body>
+</html>

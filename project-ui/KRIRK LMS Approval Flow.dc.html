@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    body { margin:0; background:#5F6368; }
+    a { color:#1A73E8; text-decoration:none }
+    a:hover { text-decoration:underline }
+    [data-theme] {
+      --bg:#F8F9FA; --card:#FFFFFF; --muted:#F1F3F4; --line:#E8EAED; --border:#DADCE0;
+      --fg:#202124; --fg2:#3C4043; --fg3:#5F6368; --fg4:#80868B;
+      --pri:#1A73E8; --pri-dk:#174EA6; --pri-bg:#E8F0FE;
+      --ok:#34A853; --ok-bg:#E6F4EA; --ok-fg:#1E8E3E;
+      --warn:#FBBC04; --warn-bg:#FEF7E0; --warn-fg:#B06000;
+      --err:#EA4335; --err-bg:#FCE8E6; --err-fg:#C5221F;
+      --pur:#A142F4; --pur-bg:#F3E8FD; --pur-fg:#7627BB;
+      --teal:#12B5CB; --teal-bg:#E4F7FB; --teal-fg:#007B83;
+      --sh:0 1px 3px rgba(60,64,67,.15); --sh-lg:0 8px 28px rgba(60,64,67,.28);
+    }
+    [data-theme="dark"] {
+      --bg:#202124; --card:#292A2D; --muted:#35363A; --line:#3C4043; --border:#3C4043;
+      --fg:#E8EAED; --fg2:#DADCE0; --fg3:#9AA0A6; --fg4:#80868B;
+      --pri:#8AB4F8; --pri-dk:#AECBFA; --pri-bg:#1A3050;
+      --ok:#81C995; --ok-bg:#1E3626; --ok-fg:#81C995;
+      --warn:#FDD663; --warn-bg:#3B3018; --warn-fg:#FDD663;
+      --err:#F28B82; --err-bg:#3E2422; --err-fg:#F28B82;
+      --pur:#C58AF9; --pur-bg:#2E2138; --pur-fg:#C58AF9;
+      --teal:#78D9EC; --teal-bg:#123239; --teal-fg:#78D9EC;
+      --sh:0 1px 3px rgba(0,0,0,.5); --sh-lg:0 8px 28px rgba(0,0,0,.6);
+    }
+  </style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="width:1280px;margin:0 auto;background:var(--bg);color:var(--fg);font-family:'Inter','Anuphan',system-ui,sans-serif;overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+  <div style="height:50px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 16px">
+    <span style="font-size:11.5px;font-weight:600;color:var(--fg4);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Flow ข้ามบทบาท</span>
+    <div style="display:flex;gap:4px;flex:1;overflow-x:auto">{{ screenTabs }}</div>
+    <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" style-hover="background:var(--muted)">{{ themeIcon }}</div>
+  </div>
+
+  <div style="height:58px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 24px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="width:30px;height:30px;border-radius:9px;background:{{ accent }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"></path><path d="M6 10.5V16C6 16 8.5 18 12 18C15.5 18 18 16 18 16V10.5"></path></svg>
+      </span>
+      <span style="font-size:14px;font-weight:600;letter-spacing:-.01em">KRIRK LMS</span>
+      <span style="font-size:10.5px;font-weight:600;color:var(--pur-fg);background:var(--pur-bg);padding:3px 8px;border-radius:5px">APPROVAL FLOW</span>
+    </div>
+    <div style="height:22px;width:1px;background:var(--line)"></div>
+    <span style="font-size:12.5px;color:var(--fg3)">เส้นทางอนุมัติคอร์ส · ผู้สอน → เจ้าหน้าที่คณะ → ผู้ดูแลระบบ</span>
+    <div style="flex:1"></div>
+    <span style="font-size:11.5px;color:var(--fg4);font-family:'JetBrains Mono',monospace">FR-02.7 · M-COURSE</span>
+  </div>
+
+  <div style="height:770px;overflow-y:auto">
+
+    <sc-if value="{{ isMap }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">แผนผังเส้นทางอนุมัติคอร์ส</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:4px">4 ขั้นตอน · 3 บทบาท · SLA รวม 5 วันทำการ · คลิกที่ขั้นตอนเพื่อดูหน้าจอจริง</div>
+          </div>
+          <div style="display:flex;gap:9px">{{ mapLegend }}</div>
+        </div>
+
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px 22px;margin-bottom:18px">
+          <div style="display:grid;grid-template-columns:132px repeat(4,1fr);gap:10px;margin-bottom:12px">{{ stageHeads }}</div>
+          <div style="display:flex;flex-direction:column;gap:10px">{{ lanes }}</div>
+          <div style="margin-top:16px;padding-top:15px;border-top:1px dashed var(--border);display:flex;align-items:center;gap:12px">
+            <span style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--err-fg);background:var(--err-bg);padding:6px 11px;border-radius:7px">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9L9 4"></path><path d="M4 9H15C18 9 20 11 20 14V20"></path></svg>
+              เส้นทางตีกลับ
+            </span>
+            <span style="font-size:12.5px;color:var(--fg3)">ทั้งขั้นที่ 2 และ 3 สามารถตีกลับไปยังผู้สอนได้ · สถานะเปลี่ยนเป็น <b style="color:var(--fg2)">ต้องแก้ไข</b> · ระบบแจ้งเตือนทางอีเมล + LINE และเก็บเหตุผลไว้ใน audit trail</span>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600">สถานะคอร์สทั้งหมด</div>
+            {{ statusList }}
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600">กติกาและสิทธิ์ในแต่ละขั้น</div>
+            {{ ruleList }}
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:13.5px;font-weight:600">คอร์สที่อยู่ในเส้นทางขณะนี้</span>
+              <span style="font-size:11px;font-weight:600;color:#fff;background:var(--err);padding:2px 8px;border-radius:9px">12</span>
+            </div>
+            {{ inFlight }}
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isSubmit }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:8px">
+          <div>
+            <div style="font-size:11.5px;font-weight:600;color:var(--pri);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px">ขั้นที่ 1 · บทบาทผู้สอน</div>
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">ส่งคอร์สเพื่อขออนุมัติ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:4px">BUS-302 การจัดการทรัพยากรมนุษย์ยุคดิจิทัล · ฉบับร่าง v1.4 · แก้ไขล่าสุด 2 ชม. ที่แล้ว</div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ดูตัวอย่างคอร์ส</button>
+            <button onClick="{{ doSubmit }}" style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">{{ submitLabel }}</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:18px;align-items:start;margin-top:16px">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:14px;font-weight:600">รายการตรวจความพร้อมก่อนส่ง</span>
+                <span style="font-size:12px;color:var(--fg4)">{{ readyText }}</span>
+              </div>
+              {{ checklist }}
+            </div>
+            <div style="background:var(--warn-bg);border:1px solid var(--warn);border-radius:12px;padding:15px 17px;display:flex;gap:12px">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--warn-fg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M12 4L21 19.5H3L12 4Z"></path><path d="M12 10V14"></path><path d="M12 16.6V16.7"></path></svg>
+              <div>
+                <div style="font-size:13.5px;font-weight:600;color:var(--warn-fg);margin-bottom:4px">ยังมี 2 รายการที่ต้องแก้ก่อนส่ง</div>
+                <div style="font-size:12.5px;color:var(--fg2);line-height:1.7">คอร์สที่มีรายการบังคับค้างอยู่จะส่งเข้าคิวอนุมัติไม่ได้ · เจ้าหน้าที่คณะจะเห็นเฉพาะคอร์สที่ผ่านการตรวจอัตโนมัติครบแล้ว</div>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:13px">ข้อมูลที่จะส่งไปกับคำขอ</div>
+              <div style="display:flex;flex-direction:column;gap:11px">{{ submitMeta }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:9px">บันทึกถึงผู้ตรวจ</div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:11px 13px;font-size:12.5px;color:var(--fg3);line-height:1.75;min-height:76px">ปรับปรุงบทที่ 4 ตามข้อเสนอแนะรอบก่อน เพิ่มกรณีศึกษาองค์กรไทย 2 เคส และแก้ไขเกณฑ์ให้คะแนนงานกลุ่มแล้วครับ</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:12px">เส้นทางหลังกดส่ง</div>
+              <div style="display:flex;flex-direction:column;gap:0">{{ nextSteps }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isDept }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:11.5px;font-weight:600;color:var(--teal-fg);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px">ขั้นที่ 2 · บทบาทเจ้าหน้าที่คณะ</div>
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">ตรวจสอบคำขอระดับคณะ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:4px">คณะบริหารธุรกิจ · 5 คำขอในคิว · SLA 2 วันทำการ</div>
+          </div>
+          <div style="display:flex;gap:6px">{{ deptFilters }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:330px 1fr;gap:18px;align-items:start">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:12px 15px;border-bottom:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--fg3)">คิวคำขอ · เรียงตามกำหนดส่ง</div>
+            {{ queue }}
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:16px 20px;border-bottom:1px solid var(--line)">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+                <span style="font-size:11.5px;font-family:'JetBrains Mono',monospace;color:var(--fg4)">{{ curCode }}</span>
+                <span style="font-size:10.5px;font-weight:600;color:var(--warn-fg);background:var(--warn-bg);padding:2px 8px;border-radius:5px">รอตรวจสอบ</span>
+                <span style="font-size:11.5px;color:var(--err-fg);font-weight:500">{{ curDue }}</span>
+              </div>
+              <div style="font-size:18px;font-weight:600;letter-spacing:-.012em">{{ curTitle }}</div>
+              <div style="font-size:12.5px;color:var(--fg4);margin-top:4px">{{ curMeta }}</div>
+            </div>
+            <div style="padding:18px 20px;border-bottom:1px solid var(--line)">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:13px">เกณฑ์การตรวจระดับคณะ</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">{{ criteria }}</div>
+            </div>
+            <div style="padding:18px 20px;border-bottom:1px solid var(--line)">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:11px">ความเห็นถึงผู้สอน</div>
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:12.5px;color:var(--fg3);line-height:1.7">พิมพ์ข้อเสนอแนะ… (บังคับกรอกเมื่อเลือก "ขอให้แก้ไข" หรือ "ไม่อนุมัติ")</div>
+              <div style="display:flex;gap:7px;margin-top:10px">{{ quickNotes }}</div>
+            </div>
+            <div style="padding:16px 20px;display:flex;align-items:center;gap:10px">
+              <button onClick="{{ goAdmin }}" style="background:var(--ok);color:#fff;border:none;border-radius:8px;height:40px;padding:0 18px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer">รับรองและส่งต่อผู้ดูแลระบบ</button>
+              <button style="background:var(--card);color:var(--warn-fg);border:1px solid var(--warn);border-radius:8px;height:40px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">ขอให้แก้ไข</button>
+              <button style="background:var(--card);color:var(--err-fg);border:1px solid var(--border);border-radius:8px;height:40px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">ไม่อนุมัติ</button>
+              <div style="flex:1"></div>
+              <span style="font-size:11.5px;color:var(--fg4)">ทุกการตัดสินใจถูกบันทึกใน audit trail</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isAdmin }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:11.5px;font-weight:600;color:var(--pur-fg);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px">ขั้นที่ 3–4 · บทบาทผู้ดูแลระบบ</div>
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">อนุมัติและกำหนดการเผยแพร่</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:4px">BUS-302 · ผ่านการรับรองจากคณะบริหารธุรกิจเมื่อ 19 ก.ย. 2569 เวลา 14:22</div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ส่งกลับคณะ</button>
+            <button onClick="{{ goTrail }}" style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">อนุมัติเผยแพร่</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600">การตรวจนโยบายอัตโนมัติ</div>
+              {{ policyChecks }}
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:14px;font-weight:600;margin-bottom:14px">ตั้งค่าการเผยแพร่</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">{{ publishFields }}</div>
+              <div style="padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:12px">{{ publishToggles }}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:13px">สรุปคำขอ</div>
+              <div style="display:flex;flex-direction:column;gap:11px">{{ adminMeta }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:12px">ความเห็นจากคณะ</div>
+              <div style="display:flex;gap:10px;margin-bottom:10px">
+                <span style="width:30px;height:30px;border-radius:50%;background:var(--teal-bg);color:var(--teal-fg);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">อ</span>
+                <div>
+                  <div style="font-size:12.5px;font-weight:600">อรพรรณ สุขใจ · เจ้าหน้าที่คณะ</div>
+                  <div style="font-size:12.5px;color:var(--fg3);line-height:1.7;margin-top:4px">เนื้อหาครบตาม มคอ.3 และสอดคล้องกับแผนการสอน ผ่านการตรวจลิขสิทธิ์สื่อแล้ว เสนออนุมัติเผยแพร่</div>
+                </div>
+              </div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:12px">ผู้ที่จะได้รับแจ้งเตือน</div>
+              <div style="display:flex;flex-direction:column;gap:10px">{{ notifyList }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isTrail }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">ประวัติการอนุมัติและการตีกลับ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:4px">BUS-302 · 2 รอบการตรวจ · ใช้เวลารวม 6 วันทำการ (เกิน SLA 1 วัน)</div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ส่งออก PDF</button>
+            <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ดูใน Audit Log</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">{{ trailStats }}</div>
+        <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:18px;align-items:start">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:18px">ไทม์ไลน์คำขอ</div>
+            {{ timeline }}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--err-bg);border:1px solid var(--err);border-radius:12px;padding:16px 18px">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:9px">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--err-fg)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12.5L15 14.5"></path></svg>
+                <span style="font-size:13.5px;font-weight:600;color:var(--err-fg)">เกินกำหนด SLA 1 วัน</span>
+              </div>
+              <div style="font-size:12.5px;color:var(--fg2);line-height:1.75">ขั้นตอนตรวจสอบระดับคณะใช้เวลา 3 วันทำการ (เกณฑ์ 2 วัน) · ระบบได้ส่งการแจ้งเตือนเร่งรัดไปยังหัวหน้าเจ้าหน้าที่คณะอัตโนมัติเมื่อครบกำหนด</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600">บันทึกการแจ้งเตือนที่ส่งแล้ว</div>
+              {{ notifyLog }}
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600">เวอร์ชันของคอร์ส</div>
+              {{ versions }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:880},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1A73E8&quot;,&quot;options&quot;:[&quot;#1A73E8&quot;,&quot;#C5221F&quot;,&quot;#1E8E3E&quot;,&quot;#7627BB&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;สี&quot;}}">
+class Component extends DCLogic {
+  state = { screen:'map', dark:false, deptFilter:'all', queueIdx:0, submitted:false, crit:{scope:true,hours:true,media:true,rubric:false}, pub:{enroll:true,cert:true,preview:false} };
+
+  SCREENS = [['map','แผนผังเส้นทาง'],['submit','1 · ผู้สอนส่งคอร์ส'],['dept','2 · คณะตรวจสอบ'],['admin','3 · ผู้ดูแลอนุมัติ'],['trail','ประวัติ & ตีกลับ']];
+  TONE = { pri:['var(--pri-bg)','var(--pri)'], ok:['var(--ok-bg)','var(--ok-fg)'], warn:['var(--warn-bg)','var(--warn-fg)'], err:['var(--err-bg)','var(--err-fg)'], pur:['var(--pur-bg)','var(--pur-fg)'], teal:['var(--teal-bg)','var(--teal-fg)'], mute:['var(--muted)','var(--fg3)'] };
+
+  QUEUE = [
+    ['BUS-302','การจัดการทรัพยากรมนุษย์ยุคดิจิทัล','ผศ.ดร. ธนกฤต วงศ์ไทย · 12 บทเรียน · 3 หน่วยกิต','เหลือ 4 ชม.','err'],
+    ['BUS-215','การวิเคราะห์ข้อมูลทางธุรกิจเบื้องต้น','อ. ปิยะดา มั่นคง · 10 บทเรียน · 3 หน่วยกิต','เหลือ 1 วัน','warn'],
+    ['MKT-118','หลักการตลาดดิจิทัล','อ. ณัฐพล เจริญสุข · 8 บทเรียน · 2 หน่วยกิต','เหลือ 2 วัน','warn'],
+    ['ACC-201','การบัญชีบริหาร','รศ. สุมาลี ทองดี · 14 บทเรียน · 3 หน่วยกิต','เหลือ 3 วัน','ok'],
+    ['BUS-410','สัมมนาการจัดการเชิงกลยุทธ์','ผศ. กิตติ ศรีสุวรรณ · 9 บทเรียน · 3 หน่วยกิต','เหลือ 4 วัน','ok'],
+  ];
+
+  ic(name, size, color, sw) {
+    const h = React.createElement;
+    const P = {
+      sun:['M12 4.5V2.5','M12 21.5V19.5','M4.5 12H2.5','M21.5 12H19.5','M6.3 6.3L4.9 4.9','M19.1 19.1L17.7 17.7','M6.3 17.7L4.9 19.1','M19.1 4.9L17.7 6.3'],
+      moon:['M20 14.5A8.5 8.5 0 0 1 9.5 4A8.5 8.5 0 1 0 20 14.5Z'],
+      check:['M5 13L9 17L19 7'],
+      x:['M6 6L18 18','M18 6L6 18'],
+      doc:['M14 3H7C6 3 5 4 5 5V19C5 20 6 21 7 21H17C18 21 19 20 19 19V8L14 3Z','M14 3V8H19'],
+      users:['M16.5 20V18.5C16.5 16.6 15 15 13 15H6.5C4.5 15 3 16.5 3 18.5V20','M9.75 11.5A3.75 3.75 0 1 0 9.75 4A3.75 3.75 0 0 0 9.75 11.5Z'],
+      shield:['M12 3L20 6V12C20 16.5 16.5 19.8 12 21C7.5 19.8 4 16.5 4 12V6L12 3Z'],
+      send:['M21 3L10.5 13.5','M21 3L14.5 21L10.5 13.5L3 9.5L21 3Z'],
+      clock:['M12 3.5A8.5 8.5 0 1 0 12 20.5A8.5 8.5 0 0 0 12 3.5Z','M12 7.5V12.5L15 14.5'],
+      arrow:['M4 12H20','M14 6L20 12L14 18'],
+      mail:['M3 5H21V19H3Z','M3.5 6L12 12.5L20.5 6'],
+      bell:['M18 9A6 6 0 1 0 6 9C6 16 3.5 17.5 3.5 17.5H20.5C20.5 17.5 18 16 18 9Z','M13.8 20.5C13.4 21.2 12.7 21.6 12 21.6C11.3 21.6 10.6 21.2 10.2 20.5'],
+      eye:['M2 12C2 12 5.5 5.5 12 5.5C18.5 5.5 22 12 22 12C22 12 18.5 18.5 12 18.5C5.5 18.5 2 12 2 12Z','M12 15A3 3 0 1 0 12 9A3 3 0 0 0 12 15Z'],
+    };
+    return h('svg',{viewBox:'0 0 24 24',width:size,height:size,fill:'none',stroke:color,strokeWidth:sw||1.7,strokeLinecap:'round',strokeLinejoin:'round'},
+      ...(P[name]||[]).map((d,i)=>h('path',{key:i,d})));
+  }
+
+  chip(text, tone, extra) {
+    const t = this.TONE[tone] || this.TONE.mute;
+    return React.createElement('span',{style:Object.assign({fontSize:10.5,fontWeight:600,color:t[1],background:t[0],padding:'3px 8px',borderRadius:5,whiteSpace:'nowrap'},extra||{})},text);
+  }
+
+  screenTabs() {
+    const h = React.createElement;
+    return this.SCREENS.map(s=>{
+      const on = this.state.screen===s[0];
+      return h('span',{key:s[0],onClick:()=>this.setState({screen:s[0]}),
+        style:{fontSize:12,fontWeight:on?600:400,padding:'6px 12px',borderRadius:7,cursor:'pointer',whiteSpace:'nowrap',background:on?'var(--pri-bg)':'transparent',color:on?'var(--pri)':'var(--fg3)'}},s[1]);
+    });
+  }
+
+  mapLegend() {
+    const h = React.createElement;
+    return [['ผู้สอน','pri'],['เจ้าหน้าที่คณะ','teal'],['ผู้ดูแลระบบ','pur']].map(r=>{
+      const t = this.TONE[r[1]];
+      return h('span',{key:r[0],style:{display:'flex',alignItems:'center',gap:7,fontSize:12,color:'var(--fg3)'}},
+        h('span',{style:{width:10,height:10,borderRadius:3,background:t[1]}}), r[0]);
+    });
+  }
+
+  stageHeads() {
+    const h = React.createElement;
+    const cols = [['','',''],['ขั้นที่ 1','ยื่นคำขอ','ทันที'],['ขั้นที่ 2','ตรวจระดับคณะ','SLA 2 วัน'],['ขั้นที่ 3','ตรวจนโยบายส่วนกลาง','SLA 2 วัน'],['ขั้นที่ 4','เผยแพร่','SLA 1 วัน']];
+    return cols.map((c,i)=> i===0
+      ? h('div',{key:i})
+      : h('div',{key:i,style:{padding:'0 2px'}},
+          h('div',{style:{fontSize:10.5,fontWeight:600,color:'var(--fg4)',letterSpacing:'.05em',textTransform:'uppercase'}},c[0]),
+          h('div',{style:{fontSize:13,fontWeight:600,marginTop:3}},c[1]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',fontFamily:"'JetBrains Mono',monospace",marginTop:2}},c[2])));
+  }
+
+  lanes() {
+    const h = React.createElement;
+    const LANES = [
+      ['ผู้สอน','pri','submit',[
+        {t:'สร้างและส่งคอร์ส',d:'ตรวจความพร้อม 8 รายการ แล้วกดส่ง',s:'เสร็จแล้ว',tone:'ok'},
+        {t:'รอผลตรวจ',wait:true},
+        {t:'รอผลตรวจ',wait:true},
+        {t:'รับแจ้งผลเผยแพร่',d:'อีเมล + LINE Notify',s:'อัตโนมัติ',tone:'mute'},
+      ]],
+      ['เจ้าหน้าที่คณะ','teal','dept',[
+        {t:'รับคำขอเข้าคิว',d:'จัดลำดับตามกำหนดส่ง',s:'อัตโนมัติ',tone:'mute'},
+        {t:'ตรวจตามเกณฑ์คณะ',d:'มคอ.3 · สื่อ · เกณฑ์ให้คะแนน',s:'กำลังตรวจ',tone:'warn',hot:true},
+        {t:'ติดตามสถานะ',wait:true},
+        {t:'แจ้งสาขาวิชา',d:'อัปเดตตารางสอนของคณะ',s:'อัตโนมัติ',tone:'mute'},
+      ]],
+      ['ผู้ดูแลระบบ','pur','admin',[
+        {t:'เฝ้าติดตาม SLA',d:'เตือนเมื่อเกินกำหนด',s:'อัตโนมัติ',tone:'mute'},
+        {t:'ตรวจคิวส่วนกลาง',wait:true},
+        {t:'ตรวจนโยบาย + PDPA',d:'ลิขสิทธิ์ · ความเป็นส่วนตัว · ความจุระบบ',s:'รอดำเนินการ',tone:'pri'},
+        {t:'อนุมัติเผยแพร่',d:'ตั้งเวลาเปิดและเปิดลงทะเบียน',s:'ขั้นสุดท้าย',tone:'pur'},
+      ]],
+    ];
+    return LANES.map(l=>{
+      const t = this.TONE[l[1]];
+      return h('div',{key:l[0],style:{display:'grid',gridTemplateColumns:'132px repeat(4,1fr)',gap:10,alignItems:'stretch'}},
+        h('div',{style:{background:t[0],borderLeft:'3px solid '+t[1],borderRadius:'0 9px 9px 0',padding:'12px 12px',display:'flex',flexDirection:'column',justifyContent:'center'}},
+          h('div',{style:{fontSize:12.5,fontWeight:600,color:t[1]}},l[0]),
+          h('div',{onClick:()=>this.setState({screen:l[2]}),style:{fontSize:11,color:'var(--fg4)',marginTop:3,cursor:'pointer',textDecoration:'underline'}},'ดูหน้าจอ')),
+        ...l[3].map((n,i)=> n.wait
+          ? h('div',{key:i,style:{border:'1px dashed var(--border)',borderRadius:9,padding:'12px 13px',display:'flex',alignItems:'center',gap:7,minHeight:64}},
+              this.ic('clock',13,'var(--fg4)',1.7),
+              h('span',{style:{fontSize:11.5,color:'var(--fg4)'}},n.t))
+          : h('div',{key:i,onClick:()=>this.setState({screen:l[2]}),
+              style:{background:n.hot?t[0]:'var(--bg)',border:'1px solid '+(n.hot?t[1]:'var(--border)'),borderRadius:9,padding:'11px 13px',cursor:'pointer',minHeight:64,display:'flex',flexDirection:'column',gap:4},
+              onMouseEnter:null},
+              h('div',{style:{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}},
+                h('span',{style:{fontSize:12.5,fontWeight:600,lineHeight:1.35}},n.t),
+                this.chip(n.s,n.tone)),
+              h('span',{style:{fontSize:11,color:'var(--fg4)',lineHeight:1.5}},n.d))));
+    });
+  }
+
+  statusList() {
+    const h = React.createElement;
+    const rows = [['ฉบับร่าง','ผู้สอนแก้ไขได้อิสระ','mute'],['รอตรวจสอบระดับคณะ','ล็อกการแก้ไขเนื้อหา','warn'],['ต้องแก้ไข','ปลดล็อกให้ผู้สอนแก้ไข','err'],['รออนุมัติส่วนกลาง','คณะรับรองแล้ว','pri'],['อนุมัติแล้ว · รอเผยแพร่','ตั้งเวลาเปิดไว้','teal'],['เผยแพร่แล้ว','ผู้เรียนลงทะเบียนได้','ok']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,padding:'11px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      this.chip(r[0],r[2]),
+      h('span',{style:{fontSize:11.5,color:'var(--fg4)',marginLeft:'auto',textAlign:'right'}},r[1]))));
+  }
+
+  ruleList() {
+    const h = React.createElement;
+    const rows = [['ผู้สอน','ส่งคำขอ · แก้ไขเมื่อถูกตีกลับ · ถอนคำขอได้ก่อนคณะเริ่มตรวจ'],['เจ้าหน้าที่คณะ','รับรอง · ขอให้แก้ไข · ไม่อนุมัติ (เฉพาะคอร์สในคณะตนเอง)'],['ผู้ดูแลระบบ','อนุมัติเผยแพร่ · ส่งกลับคณะ · ข้ามขั้นได้ในกรณีเร่งด่วนพร้อมระบุเหตุผล'],['ระบบ','ตรวจอัตโนมัติ · เตือน SLA · บันทึก audit trail ทุกการเปลี่ยนสถานะ']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{padding:'11px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('div',{style:{fontSize:12.5,fontWeight:600,marginBottom:3}},r[0]),
+      h('div',{style:{fontSize:11.5,color:'var(--fg4)',lineHeight:1.6}},r[1]))));
+  }
+
+  inFlight() {
+    const h = React.createElement;
+    const rows = [['BUS-302','คณะกำลังตรวจ','err','เหลือ 4 ชม.'],['MKT-118','คณะกำลังตรวจ','warn','เหลือ 2 วัน'],['ENG-140','ต้องแก้ไข','err','ค้าง 5 วัน'],['LAW-220','รออนุมัติส่วนกลาง','pri','เหลือ 1 วัน'],['SCI-105','รอเผยแพร่ 1 ต.ค.','teal','ตั้งเวลาแล้ว']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,padding:'11px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('span',{style:{fontSize:11.5,fontFamily:"'JetBrains Mono',monospace",color:'var(--fg3)',width:64}},r[0]),
+      h('span',{style:{fontSize:12,flex:1}},r[1]),
+      this.chip(r[3],r[2]))));
+  }
+
+  checklist() {
+    const h = React.createElement;
+    const rows = [
+      ['รายละเอียดคอร์สและคำอธิบายรายวิชา','ครบถ้วน','ok',true],
+      ['โครงสร้างบทเรียน 12 บท · วิดีโอครบทุกบท','ครบถ้วน','ok',true],
+      ['ไฟล์ มคอ.3 แนบแล้ว','ครบถ้วน','ok',true],
+      ['แบบทดสอบท้ายบทอย่างน้อย 1 ชุดต่อบท','ขาด 2 บท','err',false],
+      ['เกณฑ์การให้คะแนน (rubric) ของงานที่มอบหมาย','ยังไม่กำหนด','err',false],
+      ['ภาพปกคอร์สความละเอียดไม่ต่ำกว่า 1280×720','ครบถ้วน','ok',true],
+      ['ยืนยันสิทธิ์การใช้สื่อและลิขสิทธิ์','ยืนยันแล้ว','ok',true],
+      ['กำหนดผู้สอนร่วมและผู้ช่วยสอน','ไม่บังคับ','mute',true],
+    ];
+    return h('div',{},...rows.map((r,i)=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:12,padding:'12px 18px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+        h('span',{style:{width:20,height:20,borderRadius:'50%',background:r[3]?t[0]:'var(--err-bg)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
+          this.ic(r[3]?'check':'x',12,r[3]?t[1]:'var(--err-fg)',2.2)),
+        h('span',{style:{fontSize:13,flex:1,fontWeight:r[3]?400:500}},r[0]),
+        this.chip(r[1],r[2]),
+        h('span',{style:{fontSize:11.5,color:'var(--pri)',cursor:'pointer',width:44,textAlign:'right'}},r[3]?'':'แก้ไข'));
+    }));
+  }
+
+  submitMeta() {
+    const h = React.createElement;
+    const rows = [['รหัสคอร์ส','BUS-302'],['คณะ','บริหารธุรกิจ'],['สาขาวิชา','การจัดการ'],['ภาคเรียน','1/2569'],['จำนวนที่รับ','120 คน'],['ผู้ตรวจระดับคณะ','อรพรรณ สุขใจ']];
+    return rows.map(r=>h('div',{key:r[0],style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}},
+      h('span',{style:{fontSize:12,color:'var(--fg4)'}},r[0]),
+      h('span',{style:{fontSize:12.5,fontWeight:500}},r[1])));
+  }
+
+  nextSteps() {
+    const h = React.createElement;
+    const rows = [['เจ้าหน้าที่คณะตรวจสอบ','ภายใน 2 วันทำการ','teal'],['ผู้ดูแลระบบตรวจนโยบาย','ภายใน 2 วันทำการ','pur'],['เผยแพร่และเปิดลงทะเบียน','ภายใน 1 วันทำการ','ok']];
+    return rows.map((r,i)=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:i,style:{display:'flex',gap:11,paddingBottom:i<rows.length-1?14:0}},
+        h('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}},
+          h('span',{style:{width:9,height:9,borderRadius:'50%',background:t[1],marginTop:4}}),
+          i<rows.length-1?h('span',{style:{width:1.5,flex:1,background:'var(--line)',marginTop:4}}):null),
+        h('div',{},
+          h('div',{style:{fontSize:12.5,fontWeight:500}},r[0]),
+          h('div',{style:{fontSize:11.5,color:'var(--fg4)',marginTop:2}},r[1])));
+    });
+  }
+
+  deptFilters() {
+    const h = React.createElement;
+    return [['all','ทั้งหมด 5'],['urgent','ใกล้ครบ SLA 2'],['revise','เคยตีกลับ 1']].map(f=>{
+      const on = this.state.deptFilter===f[0];
+      return h('span',{key:f[0],onClick:()=>this.setState({deptFilter:f[0]}),
+        style:{fontSize:12.5,fontWeight:on?600:400,padding:'8px 13px',borderRadius:8,cursor:'pointer',border:'1px solid '+(on?'var(--pri)':'var(--border)'),background:on?'var(--pri-bg)':'var(--card)',color:on?'var(--pri)':'var(--fg3)'}},f[1]);
+    });
+  }
+
+  queue() {
+    const h = React.createElement;
+    const list = this.state.deptFilter==='urgent' ? this.QUEUE.slice(0,2) : this.state.deptFilter==='revise' ? this.QUEUE.slice(2,3) : this.QUEUE;
+    return h('div',{},...list.map((q,i)=>{
+      const on = this.QUEUE[this.state.queueIdx][0]===q[0];
+      return h('div',{key:q[0],onClick:()=>this.setState({queueIdx:this.QUEUE.indexOf(q)}),
+        style:{padding:'13px 15px',borderBottom:i<list.length-1?'1px solid var(--line)':'none',cursor:'pointer',background:on?'var(--pri-bg)':'transparent',borderLeft:'3px solid '+(on?'var(--pri)':'transparent')}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:5}},
+          h('span',{style:{fontSize:11,fontFamily:"'JetBrains Mono',monospace",color:'var(--fg4)'}},q[0]),
+          this.chip(q[3],q[4],{marginLeft:'auto'})),
+        h('div',{style:{fontSize:13,fontWeight:on?600:500,lineHeight:1.4,marginBottom:4}},q[1]),
+        h('div',{style:{fontSize:11,color:'var(--fg4)'}},q[2]));
+    }));
+  }
+
+  criteria() {
+    const h = React.createElement;
+    const rows = [['scope','ขอบเขตเนื้อหาตรงกับ มคอ.3','เทียบกับหลักสูตรที่อนุมัติไว้'],['hours','จำนวนชั่วโมงเรียนครบตามหน่วยกิต','12 บท · 36 ชั่วโมง'],['media','สื่อการสอนมีสิทธิ์ใช้งานถูกต้อง','ตรวจลิขสิทธิ์วิดีโอและเอกสาร'],['rubric','เกณฑ์วัดผลสอดคล้องกับระเบียบคณะ','สัดส่วนคะแนนและเกณฑ์ผ่าน']];
+    return rows.map(r=>{
+      const on = this.state.crit[r[0]];
+      return h('div',{key:r[0],onClick:()=>this.setState(s=>({crit:Object.assign({},s.crit,{[r[0]]:!s.crit[r[0]]})})),
+        style:{border:'1px solid '+(on?'var(--ok)':'var(--border)'),background:on?'var(--ok-bg)':'var(--bg)',borderRadius:10,padding:'12px 14px',display:'flex',gap:11,cursor:'pointer'}},
+        h('span',{style:{width:19,height:19,borderRadius:5,border:'1.5px solid '+(on?'var(--ok-fg)':'var(--border)'),background:on?'var(--ok-fg)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}},
+          on?this.ic('check',12,'#fff',2.4):null),
+        h('div',{},
+          h('div',{style:{fontSize:12.5,fontWeight:500,lineHeight:1.4}},r[1]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:3}},r[2])));
+    });
+  }
+
+  quickNotes() {
+    const h = React.createElement;
+    return ['เพิ่มแบบทดสอบท้ายบท','ปรับเกณฑ์ให้คะแนน','แนบ มคอ.3 ฉบับล่าสุด','ตรวจลิขสิทธิ์สื่อ'].map(t=>
+      h('span',{key:t,style:{fontSize:11.5,color:'var(--fg3)',background:'var(--muted)',padding:'6px 11px',borderRadius:14,cursor:'pointer'}},'+ '+t));
+  }
+
+  policyChecks() {
+    const h = React.createElement;
+    const rows = [
+      ['ตรวจลิขสิทธิ์สื่อทั้ง 12 บท','ผ่าน · ไม่พบสื่อที่ไม่ระบุแหล่งที่มา','ok'],
+      ['ความสอดคล้องกับนโยบาย PDPA','ผ่าน · ไม่มีข้อมูลส่วนบุคคลในสื่อการสอน','ok'],
+      ['ความจุพื้นที่จัดเก็บวิดีโอ','ใช้เพิ่ม 8.4 GB · เหลือ 62% ของโควตา','warn'],
+      ['ชื่อรหัสคอร์สไม่ซ้ำกับที่เผยแพร่แล้ว','ผ่าน','ok'],
+      ['ผู้สอนมีสิทธิ์สอนในรายวิชานี้','ผ่าน · ตรวจกับฐานข้อมูลบุคลากร','ok'],
+    ];
+    return h('div',{},...rows.map((r,i)=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:12,padding:'13px 18px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+        h('span',{style:{width:26,height:26,borderRadius:8,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
+          this.ic(r[2]==='ok'?'check':'clock',14,t[1],2)),
+        h('div',{style:{flex:1}},
+          h('div',{style:{fontSize:13,fontWeight:500}},r[0]),
+          h('div',{style:{fontSize:11.5,color:'var(--fg4)',marginTop:2}},r[1])));
+    }));
+  }
+
+  publishFields() {
+    const h = React.createElement;
+    const rows = [['วันเวลาเผยแพร่','1 ต.ค. 2569 · 08:00'],['วันเปิดลงทะเบียน','1 ต.ค. 2569 · 08:00'],['วันปิดลงทะเบียน','15 ต.ค. 2569 · 23:59'],['จำนวนที่รับ','120 คน']];
+    return rows.map(r=>h('div',{key:r[0]},
+      h('div',{style:{fontSize:11.5,color:'var(--fg4)',marginBottom:6}},r[0]),
+      h('div',{style:{background:'var(--bg)',border:'1px solid var(--border)',borderRadius:8,height:38,padding:'0 12px',display:'flex',alignItems:'center',fontSize:12.5,fontWeight:500}},r[1])));
+  }
+
+  publishToggles() {
+    const h = React.createElement;
+    const rows = [['enroll','เปิดให้ลงทะเบียนทันทีเมื่อเผยแพร่','ผู้เรียนในคณะเห็นคอร์สในแคตตาล็อก'],['cert','ออกใบรับรองอัตโนมัติเมื่อเรียนจบ','เกณฑ์ผ่าน 80% และสอบผ่าน'],['preview','เปิดพรีวิวบทที่ 1 แบบสาธารณะ','ผู้ที่ยังไม่ลงทะเบียนดูได้']];
+    return rows.map(r=>{
+      const on = this.state.pub[r[0]];
+      return h('div',{key:r[0],style:{display:'flex',alignItems:'center',gap:12}},
+        h('div',{style:{flex:1}},
+          h('div',{style:{fontSize:12.5,fontWeight:500}},r[1]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:2}},r[2])),
+        h('span',{onClick:()=>this.setState(s=>({pub:Object.assign({},s.pub,{[r[0]]:!s.pub[r[0]]})})),
+          style:{width:40,height:22,borderRadius:11,background:on?'var(--ok)':'var(--border)',position:'relative',cursor:'pointer',flexShrink:0,transition:'background .15s'}},
+          h('span',{style:{position:'absolute',top:2,left:on?20:2,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'left .15s',boxShadow:'0 1px 2px rgba(0,0,0,.3)'}})));
+    });
+  }
+
+  adminMeta() {
+    const h = React.createElement;
+    const rows = [['ผู้ยื่นคำขอ','ผศ.ดร. ธนกฤต วงศ์ไทย'],['ยื่นเมื่อ','16 ก.ย. 2569 · 09:40'],['คณะรับรองเมื่อ','19 ก.ย. 2569 · 14:22'],['รอบการตรวจ','2 รอบ (เคยตีกลับ 1)'],['ใช้เวลารวม','5 วันทำการ']];
+    return rows.map(r=>h('div',{key:r[0],style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}},
+      h('span',{style:{fontSize:12,color:'var(--fg4)'}},r[0]),
+      h('span',{style:{fontSize:12.5,fontWeight:500,textAlign:'right'}},r[1])));
+  }
+
+  notifyList() {
+    const h = React.createElement;
+    const rows = [['ผศ.ดร. ธนกฤต วงศ์ไทย','ผู้สอน · อีเมล + LINE','pri'],['อรพรรณ สุขใจ','เจ้าหน้าที่คณะ · อีเมล','teal'],['ผู้เรียนที่สนใจ 42 คน','แจ้งเตือนคอร์สใหม่','pur']];
+    return rows.map(r=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:r[0],style:{display:'flex',alignItems:'center',gap:10}},
+        h('span',{style:{width:28,height:28,borderRadius:8,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('bell',14,t[1],1.8)),
+        h('div',{},
+          h('div',{style:{fontSize:12.5,fontWeight:500}},r[0]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:1}},r[1])));
+    });
+  }
+
+  trailStats() {
+    const h = React.createElement;
+    const rows = [['6 วัน','ระยะเวลารวม','err','เกินเป้า 1 วัน'],['2','รอบการตรวจ','warn','ตีกลับ 1 ครั้ง'],['9','เหตุการณ์ในไทม์ไลน์','pri','บันทึกครบถ้วน'],['4','ผู้เกี่ยวข้อง','pur','3 บทบาท']];
+    return rows.map(r=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:r[1],style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:12,padding:'15px 17px'}},
+        h('div',{style:{fontSize:26,fontWeight:700,letterSpacing:'-.02em',color:t[1],marginBottom:4}},r[0]),
+        h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:5}},r[1]),
+        h('div',{style:{fontSize:11,color:'var(--fg4)'}},r[3]));
+    });
+  }
+
+  timeline() {
+    const h = React.createElement;
+    const rows = [
+      ['16 ก.ย. · 09:40','ผู้สอนส่งคำขออนุมัติ','ผศ.ดร. ธนกฤต วงศ์ไทย · ฉบับ v1.2','pri','send'],
+      ['16 ก.ย. · 09:41','ระบบตรวจความพร้อมอัตโนมัติ','ผ่าน 8/8 รายการ','ok','check'],
+      ['16 ก.ย. · 09:41','เข้าคิวตรวจของคณะบริหารธุรกิจ','กำหนดส่ง 18 ก.ย. 17:00','mute','clock'],
+      ['17 ก.ย. · 11:15','คณะขอให้แก้ไข','ขาดเกณฑ์ให้คะแนนงานกลุ่ม และแบบทดสอบบทที่ 7–8','err','x'],
+      ['18 ก.ย. · 16:02','ผู้สอนส่งฉบับแก้ไข','ฉบับ v1.4 · เพิ่ม rubric และแบบทดสอบ 2 ชุด','pri','send'],
+      ['19 ก.ย. · 14:22','คณะรับรองคำขอ','อรพรรณ สุขใจ · ผ่านเกณฑ์ทั้ง 4 ข้อ','ok','check'],
+      ['19 ก.ย. · 14:22','ส่งต่อคิวผู้ดูแลระบบ','แจ้งเตือนอัตโนมัติ','mute','arrow'],
+      ['20 ก.ย. · 10:05','ตรวจนโยบายและ PDPA','ผ่าน 5/5 · แจ้งเตือนโควตาพื้นที่จัดเก็บ','warn','shield'],
+      ['20 ก.ย. · 10:18','อนุมัติเผยแพร่','สมชาย ผู้ดูแลระบบ · ตั้งเวลาเปิด 1 ต.ค. 08:00','pur','check'],
+    ];
+    return h('div',{},...rows.map((r,i)=>{
+      const t = this.TONE[r[3]];
+      return h('div',{key:i,style:{display:'flex',gap:14}},
+        h('div',{style:{display:'flex',flexDirection:'column',alignItems:'center',flexShrink:0}},
+          h('span',{style:{width:28,height:28,borderRadius:'50%',background:t[0],display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(r[4],14,t[1],2)),
+          i<rows.length-1?h('span',{style:{width:1.5,flex:1,background:'var(--line)',margin:'4px 0'}}):null),
+        h('div',{style:{paddingBottom:i<rows.length-1?18:0,flex:1}},
+          h('div',{style:{fontSize:11,color:'var(--fg4)',fontFamily:"'JetBrains Mono',monospace",marginBottom:3}},r[0]),
+          h('div',{style:{fontSize:13.5,fontWeight:600,marginBottom:3}},r[1]),
+          h('div',{style:{fontSize:12,color:'var(--fg3)',lineHeight:1.6}},r[2])));
+    }));
+  }
+
+  notifyLog() {
+    const h = React.createElement;
+    const rows = [['อีเมล','แจ้งผู้สอน: คำขอถูกตีกลับ','17 ก.ย. 11:15','err'],['LINE','แจ้งผู้สอน: คณะรับรองแล้ว','19 ก.ย. 14:22','ok'],['อีเมล','เร่งรัดหัวหน้าคณะ: เกิน SLA','19 ก.ย. 09:00','warn'],['อีเมล','แจ้งผู้ดูแลระบบ: มีคำขอใหม่','19 ก.ย. 14:22','pri']];
+    return h('div',{},...rows.map((r,i)=>{
+      const t = this.TONE[r[3]];
+      return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,padding:'11px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+        h('span',{style:{width:24,height:24,borderRadius:7,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('mail',13,t[1],1.8)),
+        h('div',{style:{flex:1,minWidth:0}},
+          h('div',{style:{fontSize:12,fontWeight:500}},r[1]),
+          h('div',{style:{fontSize:10.5,color:'var(--fg4)',marginTop:1}},r[0]+' · '+r[2])));
+    }));
+  }
+
+  versions() {
+    const h = React.createElement;
+    const rows = [['v1.4','ฉบับที่อนุมัติ','18 ก.ย. 16:02','ok'],['v1.3','แก้ไขระหว่างรอบ','18 ก.ย. 10:30','mute'],['v1.2','ฉบับที่ถูกตีกลับ','16 ก.ย. 09:40','err']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,padding:'11px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('span',{style:{fontSize:11.5,fontFamily:"'JetBrains Mono',monospace",fontWeight:500}},r[0]),
+      h('span',{style:{fontSize:12,color:'var(--fg3)',flex:1}},r[1]),
+      h('span',{style:{fontSize:10.5,color:'var(--fg4)'}},r[2]),
+      this.chip(r[3]==='ok'?'ใช้งาน':'ประวัติ',r[3]))));
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    const q = this.QUEUE[this.state.queueIdx];
+    const done = Object.values(this.state.crit).filter(Boolean).length;
+    return {
+      theme: this.state.dark ? 'dark' : 'light',
+      accent: this.props.accent ?? '#1A73E8',
+      screenTabs: this.screenTabs(),
+      themeIcon: this.ic(this.state.dark ? 'sun' : 'moon', 18, 'var(--fg2)', 1.6),
+      toggleTheme: () => this.setState(st=>({dark:!st.dark})),
+      isMap: s==='map', isSubmit: s==='submit', isDept: s==='dept', isAdmin: s==='admin', isTrail: s==='trail',
+      mapLegend: this.mapLegend(), stageHeads: this.stageHeads(), lanes: this.lanes(),
+      statusList: this.statusList(), ruleList: this.ruleList(), inFlight: this.inFlight(),
+      checklist: this.checklist(), submitMeta: this.submitMeta(), nextSteps: this.nextSteps(),
+      readyText: '6 จาก 8 รายการผ่าน',
+      submitLabel: this.state.submitted ? 'ส่งคำขอแล้ว' : 'ส่งขออนุมัติ',
+      doSubmit: () => this.setState({submitted:true, screen:'dept'}),
+      deptFilters: this.deptFilters(), queue: this.queue(),
+      curCode: q[0], curTitle: q[1], curMeta: q[2], curDue: 'กำหนดส่ง ' + q[3],
+      criteria: this.criteria(), quickNotes: this.quickNotes(),
+      critDone: done,
+      goAdmin: () => this.setState({screen:'admin'}),
+      goTrail: () => this.setState({screen:'trail'}),
+      policyChecks: this.policyChecks(), publishFields: this.publishFields(), publishToggles: this.publishToggles(),
+      adminMeta: this.adminMeta(), notifyList: this.notifyList(),
+      trailStats: this.trailStats(), timeline: this.timeline(), notifyLog: this.notifyLog(), versions: this.versions(),
+    };
+  }
+}
+</script>
+</body>
+</html>

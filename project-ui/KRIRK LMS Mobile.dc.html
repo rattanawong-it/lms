@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    body { margin:0; background:#5F6368; }
+    a { color:#1A73E8; text-decoration:none }
+    a:hover { text-decoration:underline }
+    [data-theme] {
+      --bg:#F8F9FA; --card:#FFFFFF; --muted:#F1F3F4; --line:#E8EAED; --border:#DADCE0;
+      --fg:#202124; --fg2:#3C4043; --fg3:#5F6368; --fg4:#80868B;
+      --pri:#1A73E8; --pri-dk:#174EA6; --pri-bg:#E8F0FE;
+      --ok:#34A853; --ok-bg:#E6F4EA; --ok-fg:#1E8E3E;
+      --warn:#FBBC04; --warn-bg:#FEF7E0; --warn-fg:#B06000;
+      --err:#EA4335; --err-bg:#FCE8E6; --err-fg:#C5221F;
+      --pur:#A142F4; --pur-bg:#F3E8FD; --pur-fg:#7627BB;
+      --teal:#12B5CB; --teal-bg:#E4F7FB; --teal-fg:#007B83;
+      --sh:0 1px 3px rgba(60,64,67,.15); --sh-lg:0 10px 34px rgba(0,0,0,.30);
+    }
+    [data-theme="dark"] {
+      --bg:#202124; --card:#292A2D; --muted:#35363A; --line:#3C4043; --border:#3C4043;
+      --fg:#E8EAED; --fg2:#DADCE0; --fg3:#9AA0A6; --fg4:#80868B;
+      --pri:#8AB4F8; --pri-dk:#AECBFA; --pri-bg:#1A3050;
+      --ok:#81C995; --ok-bg:#1E3626; --ok-fg:#81C995;
+      --warn:#FDD663; --warn-bg:#3B3018; --warn-fg:#FDD663;
+      --err:#F28B82; --err-bg:#3E2422; --err-fg:#F28B82;
+      --pur:#C58AF9; --pur-bg:#2E2138; --pur-fg:#C58AF9;
+      --teal:#78D9EC; --teal-bg:#123239; --teal-fg:#78D9EC;
+      --sh:0 1px 3px rgba(0,0,0,.5); --sh-lg:0 10px 34px rgba(0,0,0,.55);
+    }
+  </style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="width:1320px;margin:0 auto;background:var(--bg);color:var(--fg);font-family:'Inter','Anuphan',system-ui,sans-serif;padding:26px 30px 40px;box-sizing:border-box">
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px">
+    <div>
+      <div style="font-size:24px;font-weight:700;letter-spacing:-.018em">แอปผู้เรียนบนมือถือ</div>
+      <div style="font-size:13px;color:var(--fg4);margin-top:4px">M16 · FR-16.1 รองรับการเรียนบนมือถือเต็มรูปแบบ · FR-16.3 ดาวน์โหลดเรียนออฟไลน์ · เป้าหมายการกดทุกปุ่มไม่ต่ำกว่า 44px</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span style="font-size:11.5px;color:var(--fg4);font-family:'JetBrains Mono',monospace">390 × 844 pt</span>
+      <div onClick="{{ toggleTheme }}" style="width:36px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;cursor:pointer">{{ themeIcon }}</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,390px);gap:35px 40px;justify-content:center">
+
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">1 · หน้าแรก</div>
+      <div style="width:390px;height:844px;background:var(--bg);border-radius:34px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid var(--border)">
+        {{ statusBar }}
+        <div style="flex:1;overflow:hidden;padding:0 18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0 18px">
+            <div>
+              <div style="font-size:12.5px;color:var(--fg4)">สวัสดีตอนบ่าย</div>
+              <div style="font-size:21px;font-weight:700;letter-spacing:-.015em;margin-top:2px">สมชาย ก.</div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <span style="width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--fg2)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8.5C18 5.5 15.3 3 12 3C8.7 3 6 5.5 6 8.5C6 15 3.5 17 3.5 17H20.5C20.5 17 18 15 18 8.5Z"></path><path d="M10 20.5C10.5 21.2 11.2 21.5 12 21.5C12.8 21.5 13.5 21.2 14 20.5"></path></svg>
+                <span style="position:absolute;top:8px;right:9px;width:8px;height:8px;border-radius:50%;background:var(--err);border:2px solid var(--card)"></span>
+              </span>
+              <span style="width:44px;height:44px;border-radius:50%;background:var(--pur-bg);color:var(--pur-fg);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center">ส</span>
+            </div>
+          </div>
+          <div style="background:#1B1C1E;border-radius:18px;padding:18px;color:#E8EAED;margin-bottom:18px">
+            <div style="font-size:11px;color:#9AA0A6;margin-bottom:7px">เรียนต่อจากที่ค้างไว้</div>
+            <div style="font-size:16px;font-weight:600;line-height:1.5;margin-bottom:5px">การจัดการค่าว่างและค่าผิดปกติ</div>
+            <div style="font-size:11.5px;color:#9AA0A6;margin-bottom:14px">การวิเคราะห์ข้อมูลธุรกิจด้วย Python · เหลือ 13 นาที</div>
+            <div style="height:5px;background:rgba(255,255,255,.2);border-radius:3px;margin-bottom:15px"><div style="width:38%;height:100%;background:{{ accent }};border-radius:3px"></div></div>
+            <div style="display:flex;align-items:center;gap:11px">
+              <span style="width:44px;height:44px;border-radius:50%;background:{{ accent }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                <svg viewBox="0 0 24 24" width="19" height="19" fill="#fff" stroke="none"><path d="M8 5.5L19 12L8 18.5Z"></path></svg>
+              </span>
+              <span style="font-size:14px;font-weight:600">เล่นต่อ</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:18px">{{ mobileStats }}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+            <span style="font-size:15px;font-weight:600">กำหนดส่งที่ใกล้ถึง</span>
+            <span style="font-size:12px;color:var(--pri);font-weight:500">ดูทั้งหมด</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px">{{ mobileDeadlines }}</div>
+        </div>
+        {{ tabBar1 }}
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">2 · เรียนบทเรียน</div>
+      <div style="width:390px;height:844px;background:var(--bg);border-radius:34px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid var(--border)">
+        <div style="background:#000;height:250px;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center">
+          <div style="position:absolute;top:0;left:0;right:0;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;color:#fff">
+            <span style="font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace">9:41</span>
+            <span style="font-size:11px;opacity:.72">6512345678</span>
+          </div>
+          <div style="position:absolute;top:52px;left:16px;width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5L8 12L15 19"></path></svg>
+          </div>
+          <span style="width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="#fff" stroke="none"><path d="M8 5.5L19 12L8 18.5Z"></path></svg>
+          </span>
+          <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px;background:linear-gradient(transparent,rgba(0,0,0,.8))">
+            <div style="height:4px;background:rgba(255,255,255,.28);border-radius:2px;margin-bottom:9px"><div style="width:38%;height:100%;background:{{ accent }};border-radius:2px"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:11.5px;font-family:'JetBrains Mono',monospace">
+              <span>08:12 / 21:40</span>
+              <div style="display:flex;gap:8px;font-family:'Inter',sans-serif">
+                <span style="border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:2px 8px">1.25x</span>
+                <span style="border:1px solid rgba(255,255,255,.4);border-radius:5px;padding:2px 8px">CC</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:16px 18px 0">
+          <div style="font-size:11.5px;color:var(--fg4);margin-bottom:5px">หมวด 2 · บทที่ 7 จาก 32</div>
+          <div style="font-size:18px;font-weight:600;line-height:1.45;letter-spacing:-.01em;margin-bottom:14px">การจัดการค่าว่างและค่าผิดปกติใน pandas</div>
+          <div style="display:flex;gap:9px;margin-bottom:16px">
+            <button style="flex:1;height:46px;background:{{ accent }};color:#fff;border:none;border-radius:11px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer">เรียนจบบทนี้</button>
+            <button style="width:46px;height:46px;background:var(--card);border:1px solid var(--border);border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--fg2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4V16"></path><path d="M6.5 11L12 16.5L17.5 11"></path><path d="M4 20H20"></path></svg>
+            </button>
+            <button style="width:46px;height:46px;background:var(--card);border:1px solid var(--border);border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--fg2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4H18V21L12 16.5L6 21Z"></path></svg>
+            </button>
+          </div>
+          <div style="display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:14px">{{ mobileTabs }}</div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 18px">{{ mobileTabBody }}</div>
+        {{ tabBar2 }}
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">3 · ทำแบบทดสอบ</div>
+      <div style="width:390px;height:844px;background:var(--bg);border-radius:34px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid var(--border)">
+        {{ statusBar }}
+        <div style="padding:6px 18px 14px;border-bottom:1px solid var(--line);background:var(--card)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:14px;font-weight:600">แบบทดสอบท้ายหมวด 2</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:600;color:var(--warn-fg)">18:42</span>
+          </div>
+          <div style="display:flex;gap:4px">{{ mobileProgress }}</div>
+          <div style="font-size:11.5px;color:var(--fg4);margin-top:9px">ตอบแล้ว 9 จาก 20 ข้อ · บันทึกอัตโนมัติทุก 10 วินาที</div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:18px">
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:13px">
+            <span style="font-size:11.5px;font-weight:600;color:var(--pri);background:var(--pri-bg);padding:4px 10px;border-radius:6px">ข้อ 7 / 20</span>
+            <span style="font-size:11.5px;color:var(--fg4)">2 คะแนน</span>
+          </div>
+          <div style="font-size:16px;font-weight:500;line-height:1.7;margin-bottom:20px">ถ้าชุดข้อมูลยอดขายมีค่าผิดปกติสูงมากหนึ่งค่า ค่าสถิติใดได้รับผลกระทบน้อยที่สุด</div>
+          <div style="display:flex;flex-direction:column;gap:11px">{{ mobileChoices }}</div>
+        </div>
+        <div style="padding:14px 18px;border-top:1px solid var(--line);background:var(--card);display:flex;gap:10px">
+          <button style="width:50px;height:48px;background:var(--card);border:1px solid var(--border);border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--fg2)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5L8 12L15 19"></path></svg>
+          </button>
+          <button style="width:50px;height:48px;background:var(--warn-bg);border:none;border-radius:11px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--warn-fg)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"></path><path d="M5 4H17L14.5 8L17 12H5"></path></svg>
+          </button>
+          <button style="flex:1;height:48px;background:{{ accent }};color:#fff;border:none;border-radius:11px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer">ข้อถัดไป</button>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">4 · ดาวน์โหลดเรียนออฟไลน์</div>
+      <div style="width:390px;height:844px;background:var(--bg);border-radius:34px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid var(--border)">
+        {{ statusBar }}
+        <div style="padding:6px 18px 14px">
+          <div style="font-size:21px;font-weight:700;letter-spacing:-.015em;margin-bottom:4px">ดาวน์โหลดไว้แล้ว</div>
+          <div style="font-size:12px;color:var(--fg4)">FR-16.3 วิดีโอที่ดาวน์โหลดเข้ารหัสไว้ เล่นได้เฉพาะในแอปและหมดอายุใน 14 วัน</div>
+        </div>
+        <div style="padding:0 18px 14px">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px">
+              <span style="font-size:12.5px;font-weight:500">พื้นที่ที่ใช้</span>
+              <span style="font-size:12.5px;color:var(--fg3)"><span style="font-weight:700;color:var(--fg)">2.4 GB</span> จาก 8 GB</span>
+            </div>
+            <div style="height:7px;background:var(--muted);border-radius:4px;display:flex;overflow:hidden">
+              <div style="width:22%;background:#1A73E8"></div><div style="width:8%;background:var(--pur)"></div>
+            </div>
+            <div style="display:flex;gap:14px;margin-top:10px">
+              <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg3)"><span style="width:8px;height:8px;border-radius:2px;background:#1A73E8"></span>วิดีโอ 1.8 GB</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg3)"><span style="width:8px;height:8px;border-radius:2px;background:var(--pur)"></span>เอกสาร 0.6 GB</span>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;overflow:hidden;padding:0 18px">
+          <div style="display:flex;flex-direction:column;gap:11px">{{ downloads }}</div>
+        </div>
+        <div style="padding:12px 18px;border-top:1px solid var(--line);background:var(--card)">
+          <div onClick="{{ toggleWifi }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:44px">
+            <div><div style="font-size:13px;font-weight:500">ดาวน์โหลดผ่าน Wi-Fi เท่านั้น</div><div style="font-size:11px;color:var(--fg4);margin-top:2px">ป้องกันการใช้เน็ตมือถือโดยไม่ตั้งใจ</div></div>
+            <div style="width:48px;height:28px;border-radius:16px;background:{{ wifiBg }};position:relative;flex-shrink:0;transition:background .15s"><div style="position:absolute;top:3px;left:{{ wifiX }};width:22px;height:22px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:var(--sh)"></div></div>
+          </div>
+        </div>
+        {{ tabBar4 }}
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">5 · การแจ้งเตือนและ LINE</div>
+      <div style="width:390px;height:844px;background:var(--bg);border-radius:34px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid var(--border)">
+        {{ statusBar }}
+        <div style="padding:6px 18px 14px;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:21px;font-weight:700;letter-spacing:-.015em">การแจ้งเตือน</div>
+          <span style="font-size:12.5px;color:var(--pri);font-weight:500">อ่านทั้งหมด</span>
+        </div>
+        <div style="padding:0 18px 14px">
+          <div style="background:#06C755;border-radius:14px;padding:15px;color:#fff;display:flex;align-items:center;gap:13px">
+            <span style="width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">LINE</span>
+            <div style="flex:1">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:3px">ผูกบัญชี LINE แล้ว</div>
+              <div style="font-size:11.5px;opacity:.9">รับแจ้งเตือนกำหนดส่งและประกาศทาง LINE</div>
+            </div>
+            <span style="font-size:11.5px;font-weight:600;background:rgba(255,255,255,.22);padding:7px 11px;border-radius:8px">ตั้งค่า</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:7px;padding:0 18px 14px">{{ notiFilters }}</div>
+        <div style="flex:1;overflow:hidden;padding:0 18px">
+          <div style="display:flex;flex-direction:column;gap:10px">{{ notifications }}</div>
+        </div>
+        {{ tabBar5 }}
+      </div>
+    </div>
+
+    <div>
+      <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">6 · โปรไฟล์และใบประกาศ</div>
+      <div style="width:390px;height:844px;background:var(--bg);border-radius:34px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;position:relative;border:1px solid var(--border)">
+        {{ statusBar }}
+        <div style="flex:1;overflow:hidden;padding:0 18px">
+          <div style="display:flex;align-items:center;gap:15px;padding:8px 0 20px">
+            <span style="width:66px;height:66px;border-radius:50%;background:var(--pur-bg);color:var(--pur-fg);font-size:25px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0">ส</span>
+            <div style="min-width:0">
+              <div style="font-size:19px;font-weight:700;letter-spacing:-.015em">สมชาย กิจเจริญ</div>
+              <div style="font-size:12px;color:var(--fg4);margin-top:3px;font-family:'JetBrains Mono',monospace">6512345678</div>
+              <div style="font-size:12px;color:var(--fg3);margin-top:2px">คณะบริหารธุรกิจ</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">{{ profileStats }}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
+            <span style="font-size:15px;font-weight:600">ใบประกาศนียบัตร</span>
+            <span style="font-size:12px;color:var(--pri);font-weight:500">ทั้งหมด 4 ใบ</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">{{ mobileCerts }}</div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:11px">การตั้งค่า</div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden">{{ settingRows }}</div>
+        </div>
+        {{ tabBar6 }}
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1320,&quot;height&quot;:1900},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1A73E8&quot;,&quot;options&quot;:[&quot;#1A73E8&quot;,&quot;#C5221F&quot;,&quot;#1E8E3E&quot;,&quot;#7627BB&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;สี&quot;}}">
+class Component extends DCLogic {
+  state = { dark: false, tab: 'notes', quizAns: 1, wifi: true, notiFilter: 'all' };
+
+  TONE = { pri:['var(--pri-bg)','var(--pri)'], ok:['var(--ok-bg)','var(--ok-fg)'], warn:['var(--warn-bg)','var(--warn-fg)'], err:['var(--err-bg)','var(--err-fg)'], pur:['var(--pur-bg)','var(--pur-fg)'], teal:['var(--teal-bg)','var(--teal-fg)'], mute:['var(--muted)','var(--fg3)'] };
+
+  ic(name, size, color, sw) {
+    const h = React.createElement;
+    const P = {
+      sun: ['M12 4.5V2.5','M12 21.5V19.5','M4.5 12H2.5','M21.5 12H19.5','M6.3 6.3L4.9 4.9','M19.1 19.1L17.7 17.7','M6.3 17.7L4.9 19.1','M19.1 4.9L17.7 6.3'],
+      moon: ['M20 14.5A8.5 8.5 0 0 1 9.5 4A8.5 8.5 0 1 0 20 14.5Z'],
+      check: ['M5 13L9 17L19 7'],
+      home: ['M4 10.5L12 4L20 10.5V20H4Z'],
+      book: ['M4 5C4 4 5 3.5 6 3.5H11V20H6C5 20 4 19.5 4 18.5Z','M20 5C20 4 19 3.5 18 3.5H13V20H18C19 20 20 19.5 20 18.5Z'],
+      down: ['M12 4V16','M6.5 11L12 16.5L17.5 11','M4 20H20'],
+      bell: ['M18 8.5C18 5.5 15.3 3 12 3C8.7 3 6 5.5 6 8.5C6 15 3.5 17 3.5 17H20.5C20.5 17 18 15 18 8.5Z','M10 20.5C10.5 21.2 11.2 21.5 12 21.5C12.8 21.5 13.5 21.2 14 20.5'],
+      user: ['M19 20.5V19C19 16.8 17.2 15 15 15H9C6.8 15 5 16.8 5 19V20.5','M12 11.5A4 4 0 1 0 12 3.5A4 4 0 0 0 12 11.5Z'],
+      doc: ['M14 3H7C6 3 5 4 5 5V19C5 20 6 21 7 21H17C18 21 19 20 19 19V8L14 3Z','M14 3V8H19'],
+      play: ['M8 5.5L19 12L8 18.5Z'],
+      star: ['M12 3.5L14.6 9L20.5 9.8L16.2 13.9L17.3 19.8L12 17L6.7 19.8L7.8 13.9L3.5 9.8L9.4 9Z'],
+      trash: ['M4.5 6.5H19.5','M9 6.5V4.5H15V6.5','M6.5 6.5L7.5 20H16.5L17.5 6.5'],
+      chev: ['M9.5 5L16.5 12L9.5 19'],
+      lock: ['M4 10.5H20V20.5H4Z','M8 10.5V7.5C8 5.3 9.8 3.5 12 3.5C14.2 3.5 16 5.3 16 7.5V10.5'],
+      globe: ['M12 21A9 9 0 1 1 12 3A9 9 0 0 1 12 21Z','M3.5 9.5H20.5','M3.5 14.5H20.5','M12 3C9.5 6 9.5 18 12 21','M12 3C14.5 6 14.5 18 12 21'],
+      shield: ['M12 3L20 6.5V12C20 16.5 16.5 20 12 21.5C7.5 20 4 16.5 4 12V6.5L12 3Z'],
+    };
+    return h('svg',{viewBox:'0 0 24 24',width:size,height:size,fill:'none',stroke:color,strokeWidth:sw||1.7,strokeLinecap:'round',strokeLinejoin:'round'},
+      ...(P[name]||[]).map((d,i)=>h('path',{key:i,d})));
+  }
+
+  statusBar() {
+    const h = React.createElement;
+    return h('div',{style:{height:44,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 22px'}},
+      h('span',{style:{fontSize:13.5,fontWeight:600,fontFamily:"'JetBrains Mono',monospace"}},'9:41'),
+      h('div',{style:{display:'flex',alignItems:'center',gap:6}},
+        h('svg',{viewBox:'0 0 24 24',width:15,height:15,fill:'var(--fg)',stroke:'none'},h('path',{d:'M3 17H5V20H3ZM8 13H10V20H8ZM13 9H15V20H13ZM18 4H20V20H18Z'})),
+        h('svg',{viewBox:'0 0 24 24',width:15,height:15,fill:'none',stroke:'var(--fg)',strokeWidth:1.8,strokeLinecap:'round'},h('path',{d:'M2.5 9C6 6 18 6 21.5 9'}),h('path',{d:'M5.5 12.5C8 10.5 16 10.5 18.5 12.5'}),h('path',{d:'M8.5 16C10 14.8 14 14.8 15.5 16'}),h('path',{d:'M12 19.2V19.3'})),
+        h('div',{style:{width:24,height:12,border:'1.5px solid var(--fg)',borderRadius:3,padding:1.5,display:'flex'}},
+          h('div',{style:{width:'72%',background:'var(--fg)',borderRadius:1}}))));
+  }
+
+  tabBar(active) {
+    const h = React.createElement;
+    const rows = [['home','หน้าแรก'],['book','คอร์ส'],['down','ออฟไลน์'],['bell','แจ้งเตือน'],['user','โปรไฟล์']];
+    return h('div',{style:{height:78,flexShrink:0,borderTop:'1px solid var(--line)',background:'var(--card)',display:'flex',paddingBottom:14}},
+      ...rows.map(r=>{
+        const on = r[0]===active;
+        return h('div',{key:r[0],style:{flex:1,minHeight:44,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,cursor:'pointer',position:'relative'}},
+          h('span',{style:{display:'flex'}},this.ic(r[0],21,on?'var(--pri)':'var(--fg4)',on?2:1.7)),
+          h('span',{style:{fontSize:10.5,fontWeight:on?600:400,color:on?'var(--pri)':'var(--fg4)'}},r[1]),
+          r[0]==='bell'?h('span',{style:{position:'absolute',top:6,right:'32%',width:7,height:7,borderRadius:'50%',background:'var(--err)'}}):null);
+      }));
+  }
+
+  mobileStats() {
+    const h = React.createElement;
+    const rows = [['4','กำลังเรียน','pri'],['62%','ความคืบหน้า','ok'],['4','ใบประกาศ','pur']];
+    return rows.map(r=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:r[1],style:{flex:1,background:'var(--card)',border:'1px solid var(--border)',borderRadius:13,padding:'13px 12px'}},
+        h('div',{style:{fontSize:20,fontWeight:700,letterSpacing:'-.02em',color:t[1],marginBottom:3}},r[0]),
+        h('div',{style:{fontSize:10.5,color:'var(--fg4)'}},r[1]));
+    });
+  }
+
+  mobileDeadlines() {
+    const h = React.createElement;
+    const rows = [['งานที่ 2 · วิเคราะห์ชุดข้อมูลยอดขาย','พรุ่งนี้ 23:59 น.','err','doc'],['แบบทดสอบท้ายหมวด 2','20 ก.ย. · เหลือ 2 วัน','warn','book'],['อภิปรายกลุ่ม บทที่ 5','24 ก.ย. · เหลือ 5 วัน','mute','book']];
+    return rows.map((r,i)=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:i,style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:13,padding:13,display:'flex',alignItems:'center',gap:12,minHeight:44}},
+        h('span',{style:{width:38,height:38,borderRadius:10,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic(r[3],17,t[1],1.7)),
+        h('div',{style:{flex:1,minWidth:0}},
+          h('div',{style:{fontSize:13,fontWeight:500,marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[0]),
+          h('div',{style:{fontSize:11,color:t[1],fontWeight:500}},r[1])),
+        h('span',{style:{display:'flex',flexShrink:0}},this.ic('chev',15,'var(--fg4)',1.9)));
+    });
+  }
+
+  mobileTabs() {
+    const h = React.createElement;
+    const tabs = [['notes','เนื้อหา'],['files','ไฟล์ 4'],['qa','ถาม-ตอบ']];
+    return tabs.map(t=>{
+      const on = this.state.tab===t[0];
+      return h('span',{key:t[0],onClick:()=>this.setState({tab:t[0]}),
+        style:{flex:1,textAlign:'center',fontSize:13,fontWeight:on?600:400,color:on?'var(--pri)':'var(--fg3)',padding:'11px 0 9px',borderBottom:on?'2px solid var(--pri)':'2px solid transparent',marginBottom:-1,cursor:'pointer',minHeight:44,boxSizing:'border-box'}},t[1]);
+    });
+  }
+
+  mobileTabBody() {
+    const h = React.createElement;
+    if (this.state.tab === 'notes') {
+      return h('div',{style:{fontSize:13.5,lineHeight:1.9,color:'var(--fg2)'}},
+        h('p',{style:{margin:'0 0 12px'}},'ข้อมูลจริงมักไม่สมบูรณ์ — บทนี้อธิบายวิธีตรวจหาค่าว่างและเลือกกลยุทธ์จัดการที่เหมาะกับชนิดของตัวแปร'),
+        h('div',{style:{background:'var(--warn-bg)',borderRadius:11,padding:'13px 14px',fontSize:12.5,lineHeight:1.75,color:'var(--fg2)'}},
+          'ข้อควรระวัง: การเติมค่าว่างด้วยค่าเฉลี่ยจะลดความแปรปรวนของข้อมูลเสมอ หากค่าว่างเกิน 20% ควรเก็บเป็นหมวด "ไม่ระบุ" แทน'));
+    }
+    if (this.state.tab === 'files') {
+      const rows = [['สรุปคำสั่ง pandas.pdf','PDF · 1.2 MB','err'],['ชุดข้อมูลยอดขาย.csv','CSV · 480 KB','ok'],['สมุดโน้ตบทที่ 7.ipynb','Notebook · 96 KB','warn'],['สไลด์บรรยาย.pdf','PDF · 3.4 MB','err']];
+      return h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+        ...rows.map(r=>{
+          const t = this.TONE[r[2]];
+          return h('div',{key:r[0],style:{display:'flex',alignItems:'center',gap:12,padding:12,border:'1px solid var(--border)',borderRadius:12,background:'var(--card)',minHeight:44}},
+            h('span',{style:{width:36,height:36,borderRadius:9,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('doc',16,t[1],1.7)),
+            h('div',{style:{flex:1,minWidth:0}},
+              h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[0]),
+              h('div',{style:{fontSize:10.5,color:'var(--fg4)'}},r[1])),
+            h('span',{style:{display:'flex',flexShrink:0}},this.ic('down',17,'var(--fg3)',1.8)));
+        }));
+    }
+    const qas = [['นภัสสร ท.','ถ้าค่าว่างเกิน 40% ควรลบทั้งคอลัมน์ไหมคะ','ตอบแล้ว','ok'],['ชนกันต์ พ.','ไฟล์ CSV เปิดแล้วภาษาไทยเพี้ยนครับ','รอตอบ','warn']];
+    return h('div',{style:{display:'flex',flexDirection:'column',gap:10}},
+      ...qas.map((q,i)=>{
+        const t = this.TONE[q[3]];
+        return h('div',{key:i,style:{border:'1px solid var(--border)',borderRadius:12,padding:13,background:'var(--card)'}},
+          h('div',{style:{display:'flex',alignItems:'center',gap:8,marginBottom:7}},
+            h('span',{style:{width:24,height:24,borderRadius:'50%',background:'var(--muted)',color:'var(--fg3)',fontSize:10.5,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center'}},q[0].charAt(0)),
+            h('span',{style:{fontSize:12,fontWeight:600,flex:1}},q[0]),
+            h('span',{style:{background:t[0],color:t[1],fontSize:10,fontWeight:600,padding:'3px 7px',borderRadius:5}},q[2])),
+          h('div',{style:{fontSize:12.5,lineHeight:1.65,color:'var(--fg2)'}},q[1]));
+      }));
+  }
+
+  mobileProgress() {
+    const h = React.createElement;
+    const states = ['a','a','a','a','f','a','c','n','n','a','a','f','n','n','n','n','n','n','n','n'];
+    const col = { a:'var(--ok)', f:'var(--warn)', c:'#1A73E8', n:'var(--muted)' };
+    return states.map((s,i)=>h('span',{key:i,style:{flex:1,height:5,borderRadius:3,background:col[s]}}));
+  }
+
+  mobileChoices() {
+    const h = React.createElement;
+    const opts = ['ค่าเฉลี่ยเลขคณิต (Mean)','มัธยฐาน (Median)','พิสัย (Range)','ส่วนเบี่ยงเบนมาตรฐาน'];
+    const letters = ['ก','ข','ค','ง'];
+    return opts.map((o,i)=>{
+      const on = this.state.quizAns===i;
+      return h('div',{key:i,onClick:()=>this.setState({quizAns:i}),
+        style:{display:'flex',alignItems:'center',gap:13,padding:'15px 15px',borderRadius:13,cursor:'pointer',minHeight:44,
+          border:on?'1.5px solid var(--pri)':'1px solid var(--border)',background:on?'var(--pri-bg)':'var(--card)'}},
+        h('span',{style:{width:28,height:28,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:600,background:on?'#1A73E8':'var(--muted)',color:on?'#fff':'var(--fg3)'}},letters[i]),
+        h('span',{style:{fontSize:14,fontWeight:on?500:400}},o));
+    });
+  }
+
+  downloads() {
+    const h = React.createElement;
+    const rows = [
+      ['หมวด 2 · การเตรียมข้อมูล','8 บทเรียน · 1.1 GB','พร้อมเล่น · หมดอายุใน 11 วัน','ok',100],
+      ['หมวด 3 · สถิติเชิงอนุมาน','7 บทเรียน · 0.9 GB','กำลังดาวน์โหลด 64%','pri',64],
+      ['เอกสารประกอบทั้งคอร์ส','24 ไฟล์ · 0.6 GB','พร้อมเปิด · ไม่มีวันหมดอายุ','pur',100],
+    ];
+    return rows.map((r,i)=>{
+      const t = this.TONE[r[3]];
+      return h('div',{key:i,style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:14,padding:14}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:12,marginBottom:r[4]<100?11:0}},
+          h('span',{style:{width:40,height:40,borderRadius:11,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic(i===2?'doc':'play',18,t[1],1.7)),
+          h('div',{style:{flex:1,minWidth:0}},
+            h('div',{style:{fontSize:13.5,fontWeight:500,marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[0]),
+            h('div',{style:{fontSize:11,color:'var(--fg4)',marginBottom:2}},r[1]),
+            h('div',{style:{fontSize:11,color:t[1],fontWeight:500}},r[2])),
+          h('span',{style:{width:44,height:44,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,cursor:'pointer'}},this.ic('trash',17,'var(--fg4)',1.7))),
+        r[4]<100 ? h('div',{style:{height:5,background:'var(--muted)',borderRadius:3}},h('div',{style:{width:r[4]+'%',height:'100%',background:t[1],borderRadius:3}})) : null);
+    });
+  }
+
+  notiFilters() {
+    const h = React.createElement;
+    const opts = [['all','ทั้งหมด'],['due','กำหนดส่ง'],['grade','คะแนน'],['ann','ประกาศ']];
+    return opts.map(o=>{
+      const on = this.state.notiFilter===o[0];
+      return h('span',{key:o[0],onClick:()=>this.setState({notiFilter:o[0]}),
+        style:{fontSize:12,fontWeight:on?600:400,padding:'9px 14px',borderRadius:18,cursor:'pointer',whiteSpace:'nowrap',
+          background:on?'#1A73E8':'var(--card)',color:on?'#fff':'var(--fg3)',border:on?'1px solid transparent':'1px solid var(--border)'}},o[1]);
+    });
+  }
+
+  notifications() {
+    const h = React.createElement;
+    const all = [
+      ['due','งานที่ 2 ครบกำหนดพรุ่งนี้','อย่าลืมส่งก่อน 23:59 น. · BUS-DA-201','15 นาทีที่แล้ว','err',true],
+      ['grade','คะแนนแบบทดสอบหมวด 1 ออกแล้ว','คุณได้ 9/10 คะแนน · ผ่านเกณฑ์','2 ชม. ที่แล้ว','ok',true],
+      ['ann','ปิดปรับปรุงระบบ 22 ก.ย. 01:00–04:00','ประกาศจากผู้ดูแลระบบ','5 ชม. ที่แล้ว','pri',false],
+      ['due','คลาสสดทบทวนบทที่ 3 คืนนี้','เริ่ม 19:00 น. · เข้าร่วมผ่านลิงก์ในคอร์ส','เมื่อวาน','warn',false],
+      ['grade','ผู้สอนตอบคำถามของคุณแล้ว','บทที่ 7 · การจัดการค่าว่าง','2 วันที่แล้ว','pur',false],
+    ];
+    const f = this.state.notiFilter;
+    const list = f==='all' ? all : all.filter(n=>n[0]===f);
+    if (!list.length) return h('div',{style:{padding:'40px 0',textAlign:'center',fontSize:12.5,color:'var(--fg4)'}},'ไม่มีการแจ้งเตือนในหมวดนี้');
+    const icons = { due:'bell', grade:'star', ann:'globe' };
+    return list.map((n,i)=>{
+      const t = this.TONE[n[4]];
+      return h('div',{key:i,style:{background:n[5]?'var(--card)':'transparent',border:'1px solid '+(n[5]?'var(--border)':'var(--line)'),borderRadius:14,padding:13,display:'flex',gap:12,minHeight:44}},
+        h('span',{style:{width:38,height:38,borderRadius:11,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic(icons[n[0]],17,t[1],1.7)),
+        h('div',{style:{flex:1,minWidth:0}},
+          h('div',{style:{fontSize:13,fontWeight:n[5]?600:500,lineHeight:1.5,marginBottom:3}},n[1]),
+          h('div',{style:{fontSize:11.5,color:'var(--fg3)',lineHeight:1.55,marginBottom:4}},n[2]),
+          h('div',{style:{fontSize:10.5,color:'var(--fg4)'}},n[3])),
+        n[5]?h('span',{style:{width:8,height:8,borderRadius:'50%',background:'var(--pri)',flexShrink:0,marginTop:4}}):null);
+    });
+  }
+
+  profileStats() {
+    const h = React.createElement;
+    const rows = [['12','วันต่อเนื่อง'],['48','ชม. ที่เรียน'],['4','ใบประกาศ']];
+    return rows.map(r=>h('div',{key:r[1],style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:13,padding:'13px 10px',textAlign:'center'}},
+      h('div',{style:{fontSize:19,fontWeight:700,letterSpacing:'-.02em',marginBottom:3}},r[0]),
+      h('div',{style:{fontSize:10.5,color:'var(--fg4)'}},r[1])));
+  }
+
+  mobileCerts() {
+    const h = React.createElement;
+    const rows = [['การสื่อสารองค์กรยุคดิจิทัล','CERT-2569-004182 · 12 ก.ย. 2569'],['พื้นฐานการใช้ LMS','CERT-2569-002914 · 4 ส.ค. 2569']];
+    return rows.map(r=>h('div',{key:r[0],style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:13,padding:13,display:'flex',alignItems:'center',gap:12,minHeight:44}},
+      h('span',{style:{width:38,height:38,borderRadius:10,background:'var(--pur-bg)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('star',17,'var(--pur-fg)',1.7)),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[0]),
+        h('div',{style:{fontSize:10,color:'var(--fg4)',fontFamily:"'JetBrains Mono',monospace"}},r[1])),
+      h('span',{style:{width:44,height:44,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('down',17,'var(--fg3)',1.8))));
+  }
+
+  settingRows() {
+    const h = React.createElement;
+    const rows = [['bell','การแจ้งเตือนและ LINE','เปิด 3 ประเภท'],['down','การดาวน์โหลด','Wi-Fi เท่านั้น · 2.4 GB'],['globe','ภาษา','ไทย'],['shield','ความเป็นส่วนตัว (PDPA)','ขอสำเนา · ขอลบข้อมูล'],['lock','ความปลอดภัยและรหัสผ่าน','ยังไม่เปิด 2FA']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:r[1],style:{display:'flex',alignItems:'center',gap:12,padding:'13px 14px',minHeight:44,borderBottom:i<rows.length-1?'1px solid var(--line)':'none',cursor:'pointer'}},
+      h('span',{style:{display:'flex',flexShrink:0}},this.ic(r[0],18,'var(--fg3)',1.7)),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{fontSize:13,fontWeight:500}},r[1]),
+        h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:2}},r[2])),
+      h('span',{style:{display:'flex',flexShrink:0}},this.ic('chev',15,'var(--fg4)',1.9)))));
+  }
+
+  renderVals() {
+    return {
+      theme: this.state.dark ? 'dark' : 'light',
+      accent: this.props.accent ?? '#1A73E8',
+      themeIcon: this.ic(this.state.dark ? 'sun' : 'moon', 18, 'var(--fg2)', 1.6),
+      toggleTheme: () => this.setState(s => ({ dark: !s.dark })),
+      statusBar: this.statusBar(),
+      tabBar1: this.tabBar('home'),
+      tabBar2: this.tabBar('book'),
+      tabBar4: this.tabBar('down'),
+      tabBar5: this.tabBar('bell'),
+      tabBar6: this.tabBar('user'),
+      mobileStats: this.mobileStats(),
+      mobileDeadlines: this.mobileDeadlines(),
+      mobileTabs: this.mobileTabs(),
+      mobileTabBody: this.mobileTabBody(),
+      mobileProgress: this.mobileProgress(),
+      mobileChoices: this.mobileChoices(),
+      downloads: this.downloads(),
+      toggleWifi: () => this.setState(s => ({ wifi: !s.wifi })),
+      wifiBg: this.state.wifi ? '#1A73E8' : 'var(--border)',
+      wifiX: this.state.wifi ? '23px' : '3px',
+      notiFilters: this.notiFilters(),
+      notifications: this.notifications(),
+      profileStats: this.profileStats(),
+      mobileCerts: this.mobileCerts(),
+      settingRows: this.settingRows(),
+    };
+  }
+}
+</script>
+</body>
+</html>

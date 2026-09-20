@@ -1,0 +1,15 @@
+# ให้ทุกไฟล์ข้อความเก็บใน repo เป็น LF เสมอ (นักพัฒนาใช้ Windows แต่ CI รันบน Ubuntu)
+* text=auto eol=lf
+
+# ไฟล์ไบนารี — ห้ามแปลงบรรทัด
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+
+pnpm-lock.yaml linguist-generated=true

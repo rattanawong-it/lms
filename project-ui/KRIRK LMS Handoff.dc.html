@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="./doc-page.js"></script>
+  <style>
+    doc-page:not(:defined) { visibility:hidden }
+    body { margin:0; font-family:'Inter','Anuphan',system-ui,sans-serif; color:#202124; }
+    a { color:#1A73E8; text-decoration:none }
+    a:hover { text-decoration:underline }
+    table { border-collapse:collapse; width:100%; }
+    th, td { text-align:left; vertical-align:top; padding:8px 10px; border-bottom:1px solid #E8EAED; font-size:10.5pt; line-height:1.55; }
+    th { background:#F1F3F4; font-weight:600; font-size:9.5pt; color:#3C4043; }
+    h2 { break-after:avoid }
+    tr, li { break-inside:avoid }
+  </style>
+</helmet>
+
+<doc-page margin="0.8in">
+
+  <div slot="header" style="display:flex;align-items:baseline;justify-content:space-between;border-bottom:1.5px solid #202124;padding-bottom:7px;font-size:9pt;color:#5F6368">
+    <span style="font-weight:600;color:#202124">KRIRK LMS · เอกสารส่งต่อทีมพัฒนา</span>
+    <span style="font-family:'JetBrains Mono',monospace">v1.0 · 20 ก.ย. 2569</span>
+  </div>
+  <div slot="footer" style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #DADCE0;padding-top:7px;font-size:8.5pt;color:#80868B">
+    <span>มหาวิทยาลัยเกริก · ฝ่ายเทคโนโลยีการศึกษา</span>
+    <span>เอกสารภายใน · อ้างอิงรหัส FR/M ตามเอกสารความต้องการ</span>
+  </div>
+
+  <div style="margin-bottom:26px">
+    <div style="font-size:9.5pt;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#1A73E8;margin-bottom:9px">Design Handoff</div>
+    <h1 style="font-size:26pt;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin:0 0 10px">ระบบจัดการเรียนรู้ออนไลน์ มหาวิทยาลัยเกริก</h1>
+    <p style="font-size:11.5pt;line-height:1.7;color:#3C4043;margin:0;max-width:5.6in">สรุปงานออกแบบทั้งหมด 9 ไฟล์ · 69 หน้าจอ · 6 บทบาทผู้ใช้ สำหรับใช้เป็นข้อตกลงร่วมระหว่างทีมออกแบบและทีมพัฒนา ก่อนเริ่มงาน sprint แรก</p>
+  </div>
+
+  <table style="margin-bottom:26px">
+    <tbody>
+      <tr><th style="width:1.5in">ขอบเขตเอกสาร</th><td>โครงหน้าจอ · ระบบโทเคน · คอมโพเนนต์ที่ใช้ซ้ำ · เส้นทางการทำงานข้ามบทบาท · สถานะว่าง/ผิดพลาด/เริ่มใช้งาน</td></tr>
+      <tr><th>ไม่รวมในเอกสารนี้</th><td>โครงสร้างฐานข้อมูล · สัญญา API รายฟิลด์ · แผนการทดสอบ · การประมาณงาน (จัดทำโดยทีมพัฒนา)</td></tr>
+      <tr><th>ภาษา</th><td>อินเทอร์เฟซภาษาไทยทั้งหมด · รองรับตัวเลขอารบิก · วันที่รูปแบบ พ.ศ.</td></tr>
+      <tr><th>ผู้รับผิดชอบดีไซน์</th><td>ฝ่ายเทคโนโลยีการศึกษา · ติดต่อผ่านช่องทางโครงการสำหรับคำถามระหว่างพัฒนา</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">1 · แผนผังไฟล์และหน้าจอ</h2>
+  <p style="font-size:10.5pt;color:#5F6368;line-height:1.65;margin:0 0 12px">ทุกไฟล์เปิดดูได้โดยตรงในเบราว์เซอร์ และมีแถบสลับหน้าจอด้านบนสำหรับรีวิว หน้าจอในไฟล์เดียวกันใช้โทเคนและคอมโพเนนต์ชุดเดียวกัน</p>
+  <table style="margin-bottom:22px">
+    <thead><tr><th style="width:2.15in">ไฟล์</th><th style="width:.75in">หน้าจอ</th><th>ครอบคลุม</th></tr></thead>
+    <tbody>
+      <tr><td><b>KRIRK LMS Admin</b></td><td>26</td><td>ผู้ดูแลระบบ: คอร์ส สิทธิ์ RBAC สมุดคะแนน ประกาศ ข้อสอบ รายงาน PDPA นำเข้าข้อมูล</td></tr>
+      <tr><td><b>KRIRK LMS Auth</b></td><td>8</td><td>เข้าสู่ระบบ สมัคร OTP ตั้งรหัสผ่านใหม่ ยืนยันสองชั้น ผูก LINE บัญชีถูกระงับ</td></tr>
+      <tr><td><b>KRIRK LMS Learner</b></td><td>7</td><td>ผู้เรียนบนเดสก์ท็อป: หน้าแรก แคตตาล็อก รายละเอียดคอร์ส เล่นบทเรียน ทำข้อสอบ ผล/ใบรับรอง โปรไฟล์</td></tr>
+      <tr><td><b>KRIRK LMS Instructor</b></td><td>6</td><td>ผู้สอน: ภาพรวมการสอน คอร์สของฉัน ตรวจงาน รายชื่อผู้เรียน ถาม-ตอบ วิเคราะห์การเรียน</td></tr>
+      <tr><td><b>KRIRK LMS Mobile</b></td><td>6</td><td>แอปผู้เรียน 390×844: หน้าแรก เรียนบทเรียน ดาวน์โหลดออฟไลน์ แจ้งเตือน โปรไฟล์</td></tr>
+      <tr><td><b>KRIRK LMS Instructor Mobile</b></td><td>6</td><td>แอปผู้สอน 390×844: คิวตรวจงาน ให้คะแนนด้วย rubric ถาม-ตอบ ผู้เรียนในคลาส ประกาศด่วน</td></tr>
+      <tr><td><b>KRIRK LMS Dept Admin</b></td><td>5</td><td>เจ้าหน้าที่คณะ: ภาพรวมคณะ ผู้ใช้ในคณะ นำเข้า CSV คอร์สของคณะ รายงานคณะ</td></tr>
+      <tr><td><b>KRIRK LMS Approval Flow</b></td><td>5</td><td>เส้นทางอนุมัติคอร์สข้ามบทบาท: แผนผัง swimlane ส่งคำขอ ตรวจระดับคณะ อนุมัติเผยแพร่ ประวัติ/ตีกลับ</td></tr>
+      <tr><td><b>KRIRK LMS States</b></td><td>4 ชุด</td><td>สถานะว่าง ข้อผิดพลาด การเริ่มใช้งานครั้งแรก แถบแจ้งเตือน/skeleton/toast</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">2 · โทเคนสี</h2>
+  <p style="font-size:10.5pt;color:#5F6368;line-height:1.65;margin:0 0 12px">ประกาศเป็น CSS custom properties บน <code style="font-family:'JetBrains Mono',monospace;font-size:9.5pt">[data-theme]</code> พร้อมชุด <code style="font-family:'JetBrains Mono',monospace;font-size:9.5pt">[data-theme="dark"]</code> ครบทุกตัว · ห้ามใช้ค่าสีตรงในคอมโพเนนต์ ยกเว้นสีขาวบนปุ่มหลัก</p>
+  <table style="margin-bottom:10px">
+    <thead><tr><th style="width:1.15in">โทเคน</th><th style="width:1.1in">สว่าง</th><th style="width:1.1in">มืด</th><th>การใช้งาน</th></tr></thead>
+    <tbody>{{ colorRows }}</tbody>
+  </table>
+  <p style="font-size:9.5pt;color:#80868B;line-height:1.6;margin:0 0 22px">คู่สีพื้น/ตัวอักษรของชิปสถานะมาจากตาราง <code style="font-family:'JetBrains Mono',monospace">TONE</code> เดียวกันทุกไฟล์: <code style="font-family:'JetBrains Mono',monospace">pri · ok · warn · err · pur · teal · mute</code> — เพิ่มสถานะใหม่ต้องเพิ่มในตารางนี้ก่อน</p>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">3 · ตัวอักษรและระยะ</h2>
+  <table style="margin-bottom:22px">
+    <thead><tr><th style="width:1.6in">รายการ</th><th>ข้อกำหนด</th></tr></thead>
+    <tbody>
+      <tr><td>ฟอนต์</td><td>Inter (ละติน) + Anuphan (ไทย) + JetBrains Mono (ตัวเลข รหัส เวลา)</td></tr>
+      <tr><td>หัวข้อหน้า</td><td>26px / 700 / letter-spacing −0.018em</td></tr>
+      <tr><td>หัวข้อการ์ด</td><td>14–15px / 600</td></tr>
+      <tr><td>เนื้อความ</td><td>12.5–13.5px / 400 · line-height 1.6–1.75</td></tr>
+      <tr><td>ข้อความกำกับ</td><td>11–11.5px / 400 · สี <code style="font-family:'JetBrains Mono',monospace">--fg4</code></td></tr>
+      <tr><td>มุมโค้ง</td><td>การ์ด 12px · ปุ่มและช่องกรอก 8–9px · ชิป 5–7px · แถบความคืบหน้า 3px</td></tr>
+      <tr><td>ระยะห่าง</td><td>แพดดิงหน้า 24px · ช่องว่างระหว่างการ์ด 14–18px · ภายในการ์ด 15–22px</td></tr>
+      <tr><td>ความสูงองค์ประกอบ</td><td>ปุ่ม 38–40px · ช่องกรอก 36–40px · แถบบน 50px + 58–60px · สวิตช์ 40×22</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">4 · คอมโพเนนต์ที่ใช้ซ้ำ</h2>
+  <table style="margin-bottom:22px">
+    <thead><tr><th style="width:1.7in">คอมโพเนนต์</th><th>พฤติกรรมที่ต้องพัฒนา</th></tr></thead>
+    <tbody>
+      <tr><td>การ์ดสถิติ</td><td>ตัวเลข 26–27px สีตามโทน + ป้ายกำกับ + บรรทัดเปรียบเทียบ · คลิกเพื่อกรองรายการด้านล่างได้</td></tr>
+      <tr><td>ตารางข้อมูล</td><td>หัวตารางพื้น <code style="font-family:'JetBrains Mono',monospace">--bg</code> · เลือกหลายแถวด้วยเช็กบ็อกซ์ · เรียงลำดับ · แบ่งหน้า · สถานะว่างแบบในตาราง</td></tr>
+      <tr><td>ชิปสถานะ</td><td>ข้อความ 10.5px/600 พื้นอ่อน ตัวอักษรเข้ม · สีมาจากตาราง TONE เท่านั้น</td></tr>
+      <tr><td>ลิสต์ + แผงรายละเอียด</td><td>สองคอลัมน์ · เลือกแถวแล้วแผงขวาอัปเดต · แถบซ้าย 3px สีหลักบนแถวที่เลือก</td></tr>
+      <tr><td>ตัวช่วยหลายขั้นตอน</td><td>ใช้กับนำเข้า CSV และตั้งค่าคอร์ส · เดินหน้าไม่ได้ถ้ายังมีข้อผิดพลาดบังคับ</td></tr>
+      <tr><td>rubric ให้คะแนน</td><td>4 ระดับต่อเกณฑ์ · คะแนนรวมคำนวณสดจากน้ำหนักเต็มของแต่ละเกณฑ์</td></tr>
+      <tr><td>เครื่องเล่นวิดีโอ</td><td>ลายน้ำชื่อ-รหัสผู้เรียนเคลื่อนที่ · ปรับความเร็ว · คำบรรยาย · บันทึกตำแหน่งที่ดูค้างไว้</td></tr>
+      <tr><td>สวิตช์/ตัวกรอง</td><td>สวิตช์ 40×22 (มือถือ 44×26) · ชิปกรองแบบเลือกเดียวและเลือกหลายค่า</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">5 · เส้นทางอนุมัติคอร์ส (ข้ามบทบาท)</h2>
+  <p style="font-size:10.5pt;color:#5F6368;line-height:1.65;margin:0 0 12px">อ้างอิงไฟล์ <b>KRIRK LMS Approval Flow</b> · ทุกการเปลี่ยนสถานะต้องบันทึกใน audit trail พร้อมผู้กระทำ เวลา และเหตุผล</p>
+  <table style="margin-bottom:12px">
+    <thead><tr><th style="width:.62in">ขั้น</th><th style="width:1.35in">ผู้รับผิดชอบ</th><th style="width:.82in">SLA</th><th>ผลลัพธ์ที่เป็นไปได้</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>ผู้สอน</td><td>ทันที</td><td>ส่งคำขอได้เมื่อผ่านการตรวจอัตโนมัติครบทุกรายการบังคับ · ถอนคำขอได้ก่อนคณะเริ่มตรวจ</td></tr>
+      <tr><td>2</td><td>เจ้าหน้าที่คณะ</td><td>2 วันทำการ</td><td>รับรอง / ขอให้แก้ไข / ไม่อนุมัติ — สองกรณีหลังบังคับกรอกเหตุผล</td></tr>
+      <tr><td>3</td><td>ผู้ดูแลระบบ</td><td>2 วันทำการ</td><td>อนุมัติ / ส่งกลับคณะ · ตรวจนโยบาย ลิขสิทธิ์ PDPA และโควตาพื้นที่จัดเก็บ</td></tr>
+      <tr><td>4</td><td>ระบบ</td><td>1 วันทำการ</td><td>เผยแพร่ตามเวลาที่ตั้งไว้ · เปิดลงทะเบียน · แจ้งเตือนผู้เกี่ยวข้องทุกฝ่าย</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:10.5pt;line-height:1.7;margin:0 0 22px">สถานะที่ต้องมีในฐานข้อมูล: <code style="font-family:'JetBrains Mono',monospace;font-size:9.5pt">draft · pending_dept · needs_revision · pending_admin · approved_scheduled · published · rejected</code> · เมื่ออยู่ในสถานะรอตรวจ ระบบล็อกการแก้ไขเนื้อหา และปลดล็อกอัตโนมัติเมื่อถูกตีกลับ</p>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">6 · สถานะของหน้าจอ</h2>
+  <p style="font-size:10.5pt;color:#5F6368;line-height:1.65;margin:0 0 12px">อ้างอิงไฟล์ <b>KRIRK LMS States</b> · ทุกหน้าที่ดึงข้อมูลต้องออกแบบครบทั้ง 4 สถานะก่อนถือว่าเสร็จ</p>
+  <table style="margin-bottom:22px">
+    <thead><tr><th style="width:1.35in">สถานะ</th><th>ข้อกำหนด</th></tr></thead>
+    <tbody>
+      <tr><td>กำลังโหลด</td><td>ใช้ skeleton ตามโครงเนื้อหาจริง ไม่ใช้ spinner กลางหน้า ยกเว้นการกระทำที่ใช้เวลาน้อยกว่า 1 วินาที</td></tr>
+      <tr><td>ว่าง</td><td>บอกสาเหตุ + ทางออกอย่างน้อยหนึ่งปุ่ม · สถานะว่างจากตัวกรองต้องมีปุ่มล้างตัวกรองเสมอ</td></tr>
+      <tr><td>ผิดพลาด</td><td>ภาษาที่ไม่โทษผู้ใช้ · รหัสอ้างอิง REF สำหรับแจ้งฝ่ายสนับสนุน · บันทึกร่างงานของผู้ใช้ก่อนแสดงเสมอ</td></tr>
+      <tr><td>สำเร็จ</td><td>toast พร้อมปุ่มเลิกทำเมื่อการกระทำย้อนกลับได้ · แถบแจ้งเตือนสำหรับผลที่คงอยู่ข้ามหน้า</td></tr>
+      <tr><td>เริ่มใช้งานครั้งแรก</td><td>แนะนำ 3 ขั้นตอนต่อบทบาท ข้ามได้ตลอด · รายการตั้งค่าเริ่มต้นค้างไว้จนกว่าจะทำครบ</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">7 · มือถือและการเข้าถึง</h2>
+  <table style="margin-bottom:22px">
+    <thead><tr><th style="width:1.6in">หัวข้อ</th><th>ข้อกำหนด</th></tr></thead>
+    <tbody>
+      <tr><td>ขนาดอ้างอิง</td><td>390×844 pt · แถบล่าง 5 เมนู สูง 78px รวมพื้นที่ปลอดภัย 14px</td></tr>
+      <tr><td>เป้าหมายการกด</td><td>ไม่ต่ำกว่า 44×44 px ทุกจุด รวมชิปตัวกรองและปุ่มในการ์ด</td></tr>
+      <tr><td>ออฟไลน์</td><td>ดาวน์โหลดบทเรียนไว้เรียนได้ · ความคืบหน้าซิงก์อัตโนมัติเมื่อกลับมาออนไลน์</td></tr>
+      <tr><td>คอนทราสต์</td><td>ข้อความทั่วไปไม่ต่ำกว่า 4.5:1 · หัวข้อขนาดใหญ่ไม่ต่ำกว่า 3:1 ทั้งโหมดสว่างและมืด</td></tr>
+      <tr><td>โฟกัสคีย์บอร์ด</td><td>ทุกองค์ประกอบที่กดได้ต้องมีวงโฟกัสที่มองเห็นชัด และลำดับ tab ตามลำดับสายตา</td></tr>
+      <tr><td>ดาร์กโหมด</td><td>สลับได้จากแถบบนทุกหน้า · ค่าที่เลือกต้องคงอยู่ข้ามการเข้าใช้งาน</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="font-size:15pt;font-weight:700;letter-spacing:-.015em;margin:0 0 4px">8 · สิ่งที่ต้องยืนยันกับทีมพัฒนา</h2>
+  <table style="margin-bottom:20px">
+    <thead><tr><th style="width:.5in">#</th><th style="width:2.3in">ประเด็น</th><th>คำถามที่ต้องตอบก่อนเริ่ม sprint</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>แหล่งข้อมูลผู้ใช้</td><td>ซิงก์จากระบบทะเบียนอัตโนมัติ หรือใช้การนำเข้า CSV เป็นหลัก · รอบการซิงก์ต่อวัน</td></tr>
+      <tr><td>2</td><td>สิทธิ์ RBAC</td><td>สิทธิ์ระดับคณะบังคับที่ชั้น API ด้วยหรือไม่ · ผู้ดูแลระบบข้ามขั้นอนุมัติได้ในกรณีใดบ้าง</td></tr>
+      <tr><td>3</td><td>การแจ้งเตือน</td><td>LINE Notify หรือ LINE Official Account · โควตาการส่งต่อวันและพฤติกรรมเมื่อส่งไม่สำเร็จ</td></tr>
+      <tr><td>4</td><td>วิดีโอและลายน้ำ</td><td>ลายน้ำทำฝั่งไคลเอนต์หรือฝังในสตรีม · นโยบายป้องกันการดาวน์โหลด</td></tr>
+      <tr><td>5</td><td>ออฟไลน์บนมือถือ</td><td>อายุไฟล์ที่ดาวน์โหลด · เพดานพื้นที่ต่อผู้ใช้ · วิธีแก้ความขัดแย้งเมื่อซิงก์</td></tr>
+      <tr><td>6</td><td>PDPA</td><td>ระยะเก็บ audit log · ขั้นตอนคำขอลบข้อมูล · ผู้มีสิทธิ์ส่งออกข้อมูลส่วนบุคคล</td></tr>
+      <tr><td>7</td><td>ใบรับรอง</td><td>รูปแบบไฟล์และการตรวจสอบย้อนกลับ · ผู้ลงนามและการออกใหม่เมื่อข้อมูลผิด</td></tr>
+    </tbody>
+  </table>
+
+  <div style="border:1.5px solid #202124;padding:16px 18px">
+    <div style="font-size:11.5pt;font-weight:700;margin-bottom:7px">เกณฑ์ถือว่าหน้าจอพัฒนาเสร็จ</div>
+    <div style="font-size:10.5pt;line-height:1.8;color:#3C4043">ตรงตามโทเคนและระยะในเอกสารนี้ · ครบทั้ง 4 สถานะ (โหลด ว่าง ผิดพลาด สำเร็จ) · ใช้งานได้ด้วยคีย์บอร์ดล้วน · ผ่านคอนทราสต์ทั้งโหมดสว่างและมืด · ข้อความไทยทั้งหมดผ่านการตรวจจากเจ้าของเนื้อหา</div>
+  </div>
+
+</doc-page>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  COLORS = [
+    ['--bg','#F8F9FA','#202124','พื้นหลังหน้า หัวตาราง ช่องกรอก'],
+    ['--card','#FFFFFF','#292A2D','พื้นการ์ดและแถบบน'],
+    ['--line / --border','#E8EAED / #DADCE0','#3C4043','เส้นคั่นภายใน / ขอบองค์ประกอบ'],
+    ['--fg … --fg4','#202124 → #80868B','#E8EAED → #80868B','ลำดับความสำคัญของตัวอักษร 4 ระดับ'],
+    ['--pri','#1A73E8','#8AB4F8','ปุ่มหลัก ลิงก์ แถบที่เลือก'],
+    ['--ok','#34A853','#81C995','สำเร็จ ผ่านเกณฑ์ อนุมัติแล้ว'],
+    ['--warn','#FBBC04','#FDD663','รอดำเนินการ ใกล้ครบกำหนด'],
+    ['--err','#EA4335','#F28B82','ผิดพลาด เกินกำหนด ถูกตีกลับ'],
+    ['--pur','#A142F4','#C58AF9','หมวดคอร์สและรายงานเชิงวิเคราะห์'],
+    ['--teal','#12B5CB','#78D9EC','บทบาทเจ้าหน้าที่คณะ และสถานะรอเผยแพร่'],
+  ];
+
+  renderVals() {
+    const h = React.createElement;
+    return {
+      colorRows: this.COLORS.map(c=>h('tr',{key:c[0]},
+        h('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'9.5pt'}},c[0]),
+        h('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'9pt'}},c[1]),
+        h('td',{style:{fontFamily:"'JetBrains Mono',monospace",fontSize:'9pt'}},c[2]),
+        h('td',{},c[3]))),
+    };
+  }
+}
+</script>
+</body>
+</html>

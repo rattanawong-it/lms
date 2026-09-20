@@ -1,0 +1,285 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ───────────────────────────────────────────────────────────────
+   KRIRK LMS — Design tokens
+   ที่มา: project-ui/LMS Design System.dc.html (v1.0)
+   ชุดสีแบรนด์ Google Blue/Red/Yellow/Green + โทนกลาง + semantic
+   ─────────────────────────────────────────────────────────────── */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* โทเคนเสริมเฉพาะ KRIRK LMS */
+  --color-line: var(--line);
+  --color-brand-blue: var(--brand-blue);
+  --color-primary-700: var(--primary-700);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-info-fg: var(--info-fg);
+  --color-quiz: var(--quiz);
+  --color-quiz-bg: var(--quiz-bg);
+  --color-quiz-fg: var(--quiz-fg);
+  --color-live: var(--live);
+  --color-live-bg: var(--live-bg);
+  --color-live-fg: var(--live-fg);
+  --color-due: var(--due);
+  --color-fg-2: var(--fg-2);
+  --color-fg-3: var(--fg-3);
+  --color-fg-4: var(--fg-4);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* ฟอนต์ — Inter (อังกฤษ/ตัวเลข) · Anuphan (ไทย) · JetBrains Mono (รหัส) */
+  --font-sans: var(--font-inter), var(--font-anuphan), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius: 0.625rem;
+
+  /* พื้นผิวและตัวอักษร */
+  --background: #f8f9fa;
+  --foreground: #202124;
+  --card: #ffffff;
+  --card-foreground: #202124;
+  --popover: #ffffff;
+  --popover-foreground: #202124;
+  --fg-2: #3c4043;
+  --fg-3: #5f6368;
+  --fg-4: #80868b;
+
+  /* แบรนด์ */
+  --primary: #1a73e8;
+  --primary-foreground: #ffffff;
+  --primary-700: #174ea6;
+  --brand-blue: #4285f4;
+
+  --secondary: #f1f3f4;
+  --secondary-foreground: #3c4043;
+  --muted: #f1f3f4;
+  --muted-foreground: #80868b;
+  --accent: #e8f0fe;
+  --accent-foreground: #174ea6;
+
+  --destructive: #ea4335;
+  --destructive-foreground: #ffffff;
+
+  --border: #dadce0;
+  --line: #e8eaed;
+  --input: #dadce0;
+  --ring: #1a73e8;
+
+  /* semantic */
+  --success: #34a853;
+  --success-bg: #e6f4ea;
+  --success-fg: #1e8e3e;
+  --warning: #fbbc04;
+  --warning-bg: #fef7e0;
+  --warning-fg: #b06000;
+  --danger: #ea4335;
+  --danger-bg: #fce8e6;
+  --danger-fg: #c5221f;
+  --info: #1a73e8;
+  --info-bg: #e8f0fe;
+  --info-fg: #174ea6;
+
+  /* เสริม — Quiz (ม่วง) · Live (teal) · ใกล้ครบกำหนด (ส้ม) */
+  --quiz: #a142f4;
+  --quiz-bg: #f3e8fd;
+  --quiz-fg: #7627bb;
+  --live: #12b5cb;
+  --live-bg: #e4f7fb;
+  --live-fg: #007b83;
+  --due: #f29900;
+
+  --chart-1: #4285f4;
+  --chart-2: #34a853;
+  --chart-3: #fbbc04;
+  --chart-4: #ea4335;
+  --chart-5: #a142f4;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #202124;
+  --sidebar-primary: #1a73e8;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e8f0fe;
+  --sidebar-accent-foreground: #174ea6;
+  --sidebar-border: #e8eaed;
+  --sidebar-ring: #1a73e8;
+}
+
+.dark {
+  --background: #202124;
+  --foreground: #e8eaed;
+  --card: #292a2d;
+  --card-foreground: #e8eaed;
+  --popover: #35363a;
+  --popover-foreground: #e8eaed;
+  --fg-2: #dadce0;
+  --fg-3: #9aa0a6;
+  --fg-4: #80868b;
+
+  --primary: #8ab4f8;
+  --primary-foreground: #202124;
+  --primary-700: #aecbfa;
+  --brand-blue: #8ab4f8;
+
+  --secondary: #35363a;
+  --secondary-foreground: #e8eaed;
+  --muted: #35363a;
+  --muted-foreground: #9aa0a6;
+  --accent: #1a3050;
+  --accent-foreground: #aecbfa;
+
+  --destructive: #f28b82;
+  --destructive-foreground: #202124;
+
+  --border: #3c4043;
+  --line: #3c4043;
+  --input: #3c4043;
+  --ring: #8ab4f8;
+
+  --success: #81c995;
+  --success-bg: #1e3626;
+  --success-fg: #81c995;
+  --warning: #fdd663;
+  --warning-bg: #3b3018;
+  --warning-fg: #fdd663;
+  --danger: #f28b82;
+  --danger-bg: #3e2422;
+  --danger-fg: #f28b82;
+  --info: #8ab4f8;
+  --info-bg: #1a3050;
+  --info-fg: #8ab4f8;
+
+  --quiz: #c58af9;
+  --quiz-bg: #2e2138;
+  --quiz-fg: #c58af9;
+  --live: #78d9ec;
+  --live-bg: #123239;
+  --live-fg: #78d9ec;
+  --due: #fcad70;
+
+  --chart-1: #8ab4f8;
+  --chart-2: #81c995;
+  --chart-3: #fdd663;
+  --chart-4: #f28b82;
+  --chart-5: #c58af9;
+
+  --sidebar: #292a2d;
+  --sidebar-foreground: #e8eaed;
+  --sidebar-primary: #8ab4f8;
+  --sidebar-primary-foreground: #202124;
+  --sidebar-accent: #1a3050;
+  --sidebar-accent-foreground: #aecbfa;
+  --sidebar-border: #3c4043;
+  --sidebar-ring: #8ab4f8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    /* NFR-09 · line-height ≥ 1.6 เพื่อไม่ให้วรรณยุกต์ไทยชนกัน */
+    line-height: 1.65;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.018em;
+    line-height: 1.35;
+  }
+
+  /* NFR-01 · touch target ≥ 44px บนอุปกรณ์สัมผัส */
+  @media (pointer: coarse) {
+    button,
+    [role="button"],
+    a[data-nav],
+    input[type="checkbox"],
+    input[type="radio"] {
+      min-height: 44px;
+    }
+  }
+
+  /* NFR-08 · เคารพการตั้งค่าลดการเคลื่อนไหว */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}

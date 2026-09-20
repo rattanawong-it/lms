@@ -1,0 +1,714 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────── Enums ─────────────
+enum Role {
+  SUPER_ADMIN
+  DEPT_ADMIN
+  INSTRUCTOR
+  STUDENT
+}
+enum CourseStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+  ARCHIVED
+}
+enum Visibility {
+  PUBLIC
+  INTERNAL
+}
+enum EnrollPolicy {
+  OPEN
+  APPROVAL
+  INVITE_ONLY
+}
+enum InstructorRole {
+  OWNER
+  ASSISTANT
+}
+enum LessonType {
+  VIDEO
+  PDF
+  TEXT
+  LIVE
+  QUIZ
+  ASSIGNMENT
+}
+enum VideoSource {
+  UPLOAD
+  YOUTUBE
+  VIMEO
+}
+enum AssetKind {
+  VIDEO
+  PDF
+  IMAGE
+  FILE
+}
+enum AssetStatus {
+  UPLOADING
+  READY
+  FAILED
+}
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  DROPPED
+}
+enum EnrollmentSource {
+  SELF
+  ADMIN
+  IMPORT
+  PURCHASE
+}
+enum QuestionType {
+  SINGLE
+  MULTIPLE
+  TRUE_FALSE
+  MATCHING
+  SHORT_TEXT
+  ESSAY
+}
+enum ShowAnswers {
+  IMMEDIATELY
+  AFTER_CLOSE
+  NEVER
+}
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  GRADED
+}
+enum SubmissionStatus {
+  SUBMITTED
+  GRADED
+  RETURNED
+}
+enum GradeSource {
+  QUIZ
+  ASSIGNMENT
+  MANUAL
+}
+enum AnnouncementScope {
+  GLOBAL
+  DEPARTMENT
+  COURSE
+}
+enum NotificationType {
+  ENROLLED
+  ANNOUNCEMENT
+  GRADED
+  DUE_SOON
+  LIVE_SOON
+  QA_REPLY
+  CERTIFICATE
+  SYSTEM
+}
+enum ScreenEvent {
+  PRINTSCREEN
+  SHORTCUT
+  CONTEXT_MENU
+  COPY
+  BLUR
+  PRINT
+  DEVTOOLS
+}
+enum OrderStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+// ───────────── Auth (Better Auth) ─────────────
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  role          Role      @default(STUDENT)
+  banned        Boolean   @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  phone         String?
+  externalId    String?   // รหัสนักศึกษา/พนักงาน
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  notifyPrefs   Json      @default("{}")
+  pdpaConsentAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  teaching      CourseInstructor[]
+  enrollments   Enrollment[]
+  attempts      QuizAttempt[]
+  submissions   Submission[]
+  grades        Grade[]
+  certificates  Certificate[]
+  threads       Thread[]
+  posts         Post[]
+  reviews       Review[]
+  notifications Notification[]
+  lineLink      LineLink?
+  screenEvents  ScreenEventLog[]
+  auditLogs     AuditLog[]
+  assets        Asset[]
+  announcements Announcement[]
+  orders        Order[]
+
+  @@index([role])
+  @@index([departmentId])
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  token          String   @unique
+  expiresAt      DateTime
+  ipAddress      String?
+  userAgent      String?
+  impersonatedBy String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String    // "google" | "credential"
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?   // hash (credential provider)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([identifier])
+}
+
+// ───────────── Organization ─────────────
+model Department {
+  id        String       @id @default(cuid())
+  code      String       @unique
+  name      String
+  parentId  String?
+  parent    Department?  @relation("DeptTree", fields: [parentId], references: [id])
+  children  Department[] @relation("DeptTree")
+  users     User[]
+  courses   Course[]
+  announcements Announcement[]
+  createdAt DateTime     @default(now())
+}
+
+model Category {
+  id       String     @id @default(cuid())
+  slug     String     @unique
+  name     String
+  parentId String?
+  parent   Category?  @relation("CatTree", fields: [parentId], references: [id])
+  children Category[] @relation("CatTree")
+  courses  Course[]
+}
+
+// ───────────── Course & Content ─────────────
+model Course {
+  id                 String       @id @default(cuid())
+  slug               String       @unique
+  title              String
+  summary            String?
+  description        Json?        // Tiptap JSON
+  coverKey           String?
+  level              String?
+  status             CourseStatus @default(DRAFT)
+  visibility         Visibility   @default(INTERNAL)
+  enrollPolicy       EnrollPolicy @default(OPEN)
+  sequential         Boolean      @default(false)
+  price              Decimal?     @db.Decimal(10, 2) // เฟส 2
+  protectionEnabled  Boolean      @default(true)
+  completionRule     Json         @default("{\"minProgress\":100}") // {minProgress, requireQuizPass, minScore}
+  gradingScheme      Json?        // [{grade:"A",min:80},...]
+  certificateEnabled Boolean      @default(false)
+  certificateTemplate Json?
+  departmentId       String?
+  department         Department?  @relation(fields: [departmentId], references: [id])
+  categoryId         String?
+  category           Category?    @relation(fields: [categoryId], references: [id])
+  publishedAt        DateTime?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  instructors   CourseInstructor[]
+  sections      Section[]
+  enrollments   Enrollment[]
+  questions     Question[]
+  quizzes       Quiz[]
+  assignments   Assignment[]
+  gradeItems    GradeItem[]
+  certificates  Certificate[]
+  announcements Announcement[]
+  threads       Thread[]
+  reviews       Review[]
+  orders        Order[]
+
+  @@index([status, visibility])
+  @@index([departmentId])
+  @@index([categoryId])
+}
+
+model CourseInstructor {
+  courseId String
+  userId   String
+  role     InstructorRole @default(OWNER)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@id([courseId, userId])
+}
+
+model Section {
+  id       String   @id @default(cuid())
+  courseId String
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title    String
+  position Int
+  lessons  Lesson[]
+  @@index([courseId, position])
+}
+
+model Lesson {
+  id           String      @id @default(cuid())
+  sectionId    String
+  section      Section     @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title        String
+  type         LessonType
+  position     Int
+  isPreview    Boolean     @default(false)
+  content      Json?       // TEXT: Tiptap JSON
+  videoSource  VideoSource?
+  videoUrl     String?     // YouTube/Vimeo
+  assetId      String?     // VIDEO(UPLOAD)/PDF
+  asset        Asset?      @relation("LessonAsset", fields: [assetId], references: [id])
+  durationSec  Int?
+  liveUrl      String?
+  liveStartAt  DateTime?
+  liveEndAt    DateTime?
+  recordingUrl String?
+  attachments  LessonAttachment[]
+  progress     LessonProgress[]
+  quiz         Quiz?
+  assignment   Assignment?
+  threads      Thread[]
+  screenEvents ScreenEventLog[]
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  @@index([sectionId, position])
+}
+
+model Asset {
+  id           String      @id @default(cuid())
+  key          String      @unique // object key ใน storage
+  kind         AssetKind
+  mime         String
+  size         BigInt
+  originalName String
+  status       AssetStatus @default(UPLOADING)
+  uploadedById String
+  uploadedBy   User        @relation(fields: [uploadedById], references: [id])
+  lessons      Lesson[]    @relation("LessonAsset")
+  attachments  LessonAttachment[]
+  submissionFiles SubmissionFile[]
+  createdAt    DateTime    @default(now())
+}
+
+model LessonAttachment {
+  id           String  @id @default(cuid())
+  lessonId     String
+  lesson       Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  assetId      String
+  asset        Asset   @relation(fields: [assetId], references: [id])
+  downloadable Boolean @default(false)
+}
+
+// ───────────── Enrollment & Progress ─────────────
+model Enrollment {
+  id           String           @id @default(cuid())
+  userId       String
+  courseId     String
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course       Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status       EnrollmentStatus @default(ACTIVE)
+  source       EnrollmentSource @default(SELF)
+  progressPct  Int              @default(0)
+  lastLessonId String?
+  expiresAt    DateTime?
+  enrolledAt   DateTime         @default(now())
+  completedAt  DateTime?
+  progress     LessonProgress[]
+  @@unique([userId, courseId])
+  @@index([courseId, status])
+}
+
+model LessonProgress {
+  id              String     @id @default(cuid())
+  enrollmentId    String
+  lessonId        String
+  enrollment      Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson          Lesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed       Boolean    @default(false)
+  lastPositionSec Int        @default(0)
+  completedAt     DateTime?
+  updatedAt       DateTime   @updatedAt
+  @@unique([enrollmentId, lessonId])
+}
+
+// ───────────── Quiz ─────────────
+model Question {
+  id          String       @id @default(cuid())
+  courseId    String
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  type        QuestionType
+  prompt      Json
+  explanation Json?
+  points      Decimal      @default(1) @db.Decimal(6, 2)
+  tags        String[]
+  choices     Choice[]
+  quizLinks   QuizQuestion[]
+  answers     Answer[]
+  createdAt   DateTime     @default(now())
+  @@index([courseId])
+}
+
+model Choice {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+  matchKey   String?  // สำหรับ MATCHING
+  position   Int
+}
+
+model Quiz {
+  id               String      @id @default(cuid())
+  courseId         String
+  course           Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId         String?     @unique
+  lesson           Lesson?     @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  title            String
+  timeLimitMin     Int?
+  maxAttempts      Int?        // null = ไม่จำกัด
+  shuffleQuestions Boolean     @default(true)
+  shuffleChoices   Boolean     @default(true)
+  randomPool       Json?       // [{tag:"บทที่1", count:10}]
+  passingPct       Int         @default(60)
+  showAnswers      ShowAnswers @default(AFTER_CLOSE)
+  availableFrom    DateTime?
+  availableUntil   DateTime?
+  questions        QuizQuestion[]
+  attempts         QuizAttempt[]
+  gradeItem        GradeItem?
+}
+
+model QuizQuestion {
+  quizId     String
+  questionId String
+  position   Int
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  @@id([quizId, questionId])
+}
+
+model QuizAttempt {
+  id            String        @id @default(cuid())
+  quizId        String
+  userId        String
+  quiz          Quiz          @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptNo     Int
+  questionOrder Json          // snapshot ลำดับข้อและตัวเลือกที่สุ่มได้
+  status        AttemptStatus @default(IN_PROGRESS)
+  startedAt     DateTime      @default(now())
+  expiresAt     DateTime?
+  submittedAt   DateTime?
+  score         Decimal?      @db.Decimal(8, 2)
+  maxScore      Decimal?      @db.Decimal(8, 2)
+  passed        Boolean?
+  answers       Answer[]
+  @@unique([quizId, userId, attemptNo])
+}
+
+model Answer {
+  id         String      @id @default(cuid())
+  attemptId  String
+  questionId String
+  attempt    QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  response   Json
+  isCorrect  Boolean?
+  score      Decimal?    @db.Decimal(6, 2)
+  feedback   String?
+  @@unique([attemptId, questionId])
+}
+
+// ───────────── Assignment ─────────────
+model Assignment {
+  id            String    @id @default(cuid())
+  courseId      String
+  course        Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonId      String?   @unique
+  lesson        Lesson?   @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  title         String
+  instructions  Json
+  dueAt         DateTime?
+  allowLate     Boolean   @default(true)
+  maxScore      Decimal   @db.Decimal(8, 2)
+  allowedTypes  String[]  // ["pdf","docx","zip"]
+  maxFileMb     Int       @default(20)
+  submissions   Submission[]
+  gradeItem     GradeItem?
+}
+
+model Submission {
+  id           String           @id @default(cuid())
+  assignmentId String
+  userId       String
+  assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptNo    Int              @default(1)
+  text         String?
+  files        SubmissionFile[]
+  isLate       Boolean          @default(false)
+  status       SubmissionStatus @default(SUBMITTED)
+  score        Decimal?         @db.Decimal(8, 2)
+  feedback     String?
+  gradedById   String?
+  gradedAt     DateTime?
+  submittedAt  DateTime         @default(now())
+  @@unique([assignmentId, userId, attemptNo])
+  @@index([assignmentId, status])
+}
+
+model SubmissionFile {
+  submissionId String
+  assetId      String
+  submission   Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  asset        Asset      @relation(fields: [assetId], references: [id])
+  @@id([submissionId, assetId])
+}
+
+// ───────────── Gradebook & Certificate ─────────────
+model GradeItem {
+  id           String      @id @default(cuid())
+  courseId     String
+  course       Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  source       GradeSource
+  quizId       String?     @unique
+  quiz         Quiz?       @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  assignmentId String?     @unique
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  weight       Decimal     @db.Decimal(5, 2) // %
+  maxScore     Decimal     @db.Decimal(8, 2)
+  position     Int
+  grades       Grade[]
+}
+
+model Grade {
+  id          String    @id @default(cuid())
+  gradeItemId String
+  userId      String
+  gradeItem   GradeItem @relation(fields: [gradeItemId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score       Decimal?  @db.Decimal(8, 2)
+  updatedAt   DateTime  @updatedAt
+  @@unique([gradeItemId, userId])
+}
+
+model Certificate {
+  id        String    @id @default(cuid())
+  code      String    @unique // เช่น LMS-2026-8F3K2Q
+  userId    String
+  courseId  String
+  user      User      @relation(fields: [userId], references: [id])
+  course    Course    @relation(fields: [courseId], references: [id])
+  pdfKey    String?
+  issuedAt  DateTime  @default(now())
+  revokedAt DateTime?
+  revokeReason String?
+  @@unique([userId, courseId])
+}
+
+// ───────────── Communication ─────────────
+model Announcement {
+  id           String            @id @default(cuid())
+  scope        AnnouncementScope
+  courseId     String?
+  course       Course?           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  departmentId String?
+  department   Department?       @relation(fields: [departmentId], references: [id])
+  authorId     String
+  author       User              @relation(fields: [authorId], references: [id])
+  title        String
+  body         Json
+  pinned       Boolean           @default(false)
+  publishedAt  DateTime          @default(now())
+  @@index([scope, publishedAt])
+}
+
+model Thread {
+  id         String   @id @default(cuid())
+  courseId   String
+  lessonId   String?
+  course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson     Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  title      String
+  body       String
+  isResolved Boolean  @default(false)
+  isPinned   Boolean  @default(false)
+  isHidden   Boolean  @default(false)
+  posts      Post[]
+  createdAt  DateTime @default(now())
+  @@index([courseId, lessonId])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  parentId  String?
+  body      String
+  isAnswer  Boolean  @default(false)
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  courseId  String
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      // 1..5 (ตรวจด้วย Zod + CHECK constraint)
+  comment   String?
+  reply     String?
+  isHidden  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([courseId, userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  @@index([userId, readAt])
+}
+
+model LineLink {
+  userId     String   @id
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineUserId String   @unique
+  linkedAt   DateTime @default(now())
+}
+
+// ───────────── Security & Governance ─────────────
+model ScreenEventLog {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId  String?
+  lesson    Lesson?     @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  event     ScreenEvent
+  meta      Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  action    String   // เช่น "user.role.update", "grade.update"
+  entity    String
+  entityId  String?
+  before    Json?
+  after     Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+}
+
+model SystemSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+// ───────────── Commerce (เฟส 2 — สร้างตารางไว้ก่อน) ─────────────
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  courseId    String
+  user        User        @relation(fields: [userId], references: [id])
+  course      Course      @relation(fields: [courseId], references: [id])
+  amount      Decimal     @db.Decimal(10, 2)
+  discount    Decimal     @default(0) @db.Decimal(10, 2)
+  couponCode  String?
+  status      OrderStatus @default(PENDING)
+  provider    String?
+  providerRef String?     @unique
+  paidAt      DateTime?
+  createdAt   DateTime    @default(now())
+}
+
+model Coupon {
+  code        String    @id
+  percentOff  Int?
+  amountOff   Decimal?  @db.Decimal(10, 2)
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  validUntil  DateTime?
+  courseId    String?
+}

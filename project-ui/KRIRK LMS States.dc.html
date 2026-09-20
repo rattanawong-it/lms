@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    @keyframes shimmer { 0% { opacity:.45 } 50% { opacity:1 } 100% { opacity:.45 } }
+    body { margin:0; background:#5F6368; }
+    a { color:#1A73E8; text-decoration:none }
+    a:hover { text-decoration:underline }
+    [data-theme] {
+      --bg:#F8F9FA; --card:#FFFFFF; --muted:#F1F3F4; --line:#E8EAED; --border:#DADCE0;
+      --fg:#202124; --fg2:#3C4043; --fg3:#5F6368; --fg4:#80868B;
+      --pri:#1A73E8; --pri-dk:#174EA6; --pri-bg:#E8F0FE;
+      --ok:#34A853; --ok-bg:#E6F4EA; --ok-fg:#1E8E3E;
+      --warn:#FBBC04; --warn-bg:#FEF7E0; --warn-fg:#B06000;
+      --err:#EA4335; --err-bg:#FCE8E6; --err-fg:#C5221F;
+      --pur:#A142F4; --pur-bg:#F3E8FD; --pur-fg:#7627BB;
+      --teal:#12B5CB; --teal-bg:#E4F7FB; --teal-fg:#007B83;
+      --sh:0 1px 3px rgba(60,64,67,.15); --sh-lg:0 8px 28px rgba(60,64,67,.28);
+    }
+    [data-theme="dark"] {
+      --bg:#202124; --card:#292A2D; --muted:#35363A; --line:#3C4043; --border:#3C4043;
+      --fg:#E8EAED; --fg2:#DADCE0; --fg3:#9AA0A6; --fg4:#80868B;
+      --pri:#8AB4F8; --pri-dk:#AECBFA; --pri-bg:#1A3050;
+      --ok:#81C995; --ok-bg:#1E3626; --ok-fg:#81C995;
+      --warn:#FDD663; --warn-bg:#3B3018; --warn-fg:#FDD663;
+      --err:#F28B82; --err-bg:#3E2422; --err-fg:#F28B82;
+      --pur:#C58AF9; --pur-bg:#2E2138; --pur-fg:#C58AF9;
+      --teal:#78D9EC; --teal-bg:#123239; --teal-fg:#78D9EC;
+      --sh:0 1px 3px rgba(0,0,0,.5); --sh-lg:0 8px 28px rgba(0,0,0,.6);
+    }
+  </style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="width:1280px;margin:0 auto;background:var(--bg);color:var(--fg);font-family:'Inter','Anuphan',system-ui,sans-serif;overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+  <div style="height:50px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 16px">
+    <span style="font-size:11.5px;font-weight:600;color:var(--fg4);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">สถานะและการเริ่มใช้งาน</span>
+    <div style="display:flex;gap:4px;flex:1;overflow-x:auto">{{ screenTabs }}</div>
+    <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" style-hover="background:var(--muted)">{{ themeIcon }}</div>
+  </div>
+
+  <div style="height:58px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 24px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="width:30px;height:30px;border-radius:9px;background:{{ accent }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"></path><path d="M6 10.5V16C6 16 8.5 18 12 18C15.5 18 18 16 18 16V10.5"></path></svg>
+      </span>
+      <span style="font-size:14px;font-weight:600;letter-spacing:-.01em">KRIRK LMS</span>
+      <span style="font-size:10.5px;font-weight:600;color:var(--teal-fg);background:var(--teal-bg);padding:3px 8px;border-radius:5px">STATES</span>
+    </div>
+    <div style="height:22px;width:1px;background:var(--line)"></div>
+    <span style="font-size:12.5px;color:var(--fg3)">ชุดหน้าสถานะว่าง ข้อผิดพลาด การเริ่มใช้งานครั้งแรก และการแจ้งเตือนในหน้า ใช้ร่วมกันทุกบทบาท</span>
+    <div style="flex:1"></div>
+    <span style="font-size:11.5px;color:var(--fg4);font-family:'JetBrains Mono',monospace">NFR-05 · UX-STATE</span>
+  </div>
+
+  <div style="height:770px;overflow-y:auto">
+
+    <sc-if value="{{ isEmpty }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="margin-bottom:18px">
+          <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">สถานะว่าง (Empty state)</div>
+          <div style="font-size:13px;color:var(--fg4);margin-top:4px">ทุกหน้าว่างต้องบอก 3 อย่าง: เกิดอะไรขึ้น · ทำไม · ทำอะไรต่อได้ · ไม่ใช้ภาพประกอบตกแต่งที่ไม่มีความหมาย</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">{{ emptyCards }}</div>
+        <div style="margin-top:18px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600">สถานะว่างแบบในตาราง (ไม่ยกทั้งหน้า)</div>
+          <div style="display:grid;grid-template-columns:44px 2.4fr 1.4fr 1fr 1fr;padding:11px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--fg3)">
+            <span></span><span>ชื่อผู้ใช้</span><span>คณะ</span><span>บทบาท</span><span>สถานะ</span>
+          </div>
+          <div style="padding:54px 18px;display:flex;flex-direction:column;align-items:center;gap:11px">
+            <span style="width:44px;height:44px;border-radius:12px;background:var(--muted);display:flex;align-items:center;justify-content:center">
+              <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="var(--fg4)" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M16.5 16.5L21 21"></path></svg>
+            </span>
+            <div style="font-size:14px;font-weight:600">ไม่พบผู้ใช้ที่ตรงกับ “สมชาย” ในคณะวิศวกรรมศาสตร์</div>
+            <div style="font-size:12.5px;color:var(--fg4)">ลองลบตัวกรองคณะ หรือค้นด้วยรหัสนักศึกษาแทน</div>
+            <div style="display:flex;gap:9px;margin-top:4px">
+              <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:36px;padding:0 14px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ล้างตัวกรอง</button>
+              <button style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:36px;padding:0 15px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer">ค้นทั้งระบบ</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isError }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="margin-bottom:18px">
+          <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">หน้าข้อผิดพลาด (Error state)</div>
+          <div style="font-size:13px;color:var(--fg4);margin-top:4px">ใช้ภาษาที่ไม่โทษผู้ใช้ · ระบุรหัสอ้างอิงสำหรับแจ้งฝ่ายสนับสนุน · ให้ทางออกอย่างน้อยหนึ่งทางเสมอ</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">{{ errorCards }}</div>
+        <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:18px;align-items:start">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px">
+            <div style="font-size:14px;font-weight:600;margin-bottom:6px">เซสชันหมดอายุ (ค้างหน้าเดิม)</div>
+            <div style="font-size:12.5px;color:var(--fg4);margin-bottom:16px">แสดงทับหน้าเดิมโดยไม่ทิ้งงานที่ยังไม่บันทึก</div>
+            <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--bg);position:relative;height:210px">
+              <div style="position:absolute;inset:0;background:var(--bg);opacity:.65"></div>
+              <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:360px;background:var(--card);border:1px solid var(--border);border-radius:13px;box-shadow:var(--sh-lg);padding:20px">
+                <div style="width:38px;height:38px;border-radius:11px;background:var(--warn-bg);display:flex;align-items:center;justify-content:center;margin-bottom:12px">
+                  <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--warn-fg)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V12.5L15 14.5"></path></svg>
+                </div>
+                <div style="font-size:15px;font-weight:600;margin-bottom:6px">เซสชันของคุณหมดอายุแล้ว</div>
+                <div style="font-size:12.5px;color:var(--fg3);line-height:1.7;margin-bottom:15px">ระบบเก็บร่างที่คุณกำลังพิมพ์ไว้แล้ว เข้าสู่ระบบอีกครั้งเพื่อทำงานต่อจากจุดเดิม</div>
+                <div style="display:flex;gap:9px">
+                  <button style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">เข้าสู่ระบบอีกครั้ง</button>
+                  <button style="background:transparent;color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 14px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">บันทึกร่างเป็นไฟล์</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600">แนวทางการเขียนข้อความผิดพลาด</div>
+            {{ errorRules }}
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isOnboard }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">การเริ่มใช้งานครั้งแรก</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:4px">แนะนำ 3 ขั้นตอนเมื่อเข้าสู่ระบบครั้งแรก · ข้ามได้ตลอด · กลับมาทำต่อจากเมนูช่วยเหลือ</div>
+          </div>
+          <div style="display:flex;gap:6px">{{ roleSwitch }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.25fr 1fr;gap:18px;align-items:start">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px 22px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <span style="font-size:14px;font-weight:600">หน้าต้อนรับ · ขั้นที่ {{ stepNo }} จาก 3</span>
+              <span style="font-size:12.5px;color:var(--fg4);cursor:pointer">ข้ามทั้งหมด</span>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:13px;background:var(--bg);padding:26px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;min-height:268px">
+              {{ stepIcon }}
+              <div style="font-size:20px;font-weight:700;letter-spacing:-.015em">{{ stepTitle }}</div>
+              <div style="font-size:13.5px;color:var(--fg3);line-height:1.8;max-width:520px">{{ stepBody }}</div>
+              <div style="display:flex;flex-direction:column;gap:9px;width:100%;max-width:520px">{{ stepBullets }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;margin-top:16px">
+              <div style="display:flex;gap:7px">{{ stepDots }}</div>
+              <div style="flex:1"></div>
+              <button onClick="{{ prevStep }}" style="background:transparent;color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:40px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">ย้อนกลับ</button>
+              <button onClick="{{ nextStep }}" style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:40px;padding:0 20px;font-size:13.5px;font-weight:600;font-family:inherit;cursor:pointer">{{ nextLabel }}</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:14px;font-weight:600">รายการตั้งค่าเริ่มต้น</span>
+                <span style="font-size:12px;color:var(--fg4)">{{ setupCount }}</span>
+              </div>
+              {{ setupList }}
+              <div style="padding:13px 18px;border-top:1px solid var(--line);display:flex;align-items:center;gap:11px">
+                <div style="flex:1;height:6px;background:var(--muted);border-radius:3px"><div style="width:{{ setupPct }};height:100%;background:var(--ok);border-radius:3px"></div></div>
+                <span style="font-size:12px;font-weight:600;color:var(--ok-fg);font-family:'JetBrains Mono',monospace">{{ setupPct }}</span>
+              </div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:14px;font-weight:600;margin-bottom:12px">ป้ายแนะนำในหน้าใช้งานจริง (coach mark)</div>
+              <div style="position:relative;border:1px solid var(--border);border-radius:11px;background:var(--bg);height:150px;padding:14px">
+                <div style="display:flex;gap:8px;margin-bottom:10px">
+                  <span style="height:32px;padding:0 13px;border-radius:8px;background:var(--card);border:1px solid var(--border);display:flex;align-items:center;font-size:12px;color:var(--fg3)">คอร์สของฉัน</span>
+                  <span style="height:32px;padding:0 13px;border-radius:8px;background:var(--pri-bg);border:1px solid var(--pri);display:flex;align-items:center;font-size:12px;color:var(--pri);font-weight:600">ดาวน์โหลดออฟไลน์</span>
+                </div>
+                <div style="position:absolute;left:112px;top:58px;width:250px;background:#1B1C1E;color:#E8EAED;border-radius:11px;padding:13px 15px;box-shadow:var(--sh-lg)">
+                  <div style="font-size:12.5px;font-weight:600;margin-bottom:5px">เรียนได้แม้ไม่มีอินเทอร์เน็ต</div>
+                  <div style="font-size:11.5px;color:#9AA0A6;line-height:1.65;margin-bottom:11px">กดไอคอนนี้เพื่อบันทึกบทเรียนไว้ดูภายหลัง ใช้พื้นที่ราว 120 MB ต่อบท</div>
+                  <div style="display:flex;align-items:center;justify-content:space-between">
+                    <span style="font-size:11px;color:#9AA0A6">2 จาก 4</span>
+                    <span style="font-size:11.5px;font-weight:600;background:{{ accent }};color:#fff;padding:5px 12px;border-radius:7px">ถัดไป</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isInline }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="margin-bottom:18px">
+          <div style="font-size:26px;font-weight:700;letter-spacing:-.018em">การแจ้งเตือนในหน้าและสถานะกำลังโหลด</div>
+          <div style="font-size:13px;color:var(--fg4);margin-top:4px">ใช้ระดับความรุนแรงให้ตรงกับผลกระทบ · ทุกข้อความที่บล็อกการทำงานต้องมีปุ่มแก้ไขในตัว</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.15fr 1fr;gap:18px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+              <div style="font-size:14px;font-weight:600;margin-bottom:14px">แถบแจ้งเตือน 4 ระดับ</div>
+              <div style="display:flex;flex-direction:column;gap:11px">{{ banners }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+              <div style="font-size:14px;font-weight:600;margin-bottom:14px">ข้อผิดพลาดระดับฟิลด์และการอัปโหลด</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+                <div>
+                  <div style="font-size:11.5px;color:var(--fg4);margin-bottom:6px">อีเมลมหาวิทยาลัย</div>
+                  <div style="background:var(--bg);border:1.5px solid var(--err);border-radius:8px;height:40px;padding:0 12px;display:flex;align-items:center;font-size:13px">somchai@gmail.com</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--err-fg)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 7.5V13"></path><path d="M12 16.2V16.3"></path></svg>
+                    <span style="font-size:11.5px;color:var(--err-fg)">ต้องเป็นอีเมล @krirk.ac.th เท่านั้น</span>
+                  </div>
+                </div>
+                <div>
+                  <div style="font-size:11.5px;color:var(--fg4);margin-bottom:6px">รหัสผ่านใหม่</div>
+                  <div style="background:var(--bg);border:1.5px solid var(--ok);border-radius:8px;height:40px;padding:0 12px;display:flex;align-items:center;font-size:13px;letter-spacing:.18em">••••••••••</div>
+                  <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="var(--ok-fg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13L9 17L19 7"></path></svg>
+                    <span style="font-size:11.5px;color:var(--ok-fg)">ความปลอดภัยระดับดี</span>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:10px">{{ uploads }}</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+              <div style="font-size:14px;font-weight:600;margin-bottom:6px">สถานะกำลังโหลด (skeleton)</div>
+              <div style="font-size:12px;color:var(--fg4);margin-bottom:14px">ใช้แทน spinner เมื่อทราบโครงของเนื้อหาล่วงหน้า</div>
+              <div style="display:flex;flex-direction:column;gap:12px">{{ skeletons }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+              <div style="font-size:14px;font-weight:600;margin-bottom:14px">ข้อความสั้น (toast)</div>
+              <div style="display:flex;flex-direction:column;gap:11px">{{ toasts }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:880},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1A73E8&quot;,&quot;options&quot;:[&quot;#1A73E8&quot;,&quot;#C5221F&quot;,&quot;#1E8E3E&quot;,&quot;#7627BB&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;สี&quot;}}">
+class Component extends DCLogic {
+  state = { screen:'empty', dark:false, role:'learner', step:1, setup:{profile:true,notify:true,course:false,cal:false} };
+
+  SCREENS = [['empty','สถานะว่าง'],['error','ข้อผิดพลาด'],['onboard','เริ่มใช้งานครั้งแรก'],['inline','แจ้งเตือนในหน้า']];
+  TONE = { pri:['var(--pri-bg)','var(--pri)'], ok:['var(--ok-bg)','var(--ok-fg)'], warn:['var(--warn-bg)','var(--warn-fg)'], err:['var(--err-bg)','var(--err-fg)'], pur:['var(--pur-bg)','var(--pur-fg)'], teal:['var(--teal-bg)','var(--teal-fg)'], mute:['var(--muted)','var(--fg3)'] };
+
+  STEPS = {
+    learner: [
+      ['book','ยินดีต้อนรับสู่ KRIRK LMS','ทุกคอร์สที่คุณลงทะเบียนในภาคเรียนนี้จะปรากฏบนหน้าแรกทันที เรียนต่อจากจุดที่ค้างไว้ได้ทั้งบนเว็บและมือถือ',
+        [['ความคืบหน้าซิงก์ข้ามอุปกรณ์อัตโนมัติ','ok'],['ดาวน์โหลดบทเรียนไว้ดูออฟไลน์ได้','pri']]],
+      ['bell','ตั้งค่าการแจ้งเตือนที่คุณอยากได้','เลือกรับเฉพาะเรื่องที่สำคัญกับคุณ เช่น กำหนดส่งงาน ผลคะแนน หรือประกาศจากผู้สอน ผูกบัญชี LINE เพื่อรับแจ้งเตือนทันที',
+        [['เตือนล่วงหน้าก่อนกำหนดส่ง 24 ชั่วโมง','warn'],['ปิดการแจ้งเตือนช่วงเวลาพักได้','mute']]],
+      ['check','พร้อมเริ่มเรียนแล้ว','เหลืออีก 2 ขั้นตอนในรายการตั้งค่าเริ่มต้น ทำให้ครบเพื่อรับใบรับรองอัตโนมัติเมื่อเรียนจบคอร์ส',
+        [['เพิ่มรูปโปรไฟล์เพื่อให้ผู้สอนจำคุณได้','pri'],['เชื่อมปฏิทินเพื่อเห็นกำหนดส่งทั้งหมด','teal']]],
+    ],
+    instructor: [
+      ['book','เริ่มต้นสอนบน KRIRK LMS','สร้างคอร์สแรกจากเทมเพลตของคณะ หรือคัดลอกโครงจากคอร์สภาคเรียนก่อน ระบบจะเก็บทุกอย่างเป็นฉบับร่างจนกว่าคุณจะส่งขออนุมัติ',
+        [['คัดลอกคอร์สเดิมพร้อมแบบทดสอบทั้งชุด','pri'],['เนื้อหาจะไม่แสดงต่อผู้เรียนจนกว่าจะเผยแพร่','mute']]],
+      ['clip','ตั้งเกณฑ์การให้คะแนนไว้ล่วงหน้า','กำหนด rubric ครั้งเดียวแล้วใช้ซ้ำได้ทุกงาน ช่วยให้การตรวจงานบนมือถือเร็วขึ้นและผลคะแนนสม่ำเสมอ',
+        [['คะแนนรวมคำนวณอัตโนมัติจากระดับที่เลือก','ok'],['ผู้เรียนเห็นเกณฑ์ก่อนส่งงาน','teal']]],
+      ['check','ส่งคอร์สเพื่อขออนุมัติ','เมื่อเนื้อหาครบ ระบบจะตรวจความพร้อม 8 รายการให้ก่อนส่งเข้าคิวของคณะ ติดตามสถานะได้จากหน้าคอร์สของฉัน',
+        [['เจ้าหน้าที่คณะตรวจภายใน 2 วันทำการ','warn'],['ได้รับแจ้งเตือนทุกครั้งที่สถานะเปลี่ยน','pri']]],
+    ],
+  };
+
+  ic(name, size, color, sw) {
+    const h = React.createElement;
+    const P = {
+      sun:['M12 4.5V2.5','M12 21.5V19.5','M4.5 12H2.5','M21.5 12H19.5','M6.3 6.3L4.9 4.9','M19.1 19.1L17.7 17.7','M6.3 17.7L4.9 19.1','M19.1 4.9L17.7 6.3'],
+      moon:['M20 14.5A8.5 8.5 0 0 1 9.5 4A8.5 8.5 0 1 0 20 14.5Z'],
+      book:['M4 4.5H10C11.5 4.5 12 5.5 12 6.5V20C12 19 11.5 18.5 10 18.5H4Z','M20 4.5H14C12.5 4.5 12 5.5 12 6.5V20C12 19 12.5 18.5 14 18.5H20Z'],
+      check:['M5 13L9 17L19 7'],
+      x:['M6 6L18 18','M18 6L6 18'],
+      clip:['M9 4H15V7H9Z','M7 5.5H5.5C4.7 5.5 4 6.2 4 7V19.5C4 20.3 4.7 21 5.5 21H18.5C19.3 21 20 20.3 20 19.5V7C20 6.2 19.3 5.5 18.5 5.5H17','M8.5 13L11 15.5L15.5 11'],
+      bell:['M18 8.5C18 5.5 15.3 3 12 3C8.7 3 6 5.5 6 8.5C6 15 3.5 17 3.5 17H20.5C20.5 17 18 15 18 8.5Z','M10 20.5C10.5 21.2 11.2 21.5 12 21.5C12.8 21.5 13.5 21.2 14 20.5'],
+      doc:['M14 3H7C6 3 5 4 5 5V19C5 20 6 21 7 21H17C18 21 19 20 19 19V8L14 3Z','M14 3V8H19'],
+      search:['M11 18A7 7 0 1 0 11 4A7 7 0 0 0 11 18Z','M16.5 16.5L21 21'],
+      chart:['M4 20V10','M10 20V4','M16 20V14','M22 20H2'],
+      lock:['M6 10.5H18V20H6Z','M8.5 10.5V7.5C8.5 5.5 10 4 12 4C14 4 15.5 5.5 15.5 7.5V10.5'],
+      wifi:['M2.5 9C6 6 18 6 21.5 9','M5.5 12.5C8 10.5 16 10.5 18.5 12.5','M8.5 16C10 14.8 14 14.8 15.5 16','M12 19.2V19.3'],
+      alert:['M12 4L21 19.5H3L12 4Z','M12 10V14','M12 16.6V16.7'],
+      server:['M3.5 4.5H20.5V10H3.5Z','M3.5 14H20.5V19.5H3.5Z','M7 7.2V7.3','M7 16.7V16.8'],
+      info:['M12 3.5A8.5 8.5 0 1 0 12 20.5A8.5 8.5 0 0 0 12 3.5Z','M12 11V16','M12 7.8V7.9'],
+      clock:['M12 3.5A8.5 8.5 0 1 0 12 20.5A8.5 8.5 0 0 0 12 3.5Z','M12 7.5V12.5L15 14.5'],
+      up:['M12 20V8','M6.5 13L12 7.5L17.5 13','M4 4H20'],
+      users:['M16.5 20V18.5C16.5 16.6 15 15 13 15H6.5C4.5 15 3 16.5 3 18.5V20','M9.75 11.5A3.75 3.75 0 1 0 9.75 4A3.75 3.75 0 0 0 9.75 11.5Z'],
+    };
+    return h('svg',{viewBox:'0 0 24 24',width:size,height:size,fill:'none',stroke:color,strokeWidth:sw||1.7,strokeLinecap:'round',strokeLinejoin:'round'},
+      ...(P[name]||[]).map((d,i)=>h('path',{key:i,d})));
+  }
+
+  screenTabs() {
+    const h = React.createElement;
+    return this.SCREENS.map(s=>{
+      const on = this.state.screen===s[0];
+      return h('span',{key:s[0],onClick:()=>this.setState({screen:s[0]}),
+        style:{fontSize:12,fontWeight:on?600:400,padding:'6px 12px',borderRadius:7,cursor:'pointer',whiteSpace:'nowrap',background:on?'var(--pri-bg)':'transparent',color:on?'var(--pri)':'var(--fg3)'}},s[1]);
+    });
+  }
+
+  stateCard(o) {
+    const h = React.createElement;
+    const t = this.TONE[o.tone];
+    return h('div',{key:o.title,style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:12,padding:'22px 24px',display:'flex',flexDirection:'column',gap:11,minHeight:214}},
+      h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between'}},
+        h('span',{style:{width:42,height:42,borderRadius:12,background:t[0],display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(o.icon,21,t[1],1.8)),
+        o.code?h('span',{style:{fontSize:11.5,fontFamily:"'JetBrains Mono',monospace",color:'var(--fg4)'}},o.code):null),
+      h('div',{style:{fontSize:17,fontWeight:600,letterSpacing:'-.012em'}},o.title),
+      h('div',{style:{fontSize:13,color:'var(--fg3)',lineHeight:1.75,flex:1}},o.body),
+      o.hint?h('div',{style:{fontSize:11.5,color:'var(--fg4)',background:'var(--bg)',border:'1px solid var(--line)',borderRadius:8,padding:'9px 11px',lineHeight:1.6}},o.hint):null,
+      h('div',{style:{display:'flex',gap:9}},
+        h('button',{style:{background:o.solid||'var(--pri)',color:'#fff',border:'none',borderRadius:8,height:38,padding:'0 16px',fontSize:13.5,fontWeight:500,fontFamily:'inherit',cursor:'pointer'}},o.cta),
+        o.alt?h('button',{style:{background:'transparent',color:'var(--fg2)',border:'1px solid var(--border)',borderRadius:8,height:38,padding:'0 14px',fontSize:13.5,fontWeight:500,fontFamily:'inherit',cursor:'pointer'}},o.alt):null));
+  }
+
+  emptyCards() {
+    return [
+      {icon:'book',tone:'pri',title:'คอร์สนี้ยังไม่มีบทเรียน',body:'เริ่มจากการเพิ่มหมวดเรียนหมวดแรก แล้วค่อยใส่วิดีโอ เอกสาร และแบบทดสอบทีละบท ผู้เรียนจะยังไม่เห็นจนกว่าคอร์สจะได้รับอนุมัติ',hint:'เคล็ดลับ: คัดลอกโครงบทเรียนจากคอร์สภาคเรียนก่อนได้ในหนึ่งคลิก',cta:'เพิ่มหมวดเรียนแรก',alt:'คัดลอกจากคอร์สเดิม'},
+      {icon:'clip',tone:'ok',title:'ไม่มีงานรอตรวจแล้ว',body:'คุณตรวจงานครบทั้ง 42 ชิ้นของสัปดาห์นี้ งานชิ้นถัดไปจะเข้าคิวอัตโนมัติเมื่อผู้เรียนส่งเข้ามา',hint:'งานที่กำหนดส่งถัดไป: แบบทดสอบท้ายหมวด 2 · ปิดรับ 23 ก.ย. 23:59',cta:'ดูงานที่ตรวจแล้ว',alt:'ตั้งค่าเตือนงานใหม่',solid:'var(--ok-fg)'},
+      {icon:'chart',tone:'pur',title:'ยังไม่มีข้อมูลในช่วงเวลาที่เลือก',body:'ช่วง 1–7 ก.ย. 2569 ไม่มีกิจกรรมการเรียนในคณะนี้ เนื่องจากเป็นช่วงปิดภาคเรียน ลองขยายช่วงเวลาหรือเลือกภาคเรียนอื่น',cta:'ขยายเป็น 30 วันล่าสุด',alt:'เปลี่ยนภาคเรียน',solid:'var(--pur-fg)'},
+      {icon:'users',tone:'teal',title:'ยังไม่มีผู้เรียนลงทะเบียน',body:'คอร์สเผยแพร่แล้วแต่ยังไม่มีผู้ลงทะเบียน แชร์ลิงก์คอร์สให้สาขาวิชา หรือให้เจ้าหน้าที่คณะนำเข้ารายชื่อผู้เรียนจากไฟล์ CSV',hint:'คอร์สจะแสดงในแคตตาล็อกของคณะบริหารธุรกิจตั้งแต่ 1 ต.ค. 2569',cta:'คัดลอกลิงก์คอร์ส',alt:'ขอให้คณะนำเข้ารายชื่อ',solid:'var(--teal-fg)'},
+    ].map(o=>this.stateCard(o));
+  }
+
+  errorCards() {
+    return [
+      {icon:'search',tone:'mute',title:'ไม่พบหน้าที่คุณต้องการ',body:'ลิงก์อาจถูกเปลี่ยนหรือคอร์สถูกย้ายไปภาคเรียนใหม่ กลับไปหน้าแรกหรือค้นหาคอร์สจากแคตตาล็อก',code:'ERR 404',cta:'กลับหน้าแรก',alt:'ค้นหาคอร์ส',solid:'var(--fg2)'},
+      {icon:'lock',tone:'warn',title:'คุณไม่มีสิทธิ์เข้าถึงส่วนนี้',body:'หน้านี้จำกัดเฉพาะผู้ดูแลระบบและเจ้าหน้าที่คณะ หากคุณคิดว่าควรมีสิทธิ์ ให้ขอเปิดสิทธิ์จากผู้ดูแลคณะของคุณ',code:'ERR 403',hint:'ผู้ดูแลคณะบริหารธุรกิจ: อรพรรณ สุขใจ · orapan@krirk.ac.th',cta:'ขอเปิดสิทธิ์',alt:'กลับหน้าก่อนหน้า',solid:'var(--warn-fg)'},
+      {icon:'server',tone:'err',title:'ระบบขัดข้องชั่วคราว',body:'เราบันทึกปัญหานี้ไว้แล้วและกำลังแก้ไข ลองใหม่อีกครั้งในอีกสักครู่ งานที่คุณกรอกค้างไว้ถูกเก็บเป็นร่างอัตโนมัติ',code:'ERR 500 · REF 9F2C-441',hint:'แจ้งฝ่ายสนับสนุนพร้อมรหัสอ้างอิง REF 9F2C-441 เพื่อการตรวจสอบที่เร็วขึ้น',cta:'ลองใหม่อีกครั้ง',alt:'แจ้งฝ่ายสนับสนุน',solid:'var(--err-fg)'},
+      {icon:'wifi',tone:'mute',title:'ไม่มีการเชื่อมต่ออินเทอร์เน็ต',body:'คุณยังเรียนบทเรียนที่ดาวน์โหลดไว้ได้ตามปกติ ความคืบหน้าจะซิงก์ให้อัตโนมัติเมื่อกลับมาออนไลน์',code:'OFFLINE',hint:'มีบทเรียนที่ดาวน์โหลดไว้แล้ว 6 บท · รอซิงก์ความคืบหน้า 2 รายการ',cta:'ไปที่บทเรียนออฟไลน์',alt:'ลองเชื่อมต่อใหม่',solid:'var(--fg2)'},
+    ].map(o=>this.stateCard(o));
+  }
+
+  errorRules() {
+    const h = React.createElement;
+    const rows = [
+      ['บอกสิ่งที่เกิดขึ้นด้วยภาษาคน','“ระบบขัดข้องชั่วคราว” ไม่ใช่ “Internal Server Error”'],
+      ['ไม่โทษผู้ใช้','เลี่ยงคำว่า “คุณกรอกผิด” ใช้ “รูปแบบที่ระบบรองรับคือ…” แทน'],
+      ['ให้ทางออกเสมอ','ทุกหน้าผิดพลาดมีปุ่มหลัก 1 ปุ่มและทางเลือกสำรอง 1 ทาง'],
+      ['เก็บงานของผู้ใช้ไว้','บันทึกร่างอัตโนมัติก่อนแสดงหน้าผิดพลาดทุกครั้ง'],
+      ['ใส่รหัสอ้างอิง','รหัส REF ใช้เชื่อมกับ log ฝั่งระบบเพื่อการติดตาม'],
+    ];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{padding:'12px 18px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('div',{style:{fontSize:13,fontWeight:600,marginBottom:3}},r[0]),
+      h('div',{style:{fontSize:11.5,color:'var(--fg4)',lineHeight:1.65}},r[1]))));
+  }
+
+  roleSwitch() {
+    const h = React.createElement;
+    return [['learner','ผู้เรียน'],['instructor','ผู้สอน']].map(r=>{
+      const on = this.state.role===r[0];
+      return h('span',{key:r[0],onClick:()=>this.setState({role:r[0],step:1}),
+        style:{fontSize:12.5,fontWeight:on?600:400,padding:'8px 15px',borderRadius:8,cursor:'pointer',border:'1px solid '+(on?'var(--pri)':'var(--border)'),background:on?'var(--pri-bg)':'var(--card)',color:on?'var(--pri)':'var(--fg3)'}},r[1]);
+    });
+  }
+
+  stepBullets() {
+    const h = React.createElement;
+    const s = this.STEPS[this.state.role][this.state.step-1];
+    return s[3].map((b,i)=>{
+      const t = this.TONE[b[1]];
+      return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:10,background:'var(--card)',border:'1px solid var(--border)',borderRadius:9,padding:'11px 13px'}},
+        h('span',{style:{width:22,height:22,borderRadius:7,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('check',13,t[1],2.2)),
+        h('span',{style:{fontSize:12.5,color:'var(--fg2)'}},b[0]));
+    });
+  }
+
+  stepDots() {
+    const h = React.createElement;
+    return [1,2,3].map(n=>h('span',{key:n,onClick:()=>this.setState({step:n}),
+      style:{width:n===this.state.step?22:8,height:8,borderRadius:4,cursor:'pointer',background:n===this.state.step?'var(--pri)':'var(--border)',transition:'width .15s'}}));
+  }
+
+  setupList() {
+    const h = React.createElement;
+    const rows = [['profile','เพิ่มรูปและข้อมูลโปรไฟล์','ช่วยให้ผู้สอนและเพื่อนร่วมชั้นจำคุณได้'],['notify','เลือกช่องทางการแจ้งเตือน','อีเมล · LINE · ในแอป'],['course','ลงทะเบียนคอร์สแรก','เลือกจากแคตตาล็อกของคณะ'],['cal','เชื่อมปฏิทินกำหนดส่งงาน','Google Calendar หรือไฟล์ .ics']];
+    return h('div',{},...rows.map((r,i)=>{
+      const on = this.state.setup[r[0]];
+      return h('div',{key:r[0],onClick:()=>this.setState(s=>({setup:Object.assign({},s.setup,{[r[0]]:!s.setup[r[0]]})})),
+        style:{display:'flex',alignItems:'center',gap:12,padding:'13px 18px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none',cursor:'pointer'}},
+        h('span',{style:{width:22,height:22,borderRadius:'50%',border:'1.5px solid '+(on?'var(--ok-fg)':'var(--border)'),background:on?'var(--ok-fg)':'transparent',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},
+          on?this.ic('check',13,'#fff',2.4):null),
+        h('div',{style:{flex:1}},
+          h('div',{style:{fontSize:13,fontWeight:500,textDecoration:on?'line-through':'none',color:on?'var(--fg4)':'var(--fg)'}},r[1]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:2}},r[2])),
+        on?null:h('span',{style:{fontSize:12,fontWeight:500,color:'var(--pri)'}},'ทำเลย'));
+    }));
+  }
+
+  banners() {
+    const h = React.createElement;
+    const rows = [
+      ['info','pri','กำลังปรับปรุงระบบวันอาทิตย์ที่ 28 ก.ย. เวลา 01:00–04:00 น.','ระหว่างนี้จะไม่สามารถส่งงานได้ · ดูรายละเอียด'],
+      ['check','ok','บันทึกการเปลี่ยนแปลงเรียบร้อยแล้ว','คอร์สของคุณอัปเดตเป็นฉบับ v1.5'],
+      ['alert','warn','คำขออนุมัติของคุณใกล้ครบกำหนด SLA','เหลือเวลา 4 ชั่วโมงก่อนระบบแจ้งเตือนหัวหน้าคณะ · ดูคำขอ'],
+      ['x','err','ส่งงานไม่สำเร็จ เนื่องจากเลยกำหนดส่งแล้ว','ติดต่อผู้สอนเพื่อขอเปิดรับงานล่าช้า · ส่งคำขอ'],
+    ];
+    return rows.map((r,i)=>{
+      const t = this.TONE[r[1]];
+      return h('div',{key:i,style:{background:t[0],border:'1px solid '+t[1],borderRadius:10,padding:'13px 15px',display:'flex',gap:12,alignItems:'flex-start'}},
+        h('span',{style:{flexShrink:0,marginTop:1,display:'flex'}},this.ic(r[0],17,t[1],2)),
+        h('div',{style:{flex:1}},
+          h('div',{style:{fontSize:13,fontWeight:600,color:t[1],marginBottom:3}},r[2]),
+          h('div',{style:{fontSize:12,color:'var(--fg2)',lineHeight:1.6}},r[3])),
+        h('span',{style:{cursor:'pointer',display:'flex',flexShrink:0}},this.ic('x',15,'var(--fg4)',1.9)));
+    });
+  }
+
+  uploads() {
+    const h = React.createElement;
+    const rows = [
+      ['บทที่_5_วิดีโอบรรยาย.mp4','ไฟล์ใหญ่เกิน 2 GB · บีบอัดหรือแบ่งไฟล์ก่อนอัปโหลด','err','ลองใหม่'],
+      ['เอกสารประกอบ_บทที่5.pdf','กำลังอัปโหลด 68% · เหลือประมาณ 40 วินาที','pri','ยกเลิก'],
+      ['สไลด์_บทที่5.pptx','อัปโหลดสำเร็จ · 12.4 MB','ok','ลบ'],
+    ];
+    return rows.map((r,i)=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:12,background:'var(--bg)',border:'1px solid '+(r[2]==='err'?'var(--err)':'var(--border)'),borderRadius:10,padding:'12px 14px'}},
+        h('span',{style:{width:32,height:32,borderRadius:9,background:t[0],display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic(r[2]==='err'?'alert':r[2]==='ok'?'check':'up',16,t[1],1.9)),
+        h('div',{style:{flex:1,minWidth:0}},
+          h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:3}},r[0]),
+          h('div',{style:{fontSize:11,color:r[2]==='err'?'var(--err-fg)':'var(--fg4)'}},r[1]),
+          r[2]==='pri'?h('div',{style:{height:4,background:'var(--muted)',borderRadius:2,marginTop:7}},h('div',{style:{width:'68%',height:'100%',background:'var(--pri)',borderRadius:2}})):null),
+        h('span',{style:{fontSize:12,fontWeight:500,color:r[2]==='err'?'var(--err-fg)':'var(--fg3)',cursor:'pointer',flexShrink:0}},r[3]));
+    });
+  }
+
+  skeletons() {
+    const h = React.createElement;
+    const bar = (w,hh,mt)=>h('div',{style:{width:w,height:hh,borderRadius:4,background:'var(--muted)',marginTop:mt||0,animation:'shimmer 1.4s ease-in-out infinite'}});
+    return [0,1,2].map(i=>h('div',{key:i,style:{display:'flex',gap:12,alignItems:'center',border:'1px solid var(--border)',borderRadius:10,padding:'13px 14px'}},
+      h('div',{style:{width:40,height:40,borderRadius:10,background:'var(--muted)',flexShrink:0,animation:'shimmer 1.4s ease-in-out infinite'}}),
+      h('div',{style:{flex:1}}, bar('62%',11), bar('38%',9,8))));
+  }
+
+  toasts() {
+    const h = React.createElement;
+    const rows = [['check','ok','ส่งประกาศถึงผู้เรียน 42 คนแล้ว','เลิกทำ'],['x','err','ลบคอร์สไม่สำเร็จ เพราะมีผู้เรียนอยู่','ดูรายละเอียด'],['clock','mute','บันทึกร่างอัตโนมัติเมื่อ 09:41','']];
+    return rows.map((r,i)=>{
+      const t = this.TONE[r[1]];
+      return h('div',{key:i,style:{background:'#1B1C1E',borderRadius:11,padding:'13px 15px',display:'flex',alignItems:'center',gap:11,boxShadow:'var(--sh-lg)'}},
+        h('span',{style:{width:26,height:26,borderRadius:8,background:'rgba(255,255,255,.1)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic(r[0],14,r[1]==='mute'?'#9AA0A6':t[1],2)),
+        h('span',{style:{fontSize:12.5,color:'#E8EAED',flex:1}},r[2]),
+        r[3]?h('span',{style:{fontSize:12,fontWeight:600,color:'#8AB4F8',cursor:'pointer'}},r[3]):null);
+    });
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    const step = this.STEPS[this.state.role][this.state.step-1];
+    const done = Object.values(this.state.setup).filter(Boolean).length;
+    return {
+      theme: this.state.dark ? 'dark' : 'light',
+      accent: this.props.accent ?? '#1A73E8',
+      screenTabs: this.screenTabs(),
+      themeIcon: this.ic(this.state.dark ? 'sun' : 'moon', 18, 'var(--fg2)', 1.6),
+      toggleTheme: () => this.setState(st=>({dark:!st.dark})),
+      isEmpty: s==='empty', isError: s==='error', isOnboard: s==='onboard', isInline: s==='inline',
+      emptyCards: this.emptyCards(), errorCards: this.errorCards(), errorRules: this.errorRules(),
+      roleSwitch: this.roleSwitch(),
+      stepNo: this.state.step,
+      stepIcon: React.createElement('span',{style:{width:46,height:46,borderRadius:13,background:'var(--pri-bg)',display:'flex',alignItems:'center',justifyContent:'center'}},this.ic(step[0],23,'var(--pri)',1.8)),
+      stepTitle: step[1], stepBody: step[2], stepBullets: this.stepBullets(), stepDots: this.stepDots(),
+      nextLabel: this.state.step===3 ? 'เริ่มใช้งาน' : 'ถัดไป',
+      nextStep: () => this.setState(st=>({step: st.step===3 ? 1 : st.step+1})),
+      prevStep: () => this.setState(st=>({step: st.step===1 ? 1 : st.step-1})),
+      setupList: this.setupList(),
+      setupCount: done + ' จาก 4 รายการ',
+      setupPct: Math.round(done/4*100) + '%',
+      banners: this.banners(), uploads: this.uploads(), skeletons: this.skeletons(), toasts: this.toasts(),
+    };
+  }
+}
+</script>
+</body>
+</html>

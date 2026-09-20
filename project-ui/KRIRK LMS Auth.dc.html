@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    @keyframes blink { 50% { opacity:.25 } }
+    body { margin:0; background:#5F6368; }
+    a { color:#1A73E8; text-decoration:none }
+    a:hover { text-decoration:underline }
+    [data-theme] {
+      --bg:#F8F9FA; --card:#FFFFFF; --muted:#F1F3F4; --line:#E8EAED; --border:#DADCE0;
+      --fg:#202124; --fg2:#3C4043; --fg3:#5F6368; --fg4:#80868B;
+      --pri:#1A73E8; --pri-dk:#174EA6; --pri-bg:#E8F0FE;
+      --ok:#34A853; --ok-bg:#E6F4EA; --ok-fg:#1E8E3E;
+      --warn:#FBBC04; --warn-bg:#FEF7E0; --warn-fg:#B06000;
+      --err:#EA4335; --err-bg:#FCE8E6; --err-fg:#C5221F;
+      --pur:#A142F4; --pur-bg:#F3E8FD; --pur-fg:#7627BB;
+      --sh:0 1px 3px rgba(60,64,67,.15); --sh-lg:0 8px 28px rgba(60,64,67,.28);
+    }
+    [data-theme="dark"] {
+      --bg:#202124; --card:#292A2D; --muted:#35363A; --line:#3C4043; --border:#3C4043;
+      --fg:#E8EAED; --fg2:#DADCE0; --fg3:#9AA0A6; --fg4:#80868B;
+      --pri:#8AB4F8; --pri-dk:#AECBFA; --pri-bg:#1A3050;
+      --ok:#81C995; --ok-bg:#1E3626; --ok-fg:#81C995;
+      --warn:#FDD663; --warn-bg:#3B3018; --warn-fg:#FDD663;
+      --err:#F28B82; --err-bg:#3E2422; --err-fg:#F28B82;
+      --pur:#C58AF9; --pur-bg:#2E2138; --pur-fg:#C58AF9;
+      --sh:0 1px 3px rgba(0,0,0,.5); --sh-lg:0 8px 28px rgba(0,0,0,.6);
+    }
+  </style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="width:1280px;margin:0 auto;background:var(--bg);color:var(--fg);font-family:'Inter','Anuphan',system-ui,sans-serif;overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+  <div style="height:52px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 16px">
+    <span style="font-size:11.5px;font-weight:600;color:var(--fg4);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">หน้าบัญชีผู้ใช้</span>
+    <div style="display:flex;gap:4px;overflow-x:auto;flex:1">{{ screenTabs }}</div>
+    <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" style-hover="background:var(--muted)">{{ themeIcon }}</div>
+  </div>
+
+  <div style="height:808px;display:flex;overflow:hidden">
+
+    <sc-if value="{{ showBrand }}" hint-placeholder-val="{{ true }}">
+      <div style="width:440px;flex-shrink:0;background:#1B1C1E;color:#E8EAED;padding:44px 40px;display:flex;flex-direction:column;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;opacity:.07;background-image:linear-gradient(#fff 1px,transparent 1px),linear-gradient(90deg,#fff 1px,transparent 1px);background-size:56px 56px"></div>
+        <div style="position:relative;display:flex;align-items:center;gap:11px;margin-bottom:56px">
+          <span style="width:38px;height:38px;border-radius:10px;background:{{ accent }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"></path><path d="M6 10.5V16C6 16 8.5 18 12 18C15.5 18 18 16 18 16V10.5"></path></svg>
+          </span>
+          <div>
+            <div style="font-size:15px;font-weight:600;letter-spacing:-.01em">มหาวิทยาลัยเกริก</div>
+            <div style="font-size:11.5px;color:#9AA0A6">ระบบจัดการเรียนรู้ออนไลน์</div>
+          </div>
+        </div>
+        <div style="position:relative;flex:1">
+          <div style="font-size:34px;font-weight:700;line-height:1.35;letter-spacing:-.02em;margin-bottom:18px">{{ brandTitle }}</div>
+          <div style="font-size:14px;line-height:1.85;color:#BDC1C6;max-width:320px">{{ brandBody }}</div>
+        </div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:14px;padding-top:26px;border-top:1px solid rgba(255,255,255,.14)">{{ brandStats }}</div>
+      </div>
+    </sc-if>
+
+    <div style="flex:1;min-width:0;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:44px 40px">
+      <div style="width:100%;max-width:{{ formWidth }};animation:fade .2s ease">
+
+        <sc-if value="{{ isLogin }}">
+          <div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">เข้าสู่ระบบ</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.7;margin-bottom:26px">M01 · FR-01.1 เข้าสู่ระบบด้วยอีเมลสถาบัน หรือผ่าน SSO / LINE ที่ผูกบัญชีไว้</div>
+
+            <sc-if value="{{ loginError }}">
+              <div style="display:flex;gap:10px;background:var(--err-bg);border-radius:9px;padding:12px 14px;margin-bottom:18px">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--err-fg)" stroke-width="1.9" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V13"></path><path d="M12 16.3V16.4"></path></svg>
+                <div><div style="font-size:13px;font-weight:600;color:var(--err-fg)">อีเมลหรือรหัสผ่านไม่ถูกต้อง</div><div style="font-size:11.5px;color:var(--fg3);margin-top:3px">พยายามได้อีก 3 ครั้ง ก่อนบัญชีถูกล็อกชั่วคราว 15 นาที (FR-01.6)</div></div>
+              </div>
+            </sc-if>
+
+            <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px">{{ ssoButtons }}</div>
+
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+              <div style="flex:1;height:1px;background:var(--line)"></div>
+              <span style="font-size:11.5px;color:var(--fg4)">หรือใช้อีเมลและรหัสผ่าน</span>
+              <div style="flex:1;height:1px;background:var(--line)"></div>
+            </div>
+
+            <div style="margin-bottom:15px">
+              <div style="font-size:12.5px;font-weight:500;margin-bottom:7px">อีเมล</div>
+              <div style="border:1px solid var(--border);border-radius:9px;height:46px;padding:0 13px;display:flex;align-items:center;gap:10px;background:var(--card)">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--fg4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 12.5L20.5 6.5"></path></svg>
+                <span style="font-size:14px">somchai.k@krirk.ac.th</span>
+              </div>
+            </div>
+
+            <div style="margin-bottom:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+                <span style="font-size:12.5px;font-weight:500">รหัสผ่าน</span>
+                <span onClick="{{ goForgot }}" style="font-size:12px;color:var(--pri);cursor:pointer;font-weight:500">ลืมรหัสผ่าน?</span>
+              </div>
+              <div style="border:1.5px solid {{ pwBorder }};border-radius:9px;height:46px;padding:0 13px;display:flex;align-items:center;gap:10px;background:var(--card)">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--fg4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7.5C8 5.3 9.8 3.5 12 3.5C14.2 3.5 16 5.3 16 7.5V10.5"></path></svg>
+                <span style="font-size:14px;flex:1;letter-spacing:{{ pwSpacing }}">{{ pwValue }}</span>
+                <span onClick="{{ togglePw }}" style="cursor:pointer;display:flex">{{ eyeIcon }}</span>
+              </div>
+            </div>
+
+            <div onClick="{{ toggleRemember }}" style="display:flex;align-items:center;gap:9px;cursor:pointer;margin-bottom:22px">
+              <span style="width:17px;height:17px;border-radius:4px;flex-shrink:0;background:{{ rememberBg }};border:{{ rememberBorder }};display:flex;align-items:center;justify-content:center">{{ rememberTick }}</span>
+              <span style="font-size:13px;color:var(--fg2)">จดจำการเข้าสู่ระบบบนอุปกรณ์นี้ 30 วัน</span>
+            </div>
+
+            <button onClick="{{ goOtp }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:16px">เข้าสู่ระบบ</button>
+
+            <div style="font-size:13px;color:var(--fg3);text-align:center">ยังไม่มีบัญชี? <span onClick="{{ goRegister }}" style="color:var(--pri);font-weight:500;cursor:pointer">สมัครสมาชิก</span></div>
+            <div style="margin-top:26px;padding-top:18px;border-top:1px solid var(--line);font-size:11.5px;color:var(--fg4);line-height:1.75">การเข้าสู่ระบบทุกครั้งถูกบันทึกใน Audit Log พร้อม IP และอุปกรณ์ ตามข้อกำหนด PDPA มาตรา 37</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isRegister }}">
+          <div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">สมัครสมาชิก</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.7;margin-bottom:24px">FR-01.2 สมัครด้วยอีเมล · FR-01.3 ยืนยันอีเมลก่อนใช้งาน · FR-02.1 ต้องให้ความยินยอม PDPA</div>
+
+            <div style="font-size:12.5px;font-weight:500;margin-bottom:8px">ประเภทผู้ใช้</div>
+            <div style="display:flex;background:var(--muted);border-radius:9px;padding:3px;margin-bottom:20px">{{ roleSeg }}</div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 16px;margin-bottom:16px">{{ regFields }}</div>
+
+            <div style="margin-bottom:8px">
+              <div style="font-size:12.5px;font-weight:500;margin-bottom:7px">รหัสผ่าน</div>
+              <div style="border:1px solid var(--border);border-radius:9px;height:46px;padding:0 13px;display:flex;align-items:center;gap:10px;background:var(--card)">
+                <span style="font-size:14px;flex:1;letter-spacing:.18em">••••••••••</span>
+                <span style="font-size:11.5px;font-weight:600;color:{{ strengthColor }}">{{ strengthLabel }}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;margin-bottom:9px">{{ strengthBars }}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;margin-bottom:20px">{{ pwRules }}</div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:20px">{{ consents }}</div>
+
+            <button onClick="{{ goOtp }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:14px">สร้างบัญชีและส่งรหัสยืนยัน</button>
+            <div style="font-size:13px;color:var(--fg3);text-align:center">มีบัญชีอยู่แล้ว? <span onClick="{{ goLogin }}" style="color:var(--pri);font-weight:500;cursor:pointer">เข้าสู่ระบบ</span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isOtp }}">
+          <div>
+            <div style="width:46px;height:46px;border-radius:12px;background:var(--pri-bg);display:flex;align-items:center;justify-content:center;margin-bottom:18px">
+              <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="var(--pri)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 12.5L20.5 6.5"></path></svg>
+            </div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">ยืนยันอีเมลของคุณ</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.75;margin-bottom:26px">เราส่งรหัส 6 หลักไปที่ <span style="color:var(--fg);font-weight:500">somchai.k@krirk.ac.th</span> รหัสมีอายุ 10 นาที (FR-01.3)</div>
+
+            <div style="display:flex;gap:10px;margin-bottom:16px">{{ otpBoxes }}</div>
+
+            <sc-if value="{{ otpWrong }}">
+              <div style="font-size:12.5px;color:var(--err-fg);font-weight:500;margin-bottom:16px">รหัสไม่ถูกต้องหรือหมดอายุ — กดส่งรหัสใหม่อีกครั้ง</div>
+            </sc-if>
+
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--fg3);margin-bottom:26px">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--fg4)" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V12L15 14"></path></svg>
+              ส่งรหัสใหม่ได้ใน <span style="font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--fg2)">04:32</span>
+            </div>
+
+            <button onClick="{{ goLogin }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:12px">ยืนยันรหัส</button>
+            <button onClick="{{ toggleOtpWrong }}" style="width:100%;background:transparent;color:var(--fg2);border:1px solid var(--border);border-radius:9px;height:44px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ส่งรหัสอีกครั้ง</button>
+            <div style="margin-top:22px;font-size:12.5px;color:var(--fg4);line-height:1.75">ไม่ได้รับอีเมล? ตรวจในกล่องจดหมายขยะ หรือ <span style="color:var(--pri);cursor:pointer">เปลี่ยนอีเมลที่ใช้สมัคร</span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isForgot }}">
+          <div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">ลืมรหัสผ่าน</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.75;margin-bottom:26px">FR-01.4 กรอกอีเมลที่ลงทะเบียนไว้ ระบบจะส่งลิงก์ตั้งรหัสผ่านใหม่ที่ใช้ได้ครั้งเดียว อายุ 30 นาที</div>
+
+            <div style="margin-bottom:20px">
+              <div style="font-size:12.5px;font-weight:500;margin-bottom:7px">อีเมลที่ลงทะเบียน</div>
+              <div style="border:1px solid var(--border);border-radius:9px;height:46px;padding:0 13px;display:flex;align-items:center;gap:10px;background:var(--card)">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--fg4)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 12.5L20.5 6.5"></path></svg>
+                <span style="font-size:14px">somchai.k@krirk.ac.th</span>
+              </div>
+            </div>
+
+            <button onClick="{{ toggleSent }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:18px">ส่งลิงก์ตั้งรหัสผ่านใหม่</button>
+
+            <sc-if value="{{ sent }}">
+              <div style="display:flex;gap:11px;background:var(--ok-bg);border-radius:10px;padding:14px 15px;margin-bottom:18px">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--ok-fg)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M5 13L9 17L19 7"></path></svg>
+                <div><div style="font-size:13px;font-weight:600;color:var(--ok-fg)">ส่งลิงก์แล้ว</div><div style="font-size:12px;color:var(--fg2);margin-top:4px;line-height:1.7">ตรวจกล่องจดหมายของ somchai.k@krirk.ac.th ภายใน 5 นาที หากไม่พบให้ดูในจดหมายขยะ</div></div>
+              </div>
+            </sc-if>
+
+            <div style="font-size:13px;color:var(--fg3);text-align:center"><span onClick="{{ goLogin }}" style="color:var(--pri);font-weight:500;cursor:pointer">กลับไปหน้าเข้าสู่ระบบ</span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isReset }}">
+          <div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">ตั้งรหัสผ่านใหม่</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.75;margin-bottom:24px">FR-01.5 รหัสผ่านต้องผ่านเกณฑ์ความปลอดภัยทุกข้อ และต้องไม่ซ้ำกับ 3 รหัสล่าสุด</div>
+
+            <div style="margin-bottom:8px">
+              <div style="font-size:12.5px;font-weight:500;margin-bottom:7px">รหัสผ่านใหม่</div>
+              <div style="border:1.5px solid {{ accent }};border-radius:9px;height:46px;padding:0 13px;display:flex;align-items:center;gap:10px;background:var(--card)">
+                <span style="font-size:14px;flex:1;letter-spacing:.18em">••••••••••••</span>
+                <span style="font-size:11.5px;font-weight:600;color:{{ strengthColor }}">{{ strengthLabel }}</span>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;margin-bottom:16px">{{ strengthBars }}</div>
+
+            <div style="margin-bottom:20px">
+              <div style="font-size:12.5px;font-weight:500;margin-bottom:7px">ยืนยันรหัสผ่านใหม่</div>
+              <div style="border:1px solid var(--border);border-radius:9px;height:46px;padding:0 13px;display:flex;align-items:center;background:var(--card)">
+                <span style="font-size:14px;flex:1;letter-spacing:.18em">••••••••••••</span>
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--ok-fg)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13L9 17L19 7"></path></svg>
+              </div>
+            </div>
+
+            <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:15px;margin-bottom:22px">
+              <div style="font-size:12px;font-weight:600;color:var(--fg3);margin-bottom:11px">เกณฑ์รหัสผ่าน</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 14px">{{ pwRules }}</div>
+            </div>
+
+            <button onClick="{{ goLogin }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer">บันทึกรหัสผ่านใหม่</button>
+            <div style="margin-top:16px;font-size:11.5px;color:var(--fg4);line-height:1.75">เมื่อเปลี่ยนรหัสผ่านสำเร็จ ระบบจะออกจากระบบทุกอุปกรณ์ที่ค้างอยู่ และส่งอีเมลแจ้งเตือนความปลอดภัย</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ is2fa }}">
+          <div>
+            <div style="width:46px;height:46px;border-radius:12px;background:var(--pur-bg);display:flex;align-items:center;justify-content:center;margin-bottom:18px">
+              <svg viewBox="0 0 24 24" width="23" height="23" fill="none" stroke="var(--pur-fg)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L20 6.5V12C20 16.5 16.5 20 12 21.5C7.5 20 4 16.5 4 12V6.5L12 3Z"></path><path d="M9 12L11 14L15.5 9.5"></path></svg>
+            </div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">ยืนยันตัวตนสองชั้น</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.75;margin-bottom:24px">บัญชีผู้ดูแลระบบต้องเปิด 2FA เสมอ — กรอกรหัส 6 หลักจากแอป Authenticator ของคุณ</div>
+
+            <div style="display:flex;gap:10px;margin-bottom:20px">{{ otpBoxes }}</div>
+
+            <div onClick="{{ toggleTrust }}" style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;padding:13px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:20px">
+              <span style="width:17px;height:17px;border-radius:4px;flex-shrink:0;margin-top:1px;background:{{ trustBg }};border:{{ trustBorder }};display:flex;align-items:center;justify-content:center">{{ trustTick }}</span>
+              <div><div style="font-size:13px;font-weight:500">เชื่อถืออุปกรณ์นี้ 30 วัน</div><div style="font-size:11.5px;color:var(--fg4);margin-top:3px">ระบบจะไม่ถามรหัส 2FA บนเบราว์เซอร์นี้อีกจนกว่าจะครบกำหนด</div></div>
+            </div>
+
+            <button onClick="{{ goLogin }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:20px">ยืนยันและเข้าสู่ระบบ</button>
+
+            <div style="border-top:1px solid var(--line);padding-top:18px">
+              <div style="font-size:12.5px;font-weight:600;margin-bottom:9px">วิธีสำรอง</div>
+              <div style="display:flex;flex-direction:column;gap:8px">{{ backupMethods }}</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLine }}">
+          <div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">ผูกบัญชี LINE</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.75;margin-bottom:24px">M12 · FR-12.1 ผูกบัญชีด้วยรหัส 6 หลัก · FR-12.2 รับการแจ้งเตือนคอร์สและกำหนดส่งผ่าน LINE OA</div>
+
+            <div style="display:grid;grid-template-columns:1fr 168px;gap:22px;align-items:start;margin-bottom:22px">
+              <div style="display:flex;flex-direction:column;gap:16px">{{ lineSteps }}</div>
+              <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center">
+                <div style="width:140px;height:140px;background:var(--muted);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:10px">
+                  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="var(--fg4)" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><path d="M14 14H17V17H14Z"></path><path d="M20 14V17"></path><path d="M14 20H20"></path></svg>
+                </div>
+                <div style="font-size:11.5px;color:var(--fg4);line-height:1.6">สแกนเพื่อเพิ่มเพื่อน<br>@krirk-lms</div>
+              </div>
+            </div>
+
+            <div style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:20px">
+              <div style="font-size:12px;color:var(--fg3);margin-bottom:9px">รหัสผูกบัญชีของคุณ (หมดอายุใน 09:41)</div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:30px;font-weight:500;letter-spacing:.24em;color:var(--fg)">482 093</div>
+            </div>
+
+            <div style="font-size:12.5px;font-weight:600;margin-bottom:10px">การแจ้งเตือนที่จะส่งทาง LINE</div>
+            <div style="display:flex;flex-direction:column;gap:11px;margin-bottom:22px">{{ lineNotis }}</div>
+
+            <button style="width:100%;background:#06C755;color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:12px">เปิด LINE เพื่อผูกบัญชี</button>
+            <div style="font-size:11.5px;color:var(--fg4);line-height:1.75;text-align:center">ยกเลิกการผูกบัญชีได้ตลอดเวลาที่หน้าโปรไฟล์ · ระบบเก็บเฉพาะ LINE User ID ไม่เข้าถึงข้อความส่วนตัว</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLocked }}">
+          <div>
+            <div style="width:50px;height:50px;border-radius:13px;background:var(--err-bg);display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+              <svg viewBox="0 0 24 24" width="25" height="25" fill="none" stroke="var(--err-fg)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10.5" width="16" height="10" rx="2"></rect><path d="M8 10.5V7.5C8 5.3 9.8 3.5 12 3.5C14.2 3.5 16 5.3 16 7.5V10.5"></path><path d="M12 14V17"></path></svg>
+            </div>
+            <div style="font-size:27px;font-weight:700;letter-spacing:-.018em;margin-bottom:7px">บัญชีถูกระงับชั่วคราว</div>
+            <div style="font-size:13.5px;color:var(--fg3);line-height:1.75;margin-bottom:24px">FR-01.6 ระบบล็อกบัญชีอัตโนมัติหลังกรอกรหัสผ่านผิดเกินจำนวนที่กำหนด เพื่อป้องกันการเดารหัส</div>
+
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px">{{ lockRows }}</div>
+
+            <div style="display:flex;gap:10px;background:var(--warn-bg);border-radius:10px;padding:14px 15px;margin-bottom:22px">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="var(--warn-fg)" stroke-width="1.9" stroke-linecap="round" style="flex-shrink:0;margin-top:1px"><path d="M12 4L21 19.5H3L12 4Z"></path><path d="M12 10V14"></path><path d="M12 16.6V16.7"></path></svg>
+              <div style="font-size:12.5px;color:var(--fg2);line-height:1.75">หากไม่ได้พยายามเข้าสู่ระบบด้วยตนเอง ให้เปลี่ยนรหัสผ่านทันทีและแจ้งผู้ดูแลระบบ เหตุการณ์นี้ถูกบันทึกไว้ใน Audit Log แล้ว</div>
+            </div>
+
+            <button onClick="{{ goForgot }}" style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:46px;font-size:14.5px;font-weight:600;font-family:inherit;cursor:pointer;margin-bottom:11px">ตั้งรหัสผ่านใหม่เพื่อปลดล็อกทันที</button>
+            <button style="width:100%;background:transparent;color:var(--fg2);border:1px solid var(--border);border-radius:9px;height:44px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">ติดต่อผู้ดูแลระบบ</button>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;showBrandPanel&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;เลย์เอาต์&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1A73E8&quot;,&quot;options&quot;:[&quot;#1A73E8&quot;,&quot;#C5221F&quot;,&quot;#1E8E3E&quot;,&quot;#7627BB&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;สี&quot;}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'login', dark: false, showPw: false, remember: true, loginError: true,
+    role: 'STUDENT', sent: false, otpWrong: false, trust: false,
+    consent: { terms: true, pdpa: true, marketing: false },
+    lineNoti: { due: true, ann: true, grade: false },
+  };
+
+  SCREENS = [
+    ['login','เข้าสู่ระบบ'], ['register','สมัครสมาชิก'], ['otp','ยืนยันอีเมล'],
+    ['forgot','ลืมรหัสผ่าน'], ['reset','ตั้งรหัสผ่านใหม่'], ['2fa','ยืนยัน 2 ชั้น'],
+    ['line','ผูก LINE'], ['locked','บัญชีถูกระงับ'],
+  ];
+
+  BRAND = {
+    login: ['เรียนต่อจากที่ค้างไว้', 'เข้าถึงคอร์ส งานที่มอบหมาย และใบประกาศนียบัตรของคุณได้จากที่เดียว รองรับการใช้งานบนมือถือและแท็บเล็ต'],
+    register: ['เปิดบัญชีใช้เวลาไม่ถึงสองนาที', 'นักศึกษาและบุคลากรที่มีอีเมล @krirk.ac.th จะได้รับสิทธิ์เข้าคอร์สของคณะโดยอัตโนมัติหลังยืนยันอีเมล'],
+    otp: ['อีกขั้นเดียวก็เสร็จ', 'การยืนยันอีเมลช่วยให้เรามั่นใจว่าคุณคือเจ้าของบัญชี และใช้กู้คืนรหัสผ่านได้ในอนาคต'],
+    forgot: ['กู้คืนบัญชีได้ด้วยตัวเอง', 'ลิงก์ตั้งรหัสผ่านใหม่ใช้ได้ครั้งเดียวและหมดอายุใน 30 นาที เพื่อความปลอดภัยของข้อมูลส่วนบุคคล'],
+    reset: ['ตั้งรหัสผ่านที่แข็งแรง', 'รหัสผ่านที่ดีควรยาวอย่างน้อย 8 ตัวอักษร ผสมตัวพิมพ์ใหญ่ ตัวเลข และสัญลักษณ์ และไม่ซ้ำกับบริการอื่น'],
+    '2fa': ['ปกป้องบัญชีผู้ดูแล', 'บัญชีที่มีสิทธิ์จัดการคอร์สหรือข้อมูลผู้เรียนต้องผ่านการยืนยันสองชั้นทุกครั้งที่เข้าสู่ระบบจากอุปกรณ์ใหม่'],
+    line: ['ไม่พลาดกำหนดส่งงาน', 'ผูกบัญชี LINE เพื่อรับแจ้งเตือนกำหนดส่ง ประกาศจากคณะ และผลคะแนน ทันทีที่มีการอัปเดต'],
+    locked: ['ระบบกำลังปกป้องบัญชีคุณ', 'การล็อกชั่วคราวเกิดขึ้นเมื่อมีการกรอกรหัสผ่านผิดติดต่อกัน เพื่อป้องกันการเดารหัสจากผู้ไม่ประสงค์ดี'],
+  };
+
+  STATS = [['1,284','ผู้ใช้งานที่ยืนยันตัวตนแล้ว'],['96','คอร์สที่เปิดสอนในภาคเรียนนี้'],['99.9%','ความพร้อมใช้งานของระบบ']];
+
+  ic(name, size, color, sw) {
+    const h = React.createElement;
+    const P = {
+      sun: ['M12 4.5V2.5','M12 21.5V19.5','M4.5 12H2.5','M21.5 12H19.5','M6.3 6.3L4.9 4.9','M19.1 19.1L17.7 17.7','M6.3 17.7L4.9 19.1','M19.1 4.9L17.7 6.3'],
+      moon: ['M20 14.5A8.5 8.5 0 0 1 9.5 4A8.5 8.5 0 1 0 20 14.5Z'],
+      eye: ['M2.5 12C2.5 12 6 5.5 12 5.5C18 5.5 21.5 12 21.5 12C21.5 12 18 18.5 12 18.5C6 18.5 2.5 12 2.5 12Z','M12 15A3 3 0 1 0 12 9A3 3 0 0 0 12 15Z'],
+      eyeOff: ['M4 4L20 20','M9.5 9.7A3 3 0 0 0 14.3 14.4','M6.5 6.8C4.1 8.4 2.5 12 2.5 12C2.5 12 6 18.5 12 18.5C13.6 18.5 15 18 16.2 17.3','M18.9 15C20.6 13.5 21.5 12 21.5 12C21.5 12 18 5.5 12 5.5C11.4 5.5 10.9 5.6 10.4 5.7'],
+      check: ['M5 13L9 17L19 7'],
+    };
+    return h('svg',{viewBox:'0 0 24 24',width:size,height:size,fill:'none',stroke:color,strokeWidth:sw||1.7,strokeLinecap:'round',strokeLinejoin:'round'},
+      ...(P[name]||[]).map((d,i)=>h('path',{key:i,d})));
+  }
+
+  tick(on, size) {
+    return on ? this.ic('check', size||11, '#fff', 3.4) : null;
+  }
+
+  screenTabs() {
+    const h = React.createElement;
+    return this.SCREENS.map(s=>{
+      const on = this.state.screen===s[0];
+      return h('span',{key:s[0],onClick:()=>this.setState({screen:s[0]}),
+        style:{fontSize:12,fontWeight:on?600:400,padding:'6px 12px',borderRadius:7,cursor:'pointer',whiteSpace:'nowrap',
+          background:on?'var(--pri-bg)':'transparent',color:on?'var(--pri)':'var(--fg3)'}},s[1]);
+    });
+  }
+
+  brandStats() {
+    const h = React.createElement;
+    return this.STATS.map(s=>h('div',{key:s[1],style:{display:'flex',alignItems:'baseline',gap:12}},
+      h('span',{style:{fontSize:20,fontWeight:700,letterSpacing:'-.02em',minWidth:64}},s[0]),
+      h('span',{style:{fontSize:12.5,color:'#9AA0A6'}},s[1])));
+  }
+
+  ssoButtons() {
+    const h = React.createElement;
+    const rows = [
+      ['SSO','เข้าสู่ระบบด้วยบัญชีมหาวิทยาลัย (SSO)','#1A73E8'],
+      ['LINE','เข้าสู่ระบบด้วย LINE','#06C755'],
+    ];
+    return rows.map(r=>h('div',{key:r[0],
+      style:{display:'flex',alignItems:'center',gap:11,height:46,border:'1px solid var(--border)',borderRadius:9,padding:'0 15px',cursor:'pointer',background:'var(--card)'}},
+      h('span',{style:{width:24,height:24,borderRadius:6,background:r[2],color:'#fff',fontSize:9.5,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},r[0]),
+      h('span',{style:{fontSize:13.5,fontWeight:500}},r[1])));
+  }
+
+  roleSeg() {
+    const h = React.createElement;
+    const opts = [['STUDENT','นักศึกษา'],['STAFF','บุคลากร'],['PUBLIC','บุคคลทั่วไป']];
+    return opts.map(o=>{
+      const on = this.state.role===o[0];
+      return h('span',{key:o[0],onClick:()=>this.setState({role:o[0]}),
+        style:{flex:1,textAlign:'center',fontSize:12.5,fontWeight:on?600:400,padding:'8px 0',borderRadius:7,cursor:'pointer',
+          background:on?'var(--card)':'transparent',color:on?'var(--fg)':'var(--fg3)',boxShadow:on?'var(--sh)':'none'}},o[1]);
+    });
+  }
+
+  regFields() {
+    const h = React.createElement;
+    const idLabel = this.state.role==='STUDENT' ? ['รหัสนักศึกษา','6512345678'] : this.state.role==='STAFF' ? ['รหัสบุคลากร','STF-02841'] : ['เลขบัตรประชาชน','1 1037 xxxxx 21 4'];
+    const rows = [
+      ['ชื่อ-นามสกุล','สมชาย กิจเจริญ',false],
+      ['อีเมล','somchai.k@krirk.ac.th',false],
+      [idLabel[0],idLabel[1],false],
+      ['เบอร์โทรศัพท์','081-234-5678',false],
+    ];
+    return rows.map(r=>h('div',{key:r[0]},
+      h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:7}},r[0]),
+      h('div',{style:{border:'1px solid var(--border)',borderRadius:9,height:44,padding:'0 13px',display:'flex',alignItems:'center',background:'var(--card)',fontSize:13.5}},r[1])));
+  }
+
+  PWRULES = [['ยาว 8 ตัวอักษรขึ้นไป',true],['มีตัวพิมพ์ใหญ่',true],['มีตัวเลข',true],['มีอักขระพิเศษ',false],['ไม่ซ้ำ 3 รหัสล่าสุด',true],['ไม่ใช่คำที่เดาง่าย',true]];
+
+  pwRules() {
+    const h = React.createElement;
+    return this.PWRULES.map(r=>h('div',{key:r[0],style:{display:'flex',alignItems:'center',gap:8}},
+      h('span',{style:{width:15,height:15,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',
+        background:r[1]?'var(--ok-bg)':'var(--muted)'}},
+        r[1]?this.ic('check',9,'var(--ok-fg)',3.2):h('span',{style:{width:4,height:4,borderRadius:'50%',background:'var(--fg4)'}})),
+      h('span',{style:{fontSize:11.5,color:r[1]?'var(--fg2)':'var(--fg4)'}},r[0])));
+  }
+
+  strengthBars() {
+    const h = React.createElement;
+    const n = this.PWRULES.filter(r=>r[1]).length;
+    const lvl = n>=6?4:n>=5?3:n>=3?2:1;
+    const col = lvl>=4?'var(--ok-fg)':lvl===3?'var(--ok)':lvl===2?'var(--warn)':'var(--err)';
+    return [0,1,2,3].map(i=>h('span',{key:i,style:{flex:1,height:4,borderRadius:2,background:i<lvl?col:'var(--muted)'}}));
+  }
+
+  consents() {
+    const h = React.createElement;
+    const rows = [
+      ['terms','ยอมรับข้อกำหนดการใช้งานและนโยบายความเป็นส่วนตัว','จำเป็น · FR-02.1 ต้องยืนยันก่อนสร้างบัญชี'],
+      ['pdpa','ยินยอมให้เก็บและประมวลผลข้อมูลเพื่อการเรียนการสอน','จำเป็น · เก็บบันทึกความยินยอมพร้อมวันเวลาและ IP'],
+      ['marketing','รับข่าวสารคอร์สใหม่และกิจกรรมของมหาวิทยาลัย','ไม่จำเป็น · ถอนความยินยอมได้ทุกเมื่อ'],
+    ];
+    return rows.map(r=>{
+      const on = !!this.state.consent[r[0]];
+      return h('div',{key:r[0],onClick:()=>this.setState(s=>({consent:{...s.consent,[r[0]]:!s.consent[r[0]]}})),
+        style:{display:'flex',alignItems:'flex-start',gap:10,cursor:'pointer'}},
+        h('span',{style:{width:17,height:17,borderRadius:4,flexShrink:0,marginTop:1,background:on?'#1A73E8':'transparent',border:on?'none':'1.5px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center'}},this.tick(on)),
+        h('div',{},
+          h('div',{style:{fontSize:12.5,lineHeight:1.6}},r[1]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:3}},r[2])));
+    });
+  }
+
+  otpBoxes() {
+    const h = React.createElement;
+    const vals = ['4','8','2','0','',''];
+    return vals.map((v,i)=>{
+      const cur = i===4;
+      return h('div',{key:i,style:{flex:1,height:56,border:cur?'1.5px solid var(--pri)':'1px solid var(--border)',borderRadius:10,
+        display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:600,fontFamily:"'JetBrains Mono',monospace",
+        background:'var(--card)',color:'var(--fg)'}},
+        v || (cur?h('span',{style:{width:2,height:24,background:'var(--pri)',animation:'blink 1s steps(1) infinite'}}):''));
+    });
+  }
+
+  backupMethods() {
+    const h = React.createElement;
+    const rows = [['ใช้รหัสสำรอง 10 หลัก','เหลือ 7 จาก 10 รหัส'],['ส่ง SMS ไปที่เบอร์ ***-***-5678','ใช้ได้เมื่อแอปไม่พร้อมใช้งาน']];
+    return rows.map(r=>h('div',{key:r[0],style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'11px 13px',border:'1px solid var(--border)',borderRadius:9,cursor:'pointer'}},
+      h('div',{},
+        h('div',{style:{fontSize:12.5,fontWeight:500}},r[0]),
+        h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:2}},r[1])),
+      h('span',{style:{fontSize:12,color:'var(--pri)',fontWeight:500,flexShrink:0}},'ใช้วิธีนี้')));
+  }
+
+  lineSteps() {
+    const h = React.createElement;
+    const rows = [
+      ['เพิ่มเพื่อน @krirk-lms','สแกน QR ทางขวา หรือค้นหา ID ในแอป LINE'],
+      ['ส่งรหัส 6 หลักในแชท','พิมพ์รหัสด้านล่างส่งให้บอทเพื่อยืนยันว่าเป็นบัญชีของคุณ'],
+      ['เลือกประเภทการแจ้งเตือน','ปรับได้ภายหลังที่หน้าโปรไฟล์ > การแจ้งเตือน'],
+    ];
+    return rows.map((r,i)=>h('div',{key:i,style:{display:'flex',gap:12}},
+      h('span',{style:{width:24,height:24,borderRadius:'50%',background:'var(--pri-bg)',color:'var(--pri)',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},i+1),
+      h('div',{},
+        h('div',{style:{fontSize:13.5,fontWeight:500,marginBottom:3}},r[0]),
+        h('div',{style:{fontSize:12,color:'var(--fg3)',lineHeight:1.65}},r[1]))));
+  }
+
+  lineNotis() {
+    const h = React.createElement;
+    const rows = [['due','เตือนกำหนดส่งงาน','ล่วงหน้า 24 ชั่วโมง'],['ann','ประกาศจากคณะและคอร์ส','ทันทีที่เผยแพร่'],['grade','ผลคะแนนและเกรด','เมื่อผู้สอนเผยแพร่คะแนน']];
+    return rows.map(r=>{
+      const on = !!this.state.lineNoti[r[0]];
+      return h('div',{key:r[0],onClick:()=>this.setState(s=>({lineNoti:{...s.lineNoti,[r[0]]:!s.lineNoti[r[0]]}})),
+        style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,cursor:'pointer'}},
+        h('div',{},
+          h('div',{style:{fontSize:13,fontWeight:500}},r[1]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)',marginTop:2}},r[2])),
+        h('div',{style:{width:40,height:22,borderRadius:13,background:on?'#06C755':'var(--border)',position:'relative',flexShrink:0,transition:'background .15s'}},
+          h('div',{style:{position:'absolute',top:3,left:on?21:3,width:16,height:16,borderRadius:'50%',background:'#fff',transition:'left .15s'}})));
+    });
+  }
+
+  lockRows() {
+    const h = React.createElement;
+    const rows = [['บัญชี','somchai.k@krirk.ac.th'],['สาเหตุ','กรอกรหัสผ่านผิด 5 ครั้งติดต่อกัน'],['เวลาที่ล็อก','19 ก.ย. 2569 · 14:28 น.'],['ปลดล็อกอัตโนมัติใน','12 นาที 04 วินาที'],['IP ล่าสุด','203.150.xxx.44 · Bangkok, TH']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:r[0],style:{display:'flex',alignItems:'center',justifyContent:'space-between',gap:14,padding:'12px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('span',{style:{fontSize:12.5,color:'var(--fg3)'}},r[0]),
+      h('span',{style:{fontSize:12.5,fontWeight:500,textAlign:'right'}},r[1]))));
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    const accent = this.props.accent ?? '#1A73E8';
+    const brand = this.BRAND[s] || this.BRAND.login;
+    const n = this.PWRULES.filter(r=>r[1]).length;
+    return {
+      theme: this.state.dark ? 'dark' : 'light',
+      accent,
+      showBrand: (this.props.showBrandPanel ?? true),
+      screenTabs: this.screenTabs(),
+      themeIcon: this.ic(this.state.dark ? 'sun' : 'moon', 18, 'var(--fg2)', 1.6),
+      toggleTheme: () => this.setState(st => ({ dark: !st.dark })),
+
+      brandTitle: brand[0],
+      brandBody: brand[1],
+      brandStats: this.brandStats(),
+
+      isLogin: s==='login', isRegister: s==='register', isOtp: s==='otp', isForgot: s==='forgot',
+      isReset: s==='reset', is2fa: s==='2fa', isLine: s==='line', isLocked: s==='locked',
+      formWidth: s==='register' ? '520px' : s==='line' ? '540px' : '400px',
+
+      goLogin: () => this.setState({ screen:'login' }),
+      goRegister: () => this.setState({ screen:'register' }),
+      goForgot: () => this.setState({ screen:'forgot', sent:false }),
+      goOtp: () => this.setState({ screen:'otp' }),
+
+      loginError: this.state.loginError,
+      ssoButtons: this.ssoButtons(),
+      togglePw: () => this.setState(st => ({ showPw: !st.showPw })),
+      eyeIcon: this.ic(this.state.showPw ? 'eyeOff' : 'eye', 17, 'var(--fg4)', 1.7),
+      pwValue: this.state.showPw ? 'Krirk#2569' : '••••••••••',
+      pwSpacing: this.state.showPw ? 'normal' : '.18em',
+      pwBorder: 'var(--border)',
+      toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
+      rememberBg: this.state.remember ? '#1A73E8' : 'transparent',
+      rememberBorder: this.state.remember ? 'none' : '1.5px solid var(--border)',
+      rememberTick: this.tick(this.state.remember),
+
+      roleSeg: this.roleSeg(),
+      regFields: this.regFields(),
+      pwRules: this.pwRules(),
+      strengthBars: this.strengthBars(),
+      strengthLabel: n>=6 ? 'แข็งแรงมาก' : n>=5 ? 'แข็งแรง' : n>=3 ? 'ปานกลาง' : 'อ่อน',
+      strengthColor: n>=5 ? 'var(--ok-fg)' : n>=3 ? 'var(--warn-fg)' : 'var(--err-fg)',
+      consents: this.consents(),
+
+      otpBoxes: this.otpBoxes(),
+      otpWrong: this.state.otpWrong,
+      toggleOtpWrong: () => this.setState(st => ({ otpWrong: !st.otpWrong })),
+
+      sent: this.state.sent,
+      toggleSent: () => this.setState(st => ({ sent: !st.sent })),
+
+      toggleTrust: () => this.setState(st => ({ trust: !st.trust })),
+      trustBg: this.state.trust ? '#1A73E8' : 'transparent',
+      trustBorder: this.state.trust ? 'none' : '1.5px solid var(--border)',
+      trustTick: this.tick(this.state.trust),
+      backupMethods: this.backupMethods(),
+
+      lineSteps: this.lineSteps(),
+      lineNotis: this.lineNotis(),
+      lockRows: this.lockRows(),
+    };
+  }
+}
+</script>
+</body>
+</html>

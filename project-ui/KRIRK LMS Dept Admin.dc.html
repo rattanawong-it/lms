@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    @keyframes fade { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:none } }
+    body { margin:0; background:#5F6368; }
+    a { color:#1A73E8; text-decoration:none }
+    a:hover { text-decoration:underline }
+    [data-theme] {
+      --bg:#F8F9FA; --card:#FFFFFF; --muted:#F1F3F4; --line:#E8EAED; --border:#DADCE0;
+      --fg:#202124; --fg2:#3C4043; --fg3:#5F6368; --fg4:#80868B;
+      --pri:#1A73E8; --pri-dk:#174EA6; --pri-bg:#E8F0FE;
+      --ok:#34A853; --ok-bg:#E6F4EA; --ok-fg:#1E8E3E;
+      --warn:#FBBC04; --warn-bg:#FEF7E0; --warn-fg:#B06000;
+      --err:#EA4335; --err-bg:#FCE8E6; --err-fg:#C5221F;
+      --pur:#A142F4; --pur-bg:#F3E8FD; --pur-fg:#7627BB;
+      --teal:#12B5CB; --teal-bg:#E4F7FB; --teal-fg:#007B83;
+      --sh:0 1px 3px rgba(60,64,67,.15); --sh-lg:0 8px 28px rgba(60,64,67,.28);
+    }
+    [data-theme="dark"] {
+      --bg:#202124; --card:#292A2D; --muted:#35363A; --line:#3C4043; --border:#3C4043;
+      --fg:#E8EAED; --fg2:#DADCE0; --fg3:#9AA0A6; --fg4:#80868B;
+      --pri:#8AB4F8; --pri-dk:#AECBFA; --pri-bg:#1A3050;
+      --ok:#81C995; --ok-bg:#1E3626; --ok-fg:#81C995;
+      --warn:#FDD663; --warn-bg:#3B3018; --warn-fg:#FDD663;
+      --err:#F28B82; --err-bg:#3E2422; --err-fg:#F28B82;
+      --pur:#C58AF9; --pur-bg:#2E2138; --pur-fg:#C58AF9;
+      --teal:#78D9EC; --teal-bg:#123239; --teal-fg:#78D9EC;
+      --sh:0 1px 3px rgba(0,0,0,.5); --sh-lg:0 8px 28px rgba(0,0,0,.6);
+    }
+  </style>
+</helmet>
+
+<div data-theme="{{ theme }}" style="width:1280px;margin:0 auto;background:var(--bg);color:var(--fg);font-family:'Inter','Anuphan',system-ui,sans-serif;overflow:hidden;position:relative;display:flex;flex-direction:column">
+
+  <div style="height:50px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:0 16px">
+    <span style="font-size:11.5px;font-weight:600;color:var(--fg4);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">เจ้าหน้าที่คณะ</span>
+    <div style="display:flex;gap:4px;flex:1;overflow-x:auto">{{ screenTabs }}</div>
+    <div onClick="{{ toggleTheme }}" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0" style-hover="background:var(--muted)">{{ themeIcon }}</div>
+  </div>
+
+  <div style="height:60px;flex-shrink:0;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 24px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="width:30px;height:30px;border-radius:9px;background:{{ accent }};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8.5L12 4L21.5 8.5L12 13L2.5 8.5Z"></path><path d="M6 10.5V16C6 16 8.5 18 12 18C15.5 18 18 16 18 16V10.5"></path></svg>
+      </span>
+      <span style="font-size:14px;font-weight:600;letter-spacing:-.01em">KRIRK LMS</span>
+      <span style="font-size:10.5px;font-weight:600;color:var(--teal-fg);background:var(--teal-bg);padding:3px 8px;border-radius:5px">DEPT_ADMIN</span>
+    </div>
+    <div style="height:22px;width:1px;background:var(--line)"></div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;height:36px;padding:0 13px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer">
+      คณะบริหารธุรกิจ
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--fg4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9C6 9 10.42 15 12 15C13.58 15 18 9 18 9"></path></svg>
+    </div>
+    <span style="font-size:11.5px;color:var(--fg4)">ขอบเขตสิทธิ์จำกัดเฉพาะคณะนี้ · FR-03.4</span>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:9px">
+      <span style="width:30px;height:30px;border-radius:50%;background:var(--teal-bg);color:var(--teal-fg);font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center">อ</span>
+      <span style="font-size:13px;font-weight:500">อรพรรณ สุขใจ</span>
+    </div>
+  </div>
+
+  <div style="height:750px;overflow-y:auto">
+
+    <sc-if value="{{ isDash }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div style="font-size:24px;font-weight:700;letter-spacing:-.018em">ภาพรวมคณะบริหารธุรกิจ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:3px">ภาคเรียนที่ 1/2569 · มีคำขอรอดำเนินการ 9 รายการ</div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button onClick="{{ goImport }}" style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">นำเข้าผู้ใช้</button>
+            <button onClick="{{ goUsers }}" style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">ดูคำขอรออนุมัติ</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">{{ dashStats }}</div>
+        <div style="display:grid;grid-template-columns:1.45fr 1fr;gap:18px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
+                <span style="font-size:14.5px;font-weight:600">อัตราการเรียนจบรายสาขาวิชา</span>
+                <span style="font-size:11.5px;color:var(--fg4)">เป้าหมายคณะ 75%</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:13px">{{ majorBars }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600">คอร์สที่เปิดสอนในคณะ</div>
+              {{ deptCourses }}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+                <span style="font-size:13.5px;font-weight:600">คำขอรอดำเนินการ</span>
+                <span style="font-size:11px;font-weight:600;color:#fff;background:var(--err);padding:2px 8px;border-radius:9px">9</span>
+              </div>
+              {{ requests }}
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:13px 16px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600">กิจกรรมล่าสุดในคณะ</div>
+              {{ activity }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isUsers }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:24px;font-weight:700;letter-spacing:-.018em">ผู้ใช้ในคณะ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:3px">M03 · FR-03.4 เจ้าหน้าที่คณะกำหนดบทบาทได้เฉพาะภายในคณะ และไม่สามารถแต่งตั้ง SUPER_ADMIN</div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button onClick="{{ goImport }}" style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">นำเข้า CSV</button>
+            <button style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">เพิ่มผู้ใช้</button>
+          </div>
+        </div>
+
+        <div style="background:var(--warn-bg);border-radius:11px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:13px">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="var(--warn-fg)" stroke-width="1.9" stroke-linecap="round" style="flex-shrink:0"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V13"></path><path d="M12 16.3V16.4"></path></svg>
+          <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--warn-fg)">มีคำขอเข้าร่วมคณะรออนุมัติ 4 รายการ</div><div style="font-size:11.5px;color:var(--fg2);margin-top:3px">ผู้ใช้ที่สมัครด้วยอีเมลสถาบันและระบุคณะนี้ ต้องได้รับการยืนยันก่อนเข้าถึงคอร์สภายใน</div></div>
+          <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:36px;padding:0 14px;font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer">ตรวจสอบทั้งหมด</button>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">{{ userFilters }}</div>
+
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:34px 2.4fr 1.5fr 1.2fr 1.1fr 1fr;padding:11px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--fg3)">
+            <span></span><span>ผู้ใช้</span><span>สาขาวิชา / สังกัด</span><span>บทบาทในคณะ</span><span>เข้าใช้ล่าสุด</span><span style="text-align:center">สถานะ</span>
+          </div>
+          {{ userRows }}
+          <div style="padding:12px 18px;border-top:1px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:12.5px;color:var(--fg3)">แสดง 8 จาก 486 ผู้ใช้ในคณะ</span>
+            <span style="font-size:12.5px;color:var(--fg3)">ผู้สอน 24 · เจ้าหน้าที่ 6 · ผู้เรียน 456</span>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isImport }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="margin-bottom:18px">
+          <div style="font-size:24px;font-weight:700;letter-spacing:-.018em">นำเข้าผู้ใช้จากไฟล์ CSV</div>
+          <div style="font-size:13px;color:var(--fg4);margin-top:3px">FR-03.5 นำเข้าครั้งละไม่เกิน 1,000 รายการ · ระบบตรวจสอบข้อมูลก่อนบันทึกเสมอ</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0;margin-bottom:20px">{{ steps }}</div>
+
+        <div style="display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start">
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+            <div style="padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:14px;font-weight:600">ตรวจสอบข้อมูลก่อนนำเข้า</div>
+                <div style="font-size:11.5px;color:var(--fg4);margin-top:3px">students_2569_sem1.csv · 248 แถว · อ่านหัวคอลัมน์ได้ครบ 6 คอลัมน์</div>
+              </div>
+              <div style="display:flex;gap:7px">{{ rowFilters }}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:44px 1.6fr 1.8fr 1fr 1.1fr 1.6fr;padding:10px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:11px;font-weight:600;color:var(--fg3)">
+              <span>แถว</span><span>ชื่อ-สกุล</span><span>อีเมล</span><span>รหัส</span><span>บทบาท</span><span>ผลตรวจสอบ</span>
+            </div>
+            {{ importRows }}
+            <div style="padding:12px 18px;border-top:1px solid var(--line);background:var(--bg);display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:12.5px;color:var(--fg3)">แสดง 8 จาก 248 แถว</span>
+              <span style="font-size:12.5px;color:var(--pri);font-weight:500;cursor:pointer">ดาวน์โหลดรายงานข้อผิดพลาด (12 แถว)</span>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:14px">สรุปผลการตรวจสอบ</div>
+              <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">{{ importSummary }}</div>
+              <div style="padding-top:14px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:11px">{{ importOptions }}</div>
+            </div>
+            <button style="width:100%;background:{{ accent }};color:#fff;border:none;border-radius:9px;height:44px;font-size:14px;font-weight:600;font-family:inherit;cursor:pointer">นำเข้า 236 รายการที่ผ่านการตรวจ</button>
+            <button style="width:100%;background:transparent;color:var(--fg2);border:1px solid var(--border);border-radius:9px;height:40px;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">อัปโหลดไฟล์ใหม่</button>
+            <div style="font-size:11.5px;color:var(--fg4);line-height:1.75">ผู้ใช้ใหม่จะได้รับอีเมลตั้งรหัสผ่านอัตโนมัติ และถูกบันทึกความยินยอม PDPA เมื่อเข้าสู่ระบบครั้งแรก</div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isCourses }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:24px;font-weight:700;letter-spacing:-.018em">คอร์สของคณะ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:3px">FR-05.4 เจ้าหน้าที่คณะตรวจความครบถ้วนก่อนส่งให้ผู้ดูแลระบบอนุมัติเผยแพร่</div>
+          </div>
+          <div style="display:flex;gap:9px">
+            <button style="background:var(--card);color:var(--fg2);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer" style-hover="background:var(--muted)">มอบหมายผู้สอน</button>
+            <button style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">ส่งขออนุมัติ 3 คอร์ส</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">{{ courseStats }}</div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:34px 2.6fr 1.5fr 1fr 1.1fr 1.2fr;padding:11px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:11.5px;font-weight:600;color:var(--fg3)">
+            <span></span><span>คอร์ส</span><span>ผู้สอน</span><span style="text-align:center">ผู้เรียน</span><span style="text-align:center">ความพร้อม</span><span style="text-align:center">สถานะ</span>
+          </div>
+          {{ courseRows }}
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isReport }}">
+      <div style="padding:24px;animation:fade .2s ease">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px">
+          <div>
+            <div style="font-size:24px;font-weight:700;letter-spacing:-.018em">รายงานระดับคณะ</div>
+            <div style="font-size:13px;color:var(--fg4);margin-top:3px">M15 · FR-15.3 ส่งออก CSV / PDF และตั้งเวลาส่งรายงานอัตโนมัติถึงผู้บริหารคณะ</div>
+          </div>
+          <div style="display:flex;gap:9px;align-items:center">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 13px;display:flex;align-items:center;gap:9px;font-size:13px;font-weight:500;cursor:pointer">ภาคเรียนที่ 1/2569
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="var(--fg4)" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9C6 9 10.42 15 12 15C13.58 15 18 9 18 9"></path></svg>
+            </div>
+            <button style="background:{{ accent }};color:#fff;border:none;border-radius:8px;height:38px;padding:0 16px;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer">ส่งออกรายงาน</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px;align-items:start">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px">
+                <span style="font-size:14.5px;font-weight:600">การลงทะเบียนและการเรียนจบรายเดือน</span>
+                <div style="display:flex;gap:14px;font-size:11px;color:var(--fg3)">
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:#1A73E8"></span>ลงทะเบียน</span>
+                  <span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:var(--ok)"></span>เรียนจบ</span>
+                </div>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:16px;height:170px">{{ reportChart }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+              <div style="padding:14px 18px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600">สรุปตามสาขาวิชา</div>
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;padding:10px 18px;background:var(--bg);border-bottom:1px solid var(--line);font-size:11px;font-weight:600;color:var(--fg3)">
+                <span>สาขาวิชา</span><span style="text-align:center">ผู้เรียน</span><span style="text-align:center">คอร์ส</span><span style="text-align:center">เรียนจบ</span><span style="text-align:center">คะแนนเฉลี่ย</span>
+              </div>
+              {{ majorTable }}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:13px">รายงานที่พร้อมส่งออก</div>
+              <div style="display:flex;flex-direction:column;gap:10px">{{ reportTypes }}</div>
+            </div>
+            <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px">
+              <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">ตั้งเวลาส่งอัตโนมัติ</div>
+              <div style="font-size:11.5px;color:var(--fg4);line-height:1.7;margin-bottom:14px">ส่งรายงานสรุปถึงคณบดีและรองคณบดีฝ่ายวิชาการทุกต้นเดือน</div>
+              <div style="display:flex;flex-direction:column;gap:11px;margin-bottom:14px">{{ scheduleRows }}</div>
+              <div onClick="{{ toggleAuto }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;padding-top:13px;border-top:1px solid var(--line)">
+                <span style="font-size:12.5px;font-weight:500">เปิดใช้งานการส่งอัตโนมัติ</span>
+                <div style="width:44px;height:24px;border-radius:14px;background:{{ autoBg }};position:relative;flex-shrink:0;transition:background .15s"><div style="position:absolute;top:3px;left:{{ autoX }};width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:860},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#1A73E8&quot;,&quot;options&quot;:[&quot;#1A73E8&quot;,&quot;#C5221F&quot;,&quot;#1E8E3E&quot;,&quot;#7627BB&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;สี&quot;}}">
+class Component extends DCLogic {
+  state = { screen: 'dash', dark: false, userFilter: 'all', rowFilter: 'all', auto: true, step: 2, opts: { notify: true, skipDup: true, welcome: false } };
+
+  SCREENS = [['dash','ภาพรวมคณะ'],['users','ผู้ใช้ในคณะ'],['import','นำเข้าผู้ใช้ (CSV)'],['courses','คอร์สของคณะ'],['report','รายงานคณะ']];
+  TONE = { pri:['var(--pri-bg)','var(--pri)'], ok:['var(--ok-bg)','var(--ok-fg)'], warn:['var(--warn-bg)','var(--warn-fg)'], err:['var(--err-bg)','var(--err-fg)'], pur:['var(--pur-bg)','var(--pur-fg)'], teal:['var(--teal-bg)','var(--teal-fg)'], mute:['var(--muted)','var(--fg3)'] };
+
+  ic(name, size, color, sw) {
+    const h = React.createElement;
+    const P = {
+      sun: ['M12 4.5V2.5','M12 21.5V19.5','M4.5 12H2.5','M21.5 12H19.5','M6.3 6.3L4.9 4.9','M19.1 19.1L17.7 17.7','M6.3 17.7L4.9 19.1','M19.1 4.9L17.7 6.3'],
+      moon: ['M20 14.5A8.5 8.5 0 0 1 9.5 4A8.5 8.5 0 1 0 20 14.5Z'],
+      check: ['M5 13L9 17L19 7'],
+      doc: ['M14 3H7C6 3 5 4 5 5V19C5 20 6 21 7 21H17C18 21 19 20 19 19V8L14 3Z','M14 3V8H19'],
+      users: ['M16.5 20V18.5C16.5 16.6 15 15 13 15H6.5C4.5 15 3 16.5 3 18.5V20','M9.75 11.5A3.75 3.75 0 1 0 9.75 4A3.75 3.75 0 0 0 9.75 11.5Z'],
+      chart: ['M4 20V10','M10 20V4','M16 20V14','M22 20H2'],
+      alert: ['M12 4L21 19.5H3L12 4Z','M12 10V14','M12 16.6V16.7'],
+      down: ['M12 4V16','M6.5 11L12 16.5L17.5 11','M4 20H20'],
+      mail: ['M3 5H21V19H3Z','M3.5 6L12 12.5L20.5 6'],
+    };
+    return h('svg',{viewBox:'0 0 24 24',width:size,height:size,fill:'none',stroke:color,strokeWidth:sw||1.7,strokeLinecap:'round',strokeLinejoin:'round'},
+      ...(P[name]||[]).map((d,i)=>h('path',{key:i,d})));
+  }
+
+  screenTabs() {
+    const h = React.createElement;
+    return this.SCREENS.map(s=>{
+      const on = this.state.screen===s[0];
+      return h('span',{key:s[0],onClick:()=>this.setState({screen:s[0]}),
+        style:{fontSize:12,fontWeight:on?600:400,padding:'6px 12px',borderRadius:7,cursor:'pointer',whiteSpace:'nowrap',background:on?'var(--pri-bg)':'transparent',color:on?'var(--pri)':'var(--fg3)'}},s[1]);
+    });
+  }
+
+  dashStats() {
+    const h = React.createElement;
+    const rows = [['486','ผู้ใช้ในคณะ','pri','+24 จากเดือนก่อน'],['34','คอร์สที่เปิดสอน','pur','3 คอร์สรออนุมัติ'],['68%','อัตราการเรียนจบ','ok','ต่ำกว่าเป้า 7%'],['9','คำขอรอดำเนินการ','err','เก่าสุด 3 วัน']];
+    return rows.map(r=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:r[1],style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:12,padding:'15px 17px'}},
+        h('div',{style:{fontSize:27,fontWeight:700,letterSpacing:'-.02em',color:t[1],marginBottom:4}},r[0]),
+        h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:5}},r[1]),
+        h('div',{style:{fontSize:11,color:'var(--fg4)'}},r[3]));
+    });
+  }
+
+  majorBars() {
+    const h = React.createElement;
+    const rows = [['การจัดการ',82,164],['การตลาด',74,132],['การบัญชี',69,98],['คอมพิวเตอร์ธุรกิจ',58,76],['การเงินการธนาคาร',46,42]];
+    return rows.map(r=>{
+      const low = r[1]<75;
+      return h('div',{key:r[0],style:{display:'flex',alignItems:'center',gap:13}},
+        h('span',{style:{fontSize:12.5,width:132,flexShrink:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[0]),
+        h('div',{style:{flex:1,height:22,background:'var(--muted)',borderRadius:4,overflow:'hidden'}},
+          h('div',{style:{width:r[1]+'%',height:'100%',background:low?'var(--warn)':'#1A73E8',borderRadius:4}})),
+        h('span',{style:{fontSize:12.5,fontWeight:600,width:34,textAlign:'right',fontVariantNumeric:'tabular-nums',color:low?'var(--warn-fg)':'var(--fg2)'}},r[1]+'%'),
+        h('span',{style:{fontSize:11,color:'var(--fg4)',width:64,textAlign:'right'}},r[2]+' คน'));
+    });
+  }
+
+  deptCourses() {
+    const h = React.createElement;
+    const rows = [
+      ['การวิเคราะห์ข้อมูลธุรกิจด้วย Python','ผศ.ดร.ธนกร วัฒนชัย',342,'เผยแพร่แล้ว','ok'],
+      ['หลักการตลาดดิจิทัลสำหรับ SME','ดร.วีรยา พงษ์ศรี',218,'เผยแพร่แล้ว','ok'],
+      ['การเล่าเรื่องด้วยข้อมูลสำหรับผู้บริหาร','ดร.วีรยา พงษ์ศรี',0,'รออนุมัติ','warn'],
+      ['การบัญชีบริหารเบื้องต้น','อ.กรรณิการ์ ทองดี',96,'เผยแพร่แล้ว','ok'],
+      ['เวิร์กช็อป Power BI เบื้องต้น','ผศ.ดร.ธนกร วัฒนชัย',0,'ฉบับร่าง','mute'],
+    ];
+    return h('div',{},...rows.map((r,i)=>{
+      const t = this.TONE[r[4]];
+      return h('div',{key:i,style:{display:'flex',alignItems:'center',gap:14,padding:'12px 18px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+        h('div',{style:{flex:1,minWidth:0}},
+          h('div',{style:{fontSize:13,fontWeight:500,marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[0]),
+          h('div',{style:{fontSize:11,color:'var(--fg4)'}},r[1])),
+        h('span',{style:{fontSize:12.5,fontWeight:600,fontVariantNumeric:'tabular-nums',flexShrink:0,width:46,textAlign:'right'}},r[2]||'—'),
+        h('span',{style:{background:t[0],color:t[1],fontSize:10.5,fontWeight:600,padding:'3px 8px',borderRadius:5,flexShrink:0,whiteSpace:'nowrap',width:78,textAlign:'center'}},r[3]));
+    }));
+  }
+
+  requests() {
+    const h = React.createElement;
+    const rows = [
+      ['ขอเข้าร่วมคณะ','Sarah Miller · sarah@krirk.ac.th','3 วันที่แล้ว','err'],
+      ['ขอสิทธิ์ผู้สอน','อ.กรรณิการ์ ทองดี · สาขาการบัญชี','2 วันที่แล้ว','warn'],
+      ['ขอถอนรายวิชา','ปิยะพงษ์ ศรีวิไล · BUS-DA-201','1 วันที่แล้ว','warn'],
+      ['ขอแก้ไขคะแนนย้อนหลัง','ผศ.ดร.ธนกร · งานที่ 1','5 ชม. ที่แล้ว','pri'],
+    ];
+    return h('div',{},...rows.map((r,i)=>{
+      const t = this.TONE[r[3]];
+      return h('div',{key:i,style:{padding:'12px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:9,marginBottom:5}},
+          h('span',{style:{background:t[0],color:t[1],fontSize:10.5,fontWeight:600,padding:'3px 8px',borderRadius:5}},r[0]),
+          h('span',{style:{fontSize:10.5,color:'var(--fg4)',marginLeft:'auto'}},r[2])),
+        h('div',{style:{fontSize:12.5,color:'var(--fg2)',marginBottom:8}},r[1]),
+        h('div',{style:{display:'flex',gap:8}},
+          h('span',{style:{fontSize:11.5,fontWeight:600,color:'var(--ok-fg)',cursor:'pointer'}},'อนุมัติ'),
+          h('span',{style:{fontSize:11.5,fontWeight:500,color:'var(--err-fg)',cursor:'pointer'}},'ปฏิเสธ'),
+          h('span',{style:{fontSize:11.5,color:'var(--fg4)',cursor:'pointer'}},'ดูรายละเอียด')));
+    }));
+  }
+
+  activity() {
+    const h = React.createElement;
+    const rows = [['อรพรรณ สุขใจ','นำเข้าผู้ใช้ 248 รายการ','2 ชม. ที่แล้ว'],['ผศ.ดร.ธนกร','เผยแพร่บทเรียนหมวด 3','5 ชม. ที่แล้ว'],['ระบบ','ส่งรายงานประจำเดือนถึงคณบดี','เมื่อวาน'],['ดร.วีรยา','ส่งคอร์สขออนุมัติเผยแพร่','2 วันที่แล้ว']];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{display:'flex',gap:11,padding:'11px 16px',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('span',{style:{width:6,height:6,borderRadius:'50%',background:'var(--border)',marginTop:6,flexShrink:0}}),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{fontSize:12,marginBottom:2}},h('span',{style:{fontWeight:600}},r[0]),' ',r[1]),
+        h('div',{style:{fontSize:10.5,color:'var(--fg4)'}},r[2])))));
+  }
+
+  userFilters() {
+    const h = React.createElement;
+    const opts = [['all','ทั้งหมด 486'],['pending','รออนุมัติ 4'],['inst','ผู้สอน 24'],['staff','เจ้าหน้าที่ 6'],['student','ผู้เรียน 456']];
+    return opts.map(o=>{
+      const on = this.state.userFilter===o[0];
+      return h('span',{key:o[0],onClick:()=>this.setState({userFilter:o[0]}),
+        style:{fontSize:12,fontWeight:on?600:400,padding:'7px 13px',borderRadius:17,cursor:'pointer',background:on?'#1A73E8':'var(--card)',color:on?'#fff':'var(--fg3)',border:on?'1px solid transparent':'1px solid var(--border)'}},o[1]);
+    });
+  }
+
+  USERS = [
+    ['ผศ.ดร.ธนกร วัฒนชัย','thanakorn@krirk.ac.th','คอมพิวเตอร์ธุรกิจ','INSTRUCTOR','pur','วันนี้ 09:12','ใช้งานปกติ','ok'],
+    ['ดร.วีรยา พงษ์ศรี','weeraya@krirk.ac.th','การตลาด','INSTRUCTOR','pur','วันนี้ 08:40','ใช้งานปกติ','ok'],
+    ['อรพรรณ สุขใจ','orapan@krirk.ac.th','สำนักงานคณะ','DEPT_ADMIN','teal','ขณะนี้','ใช้งานปกติ','ok'],
+    ['Sarah Miller','sarah@krirk.ac.th','ศิลปศาสตร์ (ระบุเอง)','ยังไม่กำหนด','mute','ยังไม่เคยเข้า','รออนุมัติ','warn'],
+    ['อ.กรรณิการ์ ทองดี','kannika@krirk.ac.th','การบัญชี','STUDENT','mute','เมื่อวาน','ขอสิทธิ์ผู้สอน','warn'],
+    ['ธนวัฒน์ แสงทอง','6512345678@krirk.ac.th','การจัดการ','STUDENT','pri','วันนี้ 13:05','ใช้งานปกติ','ok'],
+    ['ปิยะพงษ์ ศรีวิไล','6512345682@krirk.ac.th','การเงินการธนาคาร','STUDENT','pri','16 วันที่แล้ว','ไม่เคลื่อนไหว','err'],
+    ['เมธาวี จันทร์เพ็ญ','6512345685@krirk.ac.th','การตลาด','STUDENT','pri','2 วันที่แล้ว','ใช้งานปกติ','ok'],
+  ];
+
+  userRows() {
+    const h = React.createElement;
+    return h('div',{},...this.USERS.map((u,i)=>{
+      const rt = this.TONE[u[4]], st = this.TONE[u[7]];
+      return h('div',{key:i,style:{display:'grid',gridTemplateColumns:'34px 2.4fr 1.5fr 1.2fr 1.1fr 1fr',padding:'12px 18px',alignItems:'center',borderBottom:i<this.USERS.length-1?'1px solid var(--line)':'none'}},
+        h('div',{style:{width:16,height:16,borderRadius:4,border:'1.5px solid var(--border)'}}),
+        h('div',{style:{display:'flex',alignItems:'center',gap:11,minWidth:0}},
+          h('span',{style:{width:30,height:30,borderRadius:'50%',background:rt[0],color:rt[1],fontSize:12,fontWeight:600,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},u[0].replace(/^(ผศ\.|ดร\.|อ\.)+/,'').charAt(0)),
+          h('div',{style:{minWidth:0}},
+            h('div',{style:{fontSize:13,fontWeight:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},u[0]),
+            h('div',{style:{fontSize:10.5,color:'var(--fg4)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},u[1]))),
+        h('span',{style:{fontSize:12.5,color:'var(--fg2)',minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:10}},u[2]),
+        h('span',{style:{display:'flex'}},
+          h('span',{style:{background:rt[0],color:rt[1],fontSize:10.5,fontWeight:600,padding:'3px 8px',borderRadius:5,fontFamily:"'JetBrains Mono',monospace"}},u[3])),
+        h('span',{style:{fontSize:11.5,color:'var(--fg4)'}},u[5]),
+        h('span',{style:{display:'flex',justifyContent:'center'}},
+          h('span',{style:{background:st[0],color:st[1],fontSize:10.5,fontWeight:600,padding:'4px 9px',borderRadius:5,whiteSpace:'nowrap'}},u[6])));
+    }));
+  }
+
+  steps() {
+    const h = React.createElement;
+    const rows = [['1','อัปโหลดไฟล์'],['2','จับคู่คอลัมน์'],['3','ตรวจสอบข้อมูล'],['4','ยืนยันนำเข้า']];
+    const cur = 2;
+    return rows.map((r,i)=>{
+      const done = i<cur, on = i===cur;
+      return h('div',{key:r[0],style:{display:'flex',alignItems:'center',flex:i<rows.length-1?1:'0 0 auto'}},
+        h('div',{style:{display:'flex',alignItems:'center',gap:10,flexShrink:0}},
+          h('span',{style:{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12.5,fontWeight:700,flexShrink:0,
+            background:done?'var(--ok-bg)':on?'#1A73E8':'var(--muted)',color:done?'var(--ok-fg)':on?'#fff':'var(--fg4)'}},
+            done?this.ic('check',14,'var(--ok-fg)',2.6):r[0]),
+          h('span',{style:{fontSize:12.5,fontWeight:on?600:400,color:on?'var(--fg)':done?'var(--fg2)':'var(--fg4)',whiteSpace:'nowrap'}},r[1])),
+        i<rows.length-1?h('div',{style:{flex:1,height:2,background:done?'var(--ok)':'var(--line)',margin:'0 14px'}}):null);
+    });
+  }
+
+  rowFilters() {
+    const h = React.createElement;
+    const opts = [['all','ทั้งหมด 248'],['ok','ผ่าน 236'],['err','ผิดพลาด 12']];
+    return opts.map(o=>{
+      const on = this.state.rowFilter===o[0];
+      return h('span',{key:o[0],onClick:()=>this.setState({rowFilter:o[0]}),
+        style:{fontSize:11.5,fontWeight:on?600:400,padding:'6px 11px',borderRadius:15,cursor:'pointer',whiteSpace:'nowrap',background:on?'#1A73E8':'var(--muted)',color:on?'#fff':'var(--fg3)'}},o[1]);
+    });
+  }
+
+  IMPORT = [
+    [2,'ธนวัฒน์ แสงทอง','6512345678@krirk.ac.th','6512345678','STUDENT','ผ่านการตรวจสอบ','ok'],
+    [3,'ศิริพร ชัยมงคล','6512345679@krirk.ac.th','6512345679','STUDENT','ผ่านการตรวจสอบ','ok'],
+    [4,'ก้องภพ เรืองฤทธิ์','kongphop@gmail.com','6512345680','STUDENT','อีเมลไม่ใช่โดเมนสถาบัน','err'],
+    [5,'นภัสสร ทองคำ','6512345681@krirk.ac.th','6512345681','STUDENT','ผ่านการตรวจสอบ','ok'],
+    [6,'ปิยะพงษ์ ศรีวิไล','6512345682@krirk.ac.th','651234568','STUDENT','รหัสนักศึกษาไม่ครบ 10 หลัก','err'],
+    [7,'อารียา สุขสวัสดิ์','6512345683@krirk.ac.th','6512345683','STUDENT','มีบัญชีอยู่แล้ว · จะข้ามแถวนี้','warn'],
+    [8,'ชนกันต์ พูลผล','6512345684@krirk.ac.th','6512345684','STUDENT','ผ่านการตรวจสอบ','ok'],
+    [9,'เมธาวี จันทร์เพ็ญ','6512345685@krirk.ac.th','6512345685','TEACHER','บทบาทไม่ถูกต้อง (ต้องเป็น INSTRUCTOR)','err'],
+  ];
+
+  importRows() {
+    const h = React.createElement;
+    const list = this.state.rowFilter==='all' ? this.IMPORT : this.IMPORT.filter(r=>this.state.rowFilter==='ok' ? r[6]==='ok' : r[6]!=='ok');
+    if (!list.length) return h('div',{style:{padding:'40px 18px',textAlign:'center',fontSize:12.5,color:'var(--fg4)'}},'ไม่มีแถวในหมวดนี้');
+    return h('div',{},...list.map((r,i)=>{
+      const t = this.TONE[r[6]];
+      return h('div',{key:r[0],style:{display:'grid',gridTemplateColumns:'44px 1.6fr 1.8fr 1fr 1.1fr 1.6fr',padding:'11px 18px',alignItems:'center',borderBottom:i<list.length-1?'1px solid var(--line)':'none',background:r[6]==='err'?'var(--err-bg)':'transparent'}},
+        h('span',{style:{fontSize:11.5,color:'var(--fg4)',fontFamily:"'JetBrains Mono',monospace"}},r[0]),
+        h('span',{style:{fontSize:12.5,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:8}},r[1]),
+        h('span',{style:{fontSize:11.5,color:'var(--fg3)',fontFamily:"'JetBrains Mono',monospace",minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:8}},r[2]),
+        h('span',{style:{fontSize:11.5,fontFamily:"'JetBrains Mono',monospace",color:'var(--fg3)'}},r[3]),
+        h('span',{style:{fontSize:11,fontWeight:600,color:'var(--fg3)',fontFamily:"'JetBrains Mono',monospace"}},r[4]),
+        h('span',{style:{display:'flex',alignItems:'center',gap:7,minWidth:0}},
+          h('span',{style:{width:7,height:7,borderRadius:'50%',background:t[1],flexShrink:0}}),
+          h('span',{style:{fontSize:11.5,color:r[6]==='ok'?'var(--fg3)':t[1],fontWeight:r[6]==='ok'?400:500,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},r[5])));
+    }));
+  }
+
+  importSummary() {
+    const h = React.createElement;
+    const rows = [['236','ผ่านการตรวจสอบ','ok'],['8','ซ้ำกับบัญชีเดิม','warn'],['12','ข้อผิดพลาดต้องแก้ไข','err']];
+    return rows.map(r=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:r[1],style:{display:'flex',alignItems:'center',gap:11}},
+        h('span',{style:{width:34,height:34,borderRadius:9,background:t[0],color:t[1],fontSize:13.5,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},r[0]),
+        h('span',{style:{fontSize:12.5,color:'var(--fg2)'}},r[1]));
+    });
+  }
+
+  importOptions() {
+    const h = React.createElement;
+    const rows = [['notify','ส่งอีเมลตั้งรหัสผ่านให้ผู้ใช้ใหม่'],['skipDup','ข้ามแถวที่มีบัญชีอยู่แล้ว'],['welcome','เพิ่มเข้าคอร์สปฐมนิเทศอัตโนมัติ']];
+    return rows.map(r=>{
+      const on = !!this.state.opts[r[0]];
+      return h('div',{key:r[0],onClick:()=>this.setState(s=>({opts:{...s.opts,[r[0]]:!s.opts[r[0]]}})),
+        style:{display:'flex',alignItems:'flex-start',gap:10,cursor:'pointer'}},
+        h('span',{style:{width:17,height:17,borderRadius:4,flexShrink:0,marginTop:1,background:on?'#1A73E8':'transparent',border:on?'none':'1.5px solid var(--border)',display:'flex',alignItems:'center',justifyContent:'center'}},
+          on?this.ic('check',11,'#fff',3.4):null),
+        h('span',{style:{fontSize:12.5,lineHeight:1.55,color:'var(--fg2)'}},r[1]));
+    });
+  }
+
+  courseStats() {
+    const h = React.createElement;
+    const rows = [['34','คอร์สทั้งหมด','pri'],['28','เผยแพร่แล้ว','ok'],['3','รออนุมัติ','warn'],['3','ฉบับร่าง','mute']];
+    return rows.map(r=>{
+      const t = this.TONE[r[2]];
+      return h('div',{key:r[1],style:{background:'var(--card)',border:'1px solid var(--border)',borderRadius:11,padding:'13px 15px',display:'flex',alignItems:'baseline',gap:10}},
+        h('span',{style:{fontSize:21,fontWeight:700,letterSpacing:'-.02em',color:t[1]}},r[0]),
+        h('span',{style:{fontSize:12,color:'var(--fg3)'}},r[1]));
+    });
+  }
+
+  COURSES = [
+    ['การวิเคราะห์ข้อมูลธุรกิจด้วย Python','BUS-DA-201','ผศ.ดร.ธนกร วัฒนชัย',342,100,'เผยแพร่แล้ว','ok'],
+    ['หลักการตลาดดิจิทัลสำหรับ SME','BUS-MKT-240','ดร.วีรยา พงษ์ศรี',218,100,'เผยแพร่แล้ว','ok'],
+    ['การเล่าเรื่องด้วยข้อมูลสำหรับผู้บริหาร','BUS-DS-420','ดร.วีรยา พงษ์ศรี',0,92,'รออนุมัติ','warn'],
+    ['การบัญชีบริหารเบื้องต้น','BUS-ACC-150','อ.กรรณิการ์ ทองดี',96,100,'เผยแพร่แล้ว','ok'],
+    ['สถิติเพื่อการวิจัยทางธุรกิจ','BUS-ST-310','ผศ.ดร.ธนกร วัฒนชัย',128,100,'เผยแพร่แล้ว','ok'],
+    ['เวิร์กช็อป Power BI เบื้องต้น','BUS-BI-105','ยังไม่มอบหมาย',0,48,'ฉบับร่าง','mute'],
+    ['จริยธรรมธุรกิจและ PDPA','BUS-LAW-120','อ.สุนิสา ภักดี',0,86,'รออนุมัติ','warn'],
+  ];
+
+  courseRows() {
+    const h = React.createElement;
+    return h('div',{},...this.COURSES.map((c,i)=>{
+      const t = this.TONE[c[6]], ready = c[4]===100;
+      return h('div',{key:i,style:{display:'grid',gridTemplateColumns:'34px 2.6fr 1.5fr 1fr 1.1fr 1.2fr',padding:'12px 18px',alignItems:'center',borderBottom:i<this.COURSES.length-1?'1px solid var(--line)':'none'}},
+        h('div',{style:{width:16,height:16,borderRadius:4,border:'1.5px solid var(--border)'}}),
+        h('div',{style:{minWidth:0,paddingRight:12}},
+          h('div',{style:{fontSize:13,fontWeight:500,marginBottom:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}},c[0]),
+          h('div',{style:{fontSize:10.5,color:'var(--fg4)',fontFamily:"'JetBrains Mono',monospace"}},c[1])),
+        h('span',{style:{fontSize:12.5,color:c[2]==='ยังไม่มอบหมาย'?'var(--err-fg)':'var(--fg2)',fontWeight:c[2]==='ยังไม่มอบหมาย'?500:400,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingRight:10}},c[2]),
+        h('span',{style:{textAlign:'center',fontSize:12.5,fontVariantNumeric:'tabular-nums'}},c[3]||'—'),
+        h('div',{style:{display:'flex',alignItems:'center',gap:8,paddingRight:12}},
+          h('div',{style:{flex:1,height:5,background:'var(--muted)',borderRadius:3}},h('div',{style:{width:c[4]+'%',height:'100%',background:ready?'var(--ok)':'var(--warn)',borderRadius:3}})),
+          h('span',{style:{fontSize:11,fontWeight:600,width:30,textAlign:'right',color:ready?'var(--ok-fg)':'var(--warn-fg)'}},c[4]+'%')),
+        h('span',{style:{display:'flex',justifyContent:'center'}},
+          h('span',{style:{background:t[0],color:t[1],fontSize:10.5,fontWeight:600,padding:'4px 9px',borderRadius:5,whiteSpace:'nowrap'}},c[5])));
+    }));
+  }
+
+  reportChart() {
+    const h = React.createElement;
+    const months = [['พ.ค.',54,38],['มิ.ย.',72,46],['ก.ค.',88,58],['ส.ค.',96,64],['ก.ย.',82,71]];
+    const max = 100;
+    return months.map(m=>h('div',{key:m[0],style:{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:9}},
+      h('div',{style:{width:'100%',display:'flex',gap:6,alignItems:'flex-end',height:140,justifyContent:'center'}},
+        h('div',{style:{width:'38%',height:(m[1]/max*100)+'%',background:'#1A73E8',borderRadius:'4px 4px 0 0'}}),
+        h('div',{style:{width:'38%',height:(m[2]/max*100)+'%',background:'var(--ok)',borderRadius:'4px 4px 0 0'}})),
+      h('span',{style:{fontSize:11.5,color:'var(--fg3)'}},m[0])));
+  }
+
+  majorTable() {
+    const h = React.createElement;
+    const rows = [['การจัดการ',164,9,'82%',78.4],['การตลาด',132,8,'74%',76.1],['การบัญชี',98,6,'69%',74.8],['คอมพิวเตอร์ธุรกิจ',76,7,'58%',71.2],['การเงินการธนาคาร',42,4,'46%',68.5]];
+    return h('div',{},...rows.map((r,i)=>h('div',{key:i,style:{display:'grid',gridTemplateColumns:'2fr 1fr 1fr 1fr 1fr',padding:'11px 18px',alignItems:'center',borderBottom:i<rows.length-1?'1px solid var(--line)':'none'}},
+      h('span',{style:{fontSize:12.5,fontWeight:500}},r[0]),
+      h('span',{style:{textAlign:'center',fontSize:12.5,fontVariantNumeric:'tabular-nums'}},r[1]),
+      h('span',{style:{textAlign:'center',fontSize:12.5,fontVariantNumeric:'tabular-nums'}},r[2]),
+      h('span',{style:{textAlign:'center',fontSize:12.5,fontWeight:600,color:parseInt(r[3])<60?'var(--warn-fg)':'var(--fg)'}},r[3]),
+      h('span',{style:{textAlign:'center',fontSize:12.5,fontVariantNumeric:'tabular-nums'}},r[4]))));
+  }
+
+  reportTypes() {
+    const h = React.createElement;
+    const rows = [['สรุปผลการเรียนรายคณะ','PDF · 8 หน้า'],['รายชื่อผู้เรียนและความคืบหน้า','CSV · 486 แถว'],['สถิติการใช้งานระบบ','CSV · รายวัน 30 วัน'],['รายงานใบประกาศที่ออกให้','PDF · 124 รายการ']];
+    return rows.map(r=>h('div',{key:r[0],style:{display:'flex',alignItems:'center',gap:11,padding:'11px 12px',border:'1px solid var(--border)',borderRadius:9,cursor:'pointer'}},
+      h('span',{style:{width:32,height:32,borderRadius:8,background:'var(--muted)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}},this.ic('doc',15,'var(--fg3)',1.7)),
+      h('div',{style:{flex:1,minWidth:0}},
+        h('div',{style:{fontSize:12.5,fontWeight:500,marginBottom:2}},r[0]),
+        h('div',{style:{fontSize:10.5,color:'var(--fg4)'}},r[1])),
+      h('span',{style:{display:'flex',flexShrink:0}},this.ic('down',15,'var(--fg3)',1.8))));
+  }
+
+  scheduleRows() {
+    const h = React.createElement;
+    const rows = [['ความถี่','ทุกวันที่ 1 ของเดือน 08:00 น.'],['ผู้รับ','คณบดี · รองคณบดีฝ่ายวิชาการ'],['รูปแบบไฟล์','PDF และ CSV แนบในอีเมล'],['ส่งครั้งล่าสุด','1 ก.ย. 2569 · สำเร็จ']];
+    return rows.map(r=>h('div',{key:r[0],style:{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:12}},
+      h('span',{style:{fontSize:11.5,color:'var(--fg4)',flexShrink:0}},r[0]),
+      h('span',{style:{fontSize:12,fontWeight:500,textAlign:'right'}},r[1])));
+  }
+
+  renderVals() {
+    const s = this.state.screen;
+    return {
+      theme: this.state.dark ? 'dark' : 'light',
+      accent: this.props.accent ?? '#1A73E8',
+      screenTabs: this.screenTabs(),
+      themeIcon: this.ic(this.state.dark ? 'sun' : 'moon', 18, 'var(--fg2)', 1.6),
+      toggleTheme: () => this.setState(x => ({ dark: !x.dark })),
+
+      isDash: s==='dash', isUsers: s==='users', isImport: s==='import', isCourses: s==='courses', isReport: s==='report',
+      goImport: () => this.setState({ screen:'import' }),
+      goUsers: () => this.setState({ screen:'users' }),
+
+      dashStats: this.dashStats(),
+      majorBars: this.majorBars(),
+      deptCourses: this.deptCourses(),
+      requests: this.requests(),
+      activity: this.activity(),
+
+      userFilters: this.userFilters(),
+      userRows: this.userRows(),
+
+      steps: this.steps(),
+      rowFilters: this.rowFilters(),
+      importRows: this.importRows(),
+      importSummary: this.importSummary(),
+      importOptions: this.importOptions(),
+
+      courseStats: this.courseStats(),
+      courseRows: this.courseRows(),
+
+      reportChart: this.reportChart(),
+      majorTable: this.majorTable(),
+      reportTypes: this.reportTypes(),
+      scheduleRows: this.scheduleRows(),
+      toggleAuto: () => this.setState(x => ({ auto: !x.auto })),
+      autoBg: this.state.auto ? '#1A73E8' : 'var(--border)',
+      autoX: this.state.auto ? '23px' : '3px',
+    };
+  }
+}
+</script>
+</body>
+</html>
