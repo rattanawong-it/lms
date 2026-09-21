@@ -1,1 +1,134 @@
+# CLAUDE.md — สมองของโปรเจกต์
+
+> ไฟล์นี้คือ **FR-00.1** ใน [`docs/spec.md`](./docs/spec.md) §M00
+> อ่านไฟล์นี้ให้จบก่อนเริ่มงานทุกครั้ง และ **อัปเดตในคอมมิตเดียวกัน**
+> เมื่อ convention, คำสั่ง, โครงสร้างโฟลเดอร์ หรือข้อควรระวังเปลี่ยน (FR-00.5)
+
 @AGENTS.md
+
+---
+
+## 1. บริบท (Context)
+
+**Krirk LMS** — ระบบบริหารจัดการการเรียนรู้ที่ใช้ 2 รูปแบบในระบบเดียว
+1. **ภายในสถาบัน** — นักศึกษา/บุคลากรเรียนรายวิชาที่คณะเปิดสอน (คอร์ส `INTERNAL`)
+2. **คอร์สสาธารณะ** — บุคคลภายนอกสมัครเรียน (คอร์ส `PUBLIC`) เฟส 1 ฟรีทั้งหมด การชำระเงินอยู่เฟส 4
+
+| | |
+|---|---|
+| บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
+| สถานะปัจจุบัน | Phase 1 (MVP) — จบขั้น 4/7 · งานถัดไปคือขั้น 5 M06 Enrollment & Progress |
+| ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
+| จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
+
+## 2. เอกสารที่เป็นแหล่งความจริง
+
+| ไฟล์ | ใช้ตอบคำถามว่า |
+|---|---|
+| [`docs/spec.md`](./docs/spec.md) | ต้องทำอะไร (FR/NFR, checklist รายโมดูล, สถานะงาน §3.0.1, roadmap) |
+| [`docs/system-design.md`](./docs/system-design.md) | ทำอย่างไร (สถาปัตยกรรม, data model, authorization, flow, โครงสร้างโฟลเดอร์ §11) |
+| [`docs/phase-1-plan.md`](./docs/phase-1-plan.md) | ลำดับงานของเฟสปัจจุบัน 7 ขั้น + จุดหยุดตรวจ |
+| [`docs/CHANGELOG-REQUIREMENTS.md`](./docs/CHANGELOG-REQUIREMENTS.md) | อะไรเปลี่ยนไปจาก baseline เพราะอะไร |
+
+**กฎการเปลี่ยนแปลง:** แก้ requirement, Prisma schema, โครงสร้างโฟลเดอร์ หรือ tech stack
+→ **แจ้งเจ้าของระบบและรอคำยืนยันก่อน** แล้วบันทึกลง `CHANGELOG-REQUIREMENTS.md` (วันที่, สิ่งที่เปลี่ยน, เหตุผล, ผลกระทบ, ผู้อนุมัติ)
+ลำดับการทำงานคือ **spec → system-design → ให้ตรวจ → ลงมือเขียนโค้ด** เสมอ
+
+## 3. คำสั่งที่ใช้บ่อย
+
+```bash
+pnpm db:up          # docker compose: postgres + minio + mailpit
+pnpm storage:init   # สร้าง bucket ใน MinIO (รันครั้งแรก / หลัง db:reset)
+pnpm dev            # next dev (Turbopack)
+
+pnpm lint           # eslint
+pnpm typecheck      # tsc --noEmit
+pnpm test           # vitest run  (tests/unit)
+pnpm test:e2e       # playwright  (tests/e2e)
+
+pnpm db:migrate     # prisma migrate dev
+pnpm db:generate    # prisma generate → src/generated/prisma
+pnpm db:seed        # prisma/seed.ts  (ใช้ SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD)
+pnpm db:reset       # ล้าง DB + migrate + seed
+pnpm db:studio
+```
+
+**ก่อนคอมมิตทุกครั้ง:** `pnpm lint && pnpm typecheck && pnpm test` (CI รันชุดเดียวกันใน `.github/workflows/ci.yml`)
+บริการท้องถิ่น: Postgres `5432` · MinIO `9000` (คอนโซล `9001`) · Mailpit `8025` (อ่านอีเมลยืนยัน/รีเซ็ตรหัสผ่าน)
+
+## 4. สถาปัตยกรรมย่อ
+
+- **Next.js 16 App Router + React 19 + TypeScript strict** — อ่าน `node_modules/next/dist/docs/` ก่อนเขียนของใหม่ (ดู AGENTS.md ด้านบน)
+- **Prisma 7 + PostgreSQL** ผ่าน `@prisma/adapter-pg` · client ถูก generate ไปที่ `src/generated/prisma` (import จาก `@/generated/prisma/client` และ `@/generated/prisma/enums` ไม่ใช่ `@prisma/client`)
+- **Better Auth** (Google OAuth + Email/Password) · cookie prefix `krirk-lms` · route `/api/auth/[...all]`
+- **Tailwind v4 + shadcn/ui** (`src/components/ui`) · ฟอนต์จริงในโค้ดคือ **Inter + Anuphan** (ไทย) และ JetBrains Mono — spec NFR-09 ยังเขียนว่า IBM Plex Sans Thai (รอเจ้าของระบบชี้ขาดว่าจะแก้ฝั่งไหน)
+- **S3-compatible storage** — MinIO ตอนพัฒนา, Cloudflare R2 ตอน deploy โดยเปลี่ยนแค่ env `S3_*` (D-01)
+- **ตรวจสิทธิ์ 2 ชั้น:** `proxy.ts` เช็คแค่ว่ามี session cookie (optimistic, ไม่ query DB) → สิทธิ์จริงตรวจซ้ำใน Data Access Layer ทุกครั้ง (NFR-04 deny by default)
+
+```
+src/
+  app/(public) (auth) (learn) (instructor) (admin)   หน้าเว็บ แยกตามกลุ่มผู้ใช้
+  app/api/{auth,health,media,upload}                 route handler
+  features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
+  components/  ui (shadcn) · shared · layout · editor · brand
+  lib/         โครงพื้นฐานที่ใช้ร่วมกันทุกฟีเจอร์
+  generated/prisma/                                   ผลจาก prisma generate (ห้ามแก้มือ)
+prisma/ schema.prisma · migrations · seed.ts
+tests/  unit (Vitest) · e2e (Playwright)
+docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
+```
+
+### `src/lib/` มีอะไรบ้าง
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `db.ts` | Prisma client ตัวเดียวของทั้งแอป |
+| `rbac.ts` (server) | `getSessionUser` · `requireUser` · `requireRole` · `requireAtLeast` · `requireApiUser` · `assertCourseAccess(courseId, "learn"\|"teach"\|"manage")` |
+| `roles.ts` (client ใช้ได้) | `SessionUser` · `ROLE_RANK` · `ROLE_LABEL` · `isAtLeast` · `canAssignRole` · `userScopeWhere` |
+| `permissions.ts` | access control matrix ให้ Better Auth admin plugin |
+| `action-result.ts` | `ActionResult` + `zodToFieldErrors` |
+| `form.ts` (client) | `submitForm()` — ใช้แทน `<form action={}>` |
+| `storage.ts` | ที่เดียวที่รู้จัก endpoint/bucket · presign PUT/GET, multipart, stream, delete · `READ_URL_TTL_SECONDS = 5 นาที` |
+| `upload-limits.ts` | `UPLOAD_RULES` ต่อ `AssetKind`, เพดานขนาด, `checkUpload()` |
+| `file-type.ts` | ตรวจ magic bytes ว่า MIME ที่ client แจ้งตรงกับเนื้อไฟล์จริง |
+| `object-key.ts` | ตั้ง object key ที่ปลอดภัย |
+| `audit.ts` | `writeAudit()` — บันทึก AuditLog |
+| `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |
+| `mail.ts` · `env.ts` · `rich-text-doc.ts` · `utils.ts` | อีเมล · env ที่ผ่าน Zod · เอกสาร Tiptap แบบ sanitize แล้ว · `cn()` |
+
+## 5. Conventions
+
+**โครงสร้างฟีเจอร์** — งานใหม่ให้สร้าง `src/features/<feature>/`
+- `queries.ts` — ขึ้นต้นด้วย `import "server-only";` อ่านข้อมูลอย่างเดียว ตรวจสิทธิ์ด้วย `rbac.ts` ก่อน query ทุกฟังก์ชัน
+- `actions.ts` — ขึ้นต้นด้วย `"use server";` เขียนข้อมูล · parse ด้วย Zod → ตรวจสิทธิ์ → เขียน DB → `writeAudit()` → `revalidatePath()` → คืน `ActionResult`
+- `schemas.ts` — Zod schema ใช้ร่วม client/server **ข้อความ error เป็นภาษาไทย**
+- `components/` — UI ของฟีเจอร์นั้น (ของที่ใช้ข้ามฟีเจอร์ไปอยู่ `src/components/shared`)
+
+**ฟอร์ม** — ใช้ `onSubmit={submitForm(handler)}` จาก `@/lib/form` **ห้ามใช้ `<form action={fn}>`**
+(React 19 สั่ง reset ฟอร์มเมื่อ action จบ ค่าที่ผู้ใช้กรอกจะหายทุกครั้งที่บันทึกไม่ผ่าน)
+ผลลัพธ์คืนเป็น `ActionResult` แล้วแสดง `fieldErrors` ใต้ช่องที่ผิด + toast (`sonner`) สำหรับผลรวม
+
+**การตรวจสิทธิ์** — ทุก query/action/route handler ต้องเรียก `require*` หรือ `assertCourseAccess` ก่อนแตะข้อมูล
+อย่าไว้ใจ `proxy.ts` และอย่าเชื่อ id ที่ส่งมาจาก client โดยไม่ตรวจความเป็นเจ้าของ
+
+**Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
+ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
+
+**ไฟล์อัปโหลด** — client ขอ presign → อัปโหลดตรงไป storage → `POST /api/upload/complete`
+ฝั่ง server ตรวจ `checkUpload()` (ชนิด+ขนาด) และ magic bytes เสมอ · ไฟล์ > 20 MB ใช้ multipart (ชิ้นละ 10 MB)
+วิดีโอ/PDF ของบทเรียน **ต้องเสิร์ฟผ่าน signed URL ≤ 5 นาที หลังตรวจ enrollment** (FR-15.7) — ห้ามใส่ลิงก์ตรงไปที่ bucket
+
+**UI/A11y** — mobile-first ทดสอบที่ 375 / 768 / 1280px · ทุกหน้ามี loading / empty / error state
+touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG AA
+
+**Definition of Done ต่อโมดูล (spec §3.0)** — DB · Server (queries/actions + สิทธิ์ใน DAL) · Zod schema ไทย · UI responsive ครบ state · A11y · Test (unit + e2e) · Audit log + อัปเดตเอกสาร
+
+## 6. ข้อควรระวังที่เคยเสียเวลามาแล้ว
+
+- **ฟอร์มรีเซ็ตเอง** → ใช้ `submitForm()` ไม่ใช่ `action={}` (ดู §5)
+- **`server-only` หลุดเข้า browser bundle** → build ล้มทั้งระบบ · เช็คว่าไฟล์ที่ client import ไม่ลากเอา `db`/`next/headers` ไปด้วย
+- **Playwright ติด rate limit ของตัวเอง** → โควตา login 5 ครั้ง/15 นาที (FR-01.7) ใช้ร่วมกันทั้งชุดเทสต์
+  ระหว่างพัฒนาใช้ `pnpm test:e2e --no-deps` เพื่อใช้ session ที่เก็บไว้ใน `tests/e2e/.auth`
+- **MinIO ต้องใช้ path-style** (`S3_FORCE_PATH_STYLE=true`) ส่วน R2 ไม่ต้อง — ต่างกันแค่ env
+- **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
+- **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว
+- **`/api/media/[assetId]` ปัจจุบันรับเฉพาะรูปภาพ** — เส้นทางสำหรับวิดีโอ/PDF ของผู้เรียนต้องทำในขั้น 6

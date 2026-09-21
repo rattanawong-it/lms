@@ -210,6 +210,7 @@
 | `src/lib/storage.ts` + `S3_FORCE_PATH_STYLE` | MinIO ต้องใช้ path-style ส่วน R2 ไม่ต้อง | 1 ✅ |
 | `pnpm db:seed` เพิ่มบทเรียนครบ 6 ประเภท | ให้ทดสอบ player ได้ทุกชนิดโดยไม่ต้องสร้างมือ | 4 ✅ |
 | dnd-kit ✅, Tiptap ✅, pdf.js | dependency ใหม่ 3 ตัว | 3, 4, 6 |
+| `CLAUDE.md` (สมองของโปรเจกต์) | spec §M00 FR-00.1 — ให้ทุกเซสชันเริ่มงานด้วย context, convention และคำสั่งชุดเดียวกัน แทนการรื้อโค้ดใหม่ทุกครั้ง | ก่อนขั้น 5 ✅ |
 
 ---
 
