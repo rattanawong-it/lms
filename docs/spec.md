@@ -365,7 +365,7 @@
 | NFR-06 | Availability | เป้าหมาย uptime 99.5%, backup DB ทุกวัน เก็บย้อนหลัง 14 วัน |
 | NFR-07 | Scalability | รองรับผู้ใช้พร้อมกัน ≥ 1,000 คนในเฟสแรก, แอปเป็น stateless เพื่อ scale แนวนอนได้ |
 | NFR-08 | Accessibility | WCAG 2.1 AA |
-| NFR-09 | Localization | UI ภาษาไทย, ฟอนต์ IBM Plex Sans Thai, วันที่แสดงแบบ พ.ศ. (เก็บเป็น UTC แสดงผลเป็น Asia/Bangkok) |
+| NFR-09 | Localization | UI ภาษาไทย, ฟอนต์ **Anuphan** (ไทย) + **Inter** (อังกฤษ/ตัวเลข) + **JetBrains Mono** (โค้ด) ผ่าน `next/font/google`, วันที่แสดงแบบ พ.ศ. (เก็บเป็น UTC แสดงผลเป็น Asia/Bangkok) |
 | NFR-10 | Portability | ไม่ผูกกับ vendor: S3 API, PostgreSQL มาตรฐาน, มี Docker Compose, ใช้ env vars |
 | NFR-11 | Maintainability | TypeScript strict, ESLint + Prettier, โครงสร้างแยกตาม feature, CI รัน lint/typecheck/test |
 | NFR-12 | Observability | Structured log, error tracking (เช่น Sentry), health check endpoint |

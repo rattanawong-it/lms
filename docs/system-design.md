@@ -100,7 +100,7 @@ prisma/               → schema.prisma, migrations, seed.ts
 | Auth | Better Auth + `prismaAdapter` | Google social provider, emailAndPassword, plugin `admin` (role/ban) |
 | ORM | Prisma (generator `prisma-client`, `prisma.config.ts`) | client ถูก generate ไปที่ `src/generated/prisma` |
 | DB | PostgreSQL 16+ | |
-| UI | Tailwind CSS v4 (`@import "tailwindcss"`, `@theme`), shadcn/ui, lucide-react | ฟอนต์ IBM Plex Sans Thai ผ่าน `next/font` |
+| UI | Tailwind CSS v4 (`@import "tailwindcss"`, `@theme`), shadcn/ui, lucide-react | ฟอนต์ Anuphan + Inter + JetBrains Mono ผ่าน `next/font/google` |
 | Forms | react-hook-form + Zod + `@hookform/resolvers` | ใช้ schema เดียวกันทั้ง client และ server |
 | Rich text | Tiptap (เก็บเป็น JSON) | render ฝั่ง server เป็น HTML ที่ sanitize แล้ว |
 | Table | TanStack Table (ผ่าน shadcn data-table) | ใช้ใน gradebook และรายการผู้ใช้ |
@@ -1202,7 +1202,8 @@ flowchart LR
 
 ### 8.2 Design tokens
 - Tailwind v4 กำหนด token ใน `src/app/globals.css` ผ่าน `@theme` และตัวแปร CSS ของ shadcn (`--primary`, `--background`, …) รองรับ light/dark
-- ฟอนต์ **IBM Plex Sans Thai** (ใช้ทั้ง UI และเนื้อหา) และ `line-height` ≥ 1.6 เพื่อให้วรรณยุกต์ภาษาไทยไม่ชนกัน
+- ฟอนต์ **Anuphan** สำหรับภาษาไทย + **Inter** สำหรับอังกฤษ/ตัวเลข (`--font-sans` ใน `globals.css`) และ **JetBrains Mono** สำหรับโค้ด (`--font-mono`)
+  `line-height` ≥ 1.6 เพื่อให้วรรณยุกต์ภาษาไทยไม่ชนกัน
 - Component พื้นฐานจาก shadcn/ui: Button, Card, Dialog, Sheet, Sidebar, Tabs, Table, Form, Input, Select, Badge, Progress, Toast (Sonner), Skeleton, Chart
 
 ### 8.3 หน้าจอหลัก (Screen inventory)

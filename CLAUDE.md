@@ -61,7 +61,7 @@ pnpm db:studio
 - **Next.js 16 App Router + React 19 + TypeScript strict** — อ่าน `node_modules/next/dist/docs/` ก่อนเขียนของใหม่ (ดู AGENTS.md ด้านบน)
 - **Prisma 7 + PostgreSQL** ผ่าน `@prisma/adapter-pg` · client ถูก generate ไปที่ `src/generated/prisma` (import จาก `@/generated/prisma/client` และ `@/generated/prisma/enums` ไม่ใช่ `@prisma/client`)
 - **Better Auth** (Google OAuth + Email/Password) · cookie prefix `krirk-lms` · route `/api/auth/[...all]`
-- **Tailwind v4 + shadcn/ui** (`src/components/ui`) · ฟอนต์จริงในโค้ดคือ **Inter + Anuphan** (ไทย) และ JetBrains Mono — spec NFR-09 ยังเขียนว่า IBM Plex Sans Thai (รอเจ้าของระบบชี้ขาดว่าจะแก้ฝั่งไหน)
+- **Tailwind v4 + shadcn/ui** (`src/components/ui`) · ฟอนต์ **Anuphan** (ไทย) + **Inter** (อังกฤษ/ตัวเลข) + **JetBrains Mono** (โค้ด) ประกาศเป็น `--font-sans` / `--font-mono` ใน `globals.css`
 - **S3-compatible storage** — MinIO ตอนพัฒนา, Cloudflare R2 ตอน deploy โดยเปลี่ยนแค่ env `S3_*` (D-01)
 - **ตรวจสิทธิ์ 2 ชั้น:** `proxy.ts` เช็คแค่ว่ามี session cookie (optimistic, ไม่ query DB) → สิทธิ์จริงตรวจซ้ำใน Data Access Layer ทุกครั้ง (NFR-04 deny by default)
 
