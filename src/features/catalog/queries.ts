@@ -1,10 +1,10 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/rbac";
-import { presignGet } from "@/lib/storage";
 import { isAtLeast, type SessionUser } from "@/lib/roles";
 import { CourseStatus, Role, Visibility } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
+import { mediaSrc } from "@/lib/rich-text-doc";
 import { CATALOG_PAGE_SIZE, type CatalogParams } from "@/features/catalog/schemas";
 
 /**
@@ -44,7 +44,7 @@ export type CourseCard = {
   summary: string | null;
   level: string | null;
   coverKey: string | null;
-  /** signed URL ของภาพปก — ดูรายละเอียดที่ `withCovers()` */
+  /** URL ของภาพปกที่หน้าเว็บใช้ได้ตรง ๆ — ดูรายละเอียดที่ `withCovers()` */
   coverUrl: string | null;
   categoryName: string | null;
   departmentName: string | null;
@@ -111,18 +111,27 @@ function toCard(row: CourseCardRow, rating: RatingStat | undefined): CourseCard 
   };
 }
 
-/** อายุ signed URL ของภาพปก — ยาวกว่าเนื้อหาบทเรียนได้ เพราะปกเป็นภาพโปรโมต ไม่ใช่เนื้อหาที่ต้องป้องกันตาม M15 */
-const COVER_URL_TTL_SECONDS = 60 * 60;
-
-/** เติม signed URL ของภาพปกให้การ์ดที่มี coverKey (คอร์สที่ยังไม่ตั้งปกจะได้ null แล้วไปแสดง placeholder) */
+/**
+ * เติม URL ของภาพปกให้การ์ดที่มี coverKey (คอร์สที่ยังไม่ตั้งปกได้ null แล้วไปแสดง placeholder)
+ *
+ * ชี้ไปที่ `/api/media/<assetId>` ไม่ใช่ signed URL ของ storage โดยตรง เพราะลายเซ็นเปลี่ยนทุกครั้ง
+ * ที่ render ทำให้ทั้งเบราว์เซอร์และ image optimizer แคชไม่ได้เลย (ดู `app/api/media/[assetId]/route.ts`)
+ * ปกทั้งหน้าใช้คิวรีเดียว — ไม่ใช่ไล่ถาม storage ทีละใบ
+ */
 async function withCovers(cards: CourseCard[]): Promise<CourseCard[]> {
-  return Promise.all(
-    cards.map(async (card) =>
-      card.coverKey
-        ? { ...card, coverUrl: await presignGet(card.coverKey, { expiresIn: COVER_URL_TTL_SECONDS }) }
-        : card,
-    ),
-  );
+  const keys = cards.flatMap((card) => (card.coverKey ? [card.coverKey] : []));
+  if (keys.length === 0) return cards;
+
+  const assets = await db.asset.findMany({
+    where: { key: { in: keys }, status: "READY" },
+    select: { id: true, key: true },
+  });
+  const idByKey = new Map(assets.map((asset) => [asset.key, asset.id]));
+
+  return cards.map((card) => {
+    const assetId = card.coverKey ? idByKey.get(card.coverKey) : undefined;
+    return assetId ? { ...card, coverUrl: mediaSrc(assetId) } : card;
+  });
 }
 
 export type CatalogResult = {

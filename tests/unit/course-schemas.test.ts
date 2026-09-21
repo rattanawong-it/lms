@@ -57,6 +57,9 @@ describe("lessonSchema (FR-04.3)", () => {
     isPreview: false,
   };
 
+  /** รหัส Asset ที่อัปโหลดเสร็จแล้ว — ของจริงตรวจอีกชั้นในฝั่ง action */
+  const ASSET_ID = "clh1111111111111111111111";
+
   it("วิดีโอต้องมีลิงก์ที่ฝังได้", () => {
     const ok = lessonSchema.safeParse({
       ...base,
@@ -75,13 +78,43 @@ describe("lessonSchema (FR-04.3)", () => {
     expect(bad.success).toBe(false);
   });
 
-  it("วิดีโอแบบอัปโหลดเองยังไม่ต้องมีลิงก์", () => {
-    const parsed = lessonSchema.safeParse({
+  it("วิดีโอแบบอัปโหลดเองต้องมีไฟล์ ไม่ใช่ลิงก์ (FR-05.1)", () => {
+    const withoutFile = lessonSchema.safeParse({
       ...base,
       type: LessonType.VIDEO,
       videoSource: VideoSource.UPLOAD,
     });
-    expect(parsed.success).toBe(true);
+    expect(withoutFile.success).toBe(false);
+
+    const withFile = lessonSchema.safeParse({
+      ...base,
+      type: LessonType.VIDEO,
+      videoSource: VideoSource.UPLOAD,
+      assetId: ASSET_ID,
+    });
+    expect(withFile.success).toBe(true);
+  });
+
+  it("เอกสารต้องมีไฟล์ PDF ที่อัปโหลดแล้ว (FR-05.1)", () => {
+    expect(lessonSchema.safeParse({ ...base, type: LessonType.PDF }).success).toBe(false);
+    expect(
+      lessonSchema.safeParse({ ...base, type: LessonType.PDF, assetId: ASSET_ID }).success,
+    ).toBe(true);
+  });
+
+  it("ลิงก์วิดีโอย้อนหลังของคาบเรียนสดต้องเป็น http/https (FR-05.5)", () => {
+    const live = {
+      ...base,
+      type: LessonType.LIVE,
+      liveUrl: "https://meet.google.com/abc-defg-hij",
+      liveStartAt: "2026-10-01T09:00",
+    };
+    expect(lessonSchema.safeParse({ ...live, recordingUrl: "https://ex.test/v" }).success).toBe(
+      true,
+    );
+    expect(lessonSchema.safeParse({ ...live, recordingUrl: "javascript:alert(1)" }).success).toBe(
+      false,
+    );
   });
 
   it("บทเรียนสดต้องมีลิงก์และเวลาเริ่ม", () => {
@@ -108,7 +141,7 @@ describe("lessonSchema (FR-04.3)", () => {
   });
 
   it("บทความและเอกสารไม่ต้องกรอกช่องของวิดีโอ (ค่าที่ส่งมาเป็น null)", () => {
-    for (const type of [LessonType.TEXT, LessonType.PDF, LessonType.QUIZ]) {
+    for (const type of [LessonType.TEXT, LessonType.QUIZ, LessonType.ASSIGNMENT]) {
       const parsed = lessonSchema.safeParse({
         ...base,
         type,

@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { writeAudit } from "@/lib/audit";
-import { abortMultipart, completeMultipart, deleteObject, readHead, statObject } from "@/lib/storage";
+import {
+  abortMultipart,
+  completeMultipart,
+  deleteObject,
+  listParts,
+  readHead,
+  statObject,
+} from "@/lib/storage";
 import { mimeMatchesContent } from "@/lib/file-type";
 import { checkUpload, formatBytes } from "@/lib/upload-limits";
 import { completeInputSchema } from "@/features/uploads/schemas";
@@ -50,11 +57,14 @@ export async function POST(request: Request) {
   }
 
   if (input.uploadId) {
-    if (!input.parts?.length) {
+    // เบราว์เซอร์อ่าน ETag ของ part ไม่ได้เสมอไป (ขึ้นกับ CORS ของ storage)
+    // ถ้าไม่ได้ส่งมาก็ไปถาม storage เอง ซึ่งเป็นแหล่งข้อมูลที่เชื่อถือได้กว่าอยู่แล้ว
+    const parts = input.parts?.length ? input.parts : await listParts(asset.key, input.uploadId);
+    if (!parts.length) {
       return jsonError("ไม่พบรายการ part ของไฟล์", 400).response;
     }
     try {
-      await completeMultipart(asset.key, input.uploadId, input.parts);
+      await completeMultipart(asset.key, input.uploadId, parts);
     } catch {
       await abortMultipart(asset.key, input.uploadId).catch(() => {});
       await db.asset.update({ where: { id: asset.id }, data: { status: "FAILED" } });

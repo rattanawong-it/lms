@@ -27,6 +27,7 @@ import { COURSE_STATUS_LABEL, COURSE_STATUS_TONE } from "@/features/courses/lib/
 import type { CourseEditor } from "@/features/courses/queries";
 import type { CourseTransition } from "@/features/courses/schemas";
 import { CourseStatus } from "@/generated/prisma/enums";
+import { submitForm } from "@/lib/form";
 
 type ActionResultLike = {
   ok: boolean;
@@ -183,7 +184,7 @@ export function CourseSidebar({ course }: { course: CourseEditor }) {
       <section className="bg-card border-border rounded-xl border p-4">
         <h2 className="mb-3 text-[14px] font-semibold">เงื่อนไขการจบคอร์ส</h2>
 
-        <form action={(fd) => run(() => updateCompletionRule(fd))} className="space-y-4">
+        <form onSubmit={submitForm((fd) => run(() => updateCompletionRule(fd)))} className="space-y-4">
           <input type="hidden" name="courseId" value={course.id} />
 
           <Field
@@ -237,7 +238,7 @@ export function CourseSidebar({ course }: { course: CourseEditor }) {
       {/* เพิ่มผู้สอนร่วม */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent className="sm:max-w-[420px]">
-          <form action={(fd) => run(() => addInstructor(fd), () => setAddOpen(false))}>
+          <form onSubmit={submitForm((fd) => run(() => addInstructor(fd), () => setAddOpen(false)))}>
             <DialogHeader>
               <DialogTitle>เพิ่มผู้สอนร่วม</DialogTitle>
               <DialogDescription>

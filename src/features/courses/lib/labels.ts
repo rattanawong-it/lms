@@ -42,10 +42,8 @@ export const VIDEO_SOURCE_LABEL: Record<VideoSource, string> = {
   VIMEO: "Vimeo",
 };
 
-/** ชนิดบทเรียนที่แก้ไขเนื้อหาได้แล้วในเฟสนี้ ที่เหลือรอโมดูลของตัวเอง */
+/** ชนิดบทเรียนที่ยังแก้ไขเนื้อหาไม่ได้ในเฟสนี้ — รอโมดูลของตัวเอง */
 export const LESSON_TYPE_PHASE: Partial<Record<LessonType, string>> = {
-  PDF: "อัปโหลดไฟล์ได้ในขั้น 4",
-  TEXT: "เขียนเนื้อหาได้ในขั้น 4",
   QUIZ: "ผูกกับแบบทดสอบได้ใน M07 (เฟส 2)",
   ASSIGNMENT: "ผูกกับงานที่ต้องส่งได้ใน M08 (เฟส 2)",
 };

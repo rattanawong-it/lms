@@ -15,13 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Field } from "@/components/shared/field";
+import { RichTextField } from "@/components/editor/rich-text-field";
+import { AssetField } from "@/features/uploads/components/asset-field";
 import { createCourse, updateCourse } from "@/features/courses/actions";
+import { AssetKind } from "@/generated/prisma/enums";
 import {
   ENROLL_POLICY_LABEL,
   VISIBILITY_LABEL,
 } from "@/features/courses/lib/labels";
 import type { CourseEditor } from "@/features/courses/queries";
 import { EnrollPolicy, Visibility } from "@/generated/prisma/enums";
+import { submitForm } from "@/lib/form";
 
 type Options = {
   categories: { id: string; name: string }[];
@@ -85,7 +89,7 @@ export function CourseForm({
   }
 
   return (
-    <form action={submit} className="bg-card border-border space-y-5 rounded-xl border p-5">
+    <form onSubmit={submitForm(submit)} className="bg-card border-border space-y-5 rounded-xl border p-5">
       {course ? <input type="hidden" name="id" value={course.id} /> : null}
 
       <Field
@@ -120,6 +124,22 @@ export function CourseForm({
         defaultValue={course?.summary ?? ""}
         placeholder="สรุปสั้น ๆ ว่าผู้เรียนจะได้อะไร แสดงบนการ์ดในคลังคอร์ส"
         error={fieldErrors.summary}
+      />
+
+      <AssetField
+        label="ภาพปก (ไม่บังคับ)"
+        name="coverAssetId"
+        kind={AssetKind.IMAGE}
+        hint="แนะนำอัตราส่วน 16:9"
+        defaultValue={course?.cover ?? null}
+      />
+
+      <RichTextField
+        name="description"
+        label="คำอธิบายคอร์ส (ไม่บังคับ)"
+        defaultValue={course?.description}
+        hint="แสดงในหน้ารายละเอียดคอร์ส ใส่หัวข้อ รูป ตาราง และวิดีโอประกอบได้"
+        placeholder="อธิบายว่าคอร์สนี้สอนอะไร เหมาะกับใคร และต้องเตรียมอะไรมาบ้าง"
       />
 
       <div className="grid gap-4 sm:grid-cols-2">

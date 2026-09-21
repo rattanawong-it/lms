@@ -6,6 +6,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListPartsCommand,
   PutObjectCommand,
   S3Client,
   UploadPartCommand,
@@ -79,6 +80,37 @@ export async function presignUploadPart(
 
 export type UploadedPart = { partNumber: number; etag: string };
 
+/**
+ * ถาม storage เองว่ามี part ใดอัปโหลดสำเร็จแล้วบ้าง
+ *
+ * ใช้เมื่อเบราว์เซอร์อ่าน header `ETag` ของการอัปโหลดข้ามโดเมนไม่ได้
+ * (ขึ้นกับ `Access-Control-Expose-Headers` ของ storage ซึ่งคุมจากฝั่งแอปไม่ได้)
+ * ค่าที่ได้จาก storage เชื่อถือได้กว่าค่าที่ client แจ้งมาอยู่แล้ว
+ */
+export async function listParts(key: string, uploadId: string): Promise<UploadedPart[]> {
+  const parts: UploadedPart[] = [];
+  let marker: number | undefined;
+
+  do {
+    const result = await s3.send(
+      new ListPartsCommand({
+        Bucket: BUCKET,
+        Key: key,
+        UploadId: uploadId,
+        PartNumberMarker: marker != null ? String(marker) : undefined,
+      }),
+    );
+    for (const part of result.Parts ?? []) {
+      if (part.PartNumber && part.ETag) {
+        parts.push({ partNumber: part.PartNumber, etag: part.ETag });
+      }
+    }
+    marker = result.IsTruncated ? Number(result.NextPartNumberMarker) : undefined;
+  } while (marker);
+
+  return parts.sort((a, b) => a.partNumber - b.partNumber);
+}
+
 export async function completeMultipart(
   key: string,
   uploadId: string,
@@ -127,6 +159,33 @@ export async function presignGet(
     }),
     { expiresIn },
   );
+}
+
+/**
+ * อ่าน object ออกมาเป็น stream เพื่อส่งต่อให้เบราว์เซอร์ (ใช้กับรูปภาพใน `/api/media`)
+ * ไฟล์ไม่ถูกโหลดเข้าหน่วยความจำทั้งก้อน และ object key ไม่หลุดออกไปถึง client
+ */
+export type ObjectStream = {
+  body: ReadableStream<Uint8Array>;
+  mime: string;
+  size: number | null;
+  etag: string | null;
+};
+
+export async function getObjectStream(key: string): Promise<ObjectStream | null> {
+  try {
+    const result = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    const body = result.Body?.transformToWebStream();
+    if (!body) return null;
+    return {
+      body: body as ReadableStream<Uint8Array>,
+      mime: result.ContentType ?? "application/octet-stream",
+      size: result.ContentLength ?? null,
+      etag: result.ETag ?? null,
+    };
+  } catch {
+    return null;
+  }
 }
 
 export type ObjectStat = { size: number; mime: string | null };

@@ -52,7 +52,8 @@ test.describe("ผู้สอนสร้างและจัดการค�
     await page.getByRole("button", { name: "เพิ่มบทแรก" }).click();
     await page.getByLabel("ชื่อบท", { exact: true }).fill("บทที่ 1 ความรู้พื้นฐาน");
     await page.getByRole("button", { name: "เพิ่มบท", exact: true }).click();
-    await expect(page.getByText("บทที่ 1 ความรู้พื้นฐาน")).toBeVisible();
+    // อ่านจากหัวข้อของบทโดยตรง — ข้อความล้วนจะไปชนกับ toast ที่มีชื่อบทอยู่ด้วย
+    await expect(page.getByRole("heading", { name: /บทที่ 1 ความรู้พื้นฐาน/ })).toBeVisible();
 
     await page.getByRole("button", { name: "เพิ่มบทเรียนในบทนี้" }).click();
     await page.getByLabel("ชื่อบทเรียน", { exact: true }).fill("แนะนำคอร์ส");
@@ -62,7 +63,8 @@ test.describe("ผู้สอนสร้างและจัดการค�
     await page.getByLabel(/เปิดเป็นบทเรียนตัวอย่าง/).check();
     await page.getByRole("button", { name: "เพิ่มบทเรียน", exact: true }).click();
 
-    await expect(page.getByText("แนะนำคอร์ส")).toBeVisible();
+    // exact เพราะ toast ที่เพิ่งขึ้นมีชื่อบทเรียนอยู่ในข้อความด้วย
+    await expect(page.getByText("แนะนำคอร์ส", { exact: true })).toBeVisible();
     // exact เพราะชื่อผู้สอนในเมนูบัญชีคือ "อาจารย์ตัวอย่าง" ซึ่งชนแบบ substring
     await expect(page.getByText("ตัวอย่าง", { exact: true })).toBeVisible();
   });

@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/shared/field";
 import { updateProfile } from "@/features/account/actions";
+import { submitForm } from "@/lib/form";
 
 /** M01 · FR-01.5 — ฟอร์มแก้ไขโปรไฟล์ */
 export function ProfileForm({
@@ -18,7 +19,7 @@ export function ProfileForm({
 
   return (
     <form
-      action={(formData) =>
+      onSubmit={submitForm((formData) =>
         startTransition(async () => {
           const result = await updateProfile(formData);
           if (result.ok) {
@@ -28,8 +29,8 @@ export function ProfileForm({
             setFieldErrors(result.fieldErrors ?? {});
             toast.error(result.message);
           }
-        })
-      }
+        }),
+      )}
       className="space-y-[15px]"
     >
       <Field

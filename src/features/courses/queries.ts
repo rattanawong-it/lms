@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { assertCourseAccess, requireCourseCreator, requireAtLeast } from "@/lib/rbac";
 import { CourseStatus, Role } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
+import { formatBytes } from "@/lib/upload-limits";
 import { parseCompletionRule, type CompletionRule } from "@/features/courses/schemas";
 
 /** M04 — ข้อมูลฝั่งผู้สอนและผู้ดูแล (หน้า catalog สาธารณะอยู่ใน features/catalog) */
@@ -86,11 +87,33 @@ export async function listTeachCourses(): Promise<TeachCourseRow[]> {
   return rows.map((row) => toRow(row, user.id));
 }
 
+/** ข้อมูลไฟล์ที่ฟอร์มต้องใช้แสดงว่า "แนบอะไรไว้อยู่" — ขนาดแปลงเป็นข้อความแล้วเพราะ BigInt ส่งข้าม client ไม่ได้ */
+export type AttachedAsset = {
+  assetId: string;
+  originalName: string;
+  sizeLabel: string;
+};
+
+const assetSelect = { id: true, originalName: true, size: true } satisfies Prisma.AssetSelect;
+
+function toAttached(
+  asset: Prisma.AssetGetPayload<{ select: typeof assetSelect }> | null,
+): AttachedAsset | null {
+  if (!asset) return null;
+  return {
+    assetId: asset.id,
+    originalName: asset.originalName,
+    sizeLabel: formatBytes(Number(asset.size)),
+  };
+}
+
 export type CourseEditor = {
   id: string;
   slug: string;
   title: string;
   summary: string | null;
+  description: unknown;
+  cover: AttachedAsset | null;
   level: string | null;
   status: CourseStatus;
   visibility: string;
@@ -115,6 +138,8 @@ export async function getCourseForEdit(courseId: string): Promise<CourseEditor> 
       slug: true,
       title: true,
       summary: true,
+      description: true,
+      coverKey: true,
       level: true,
       status: true,
       visibility: true,
@@ -131,8 +156,14 @@ export async function getCourseForEdit(courseId: string): Promise<CourseEditor> 
     },
   });
 
+  // ภาพปกเก็บเป็น object key ไม่ใช่รหัส Asset จึงต้องย้อนหาเพื่อให้ฟอร์มแสดงไฟล์เดิมได้
+  const cover = course.coverKey
+    ? await db.asset.findUnique({ where: { key: course.coverKey }, select: assetSelect })
+    : null;
+
   return {
     ...course,
+    cover: toAttached(cover),
     completionRule: parseCompletionRule(course.completionRule),
     canManage: access.isManager,
     instructors: course.instructors.map((i) => ({
@@ -160,7 +191,10 @@ export type CurriculumSection = {
     liveUrl: string | null;
     liveStartAt: Date | null;
     liveEndAt: Date | null;
-    assetId: string | null;
+    recordingUrl: string | null;
+    content: unknown;
+    asset: AttachedAsset | null;
+    attachments: (AttachedAsset & { id: string; downloadable: boolean })[];
   }[];
 };
 
@@ -189,13 +223,30 @@ export async function getCurriculum(courseId: string): Promise<CurriculumSection
           liveUrl: true,
           liveStartAt: true,
           liveEndAt: true,
-          assetId: true,
+          recordingUrl: true,
+          content: true,
+          asset: { select: assetSelect },
+          attachments: {
+            orderBy: { id: "asc" },
+            select: { id: true, downloadable: true, asset: { select: assetSelect } },
+          },
         },
       },
     },
   });
 
-  return sections;
+  return sections.map((section) => ({
+    ...section,
+    lessons: section.lessons.map((lesson) => ({
+      ...lesson,
+      asset: toAttached(lesson.asset),
+      attachments: lesson.attachments.map((a) => ({
+        id: a.id,
+        downloadable: a.downloadable,
+        ...toAttached(a.asset)!,
+      })),
+    })),
+  }));
 }
 
 /** หัวข้อคอร์สสั้น ๆ สำหรับ breadcrumb และ metadata ของหน้าผู้สอน */

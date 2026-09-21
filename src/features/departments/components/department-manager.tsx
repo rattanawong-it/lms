@@ -22,6 +22,7 @@ import {
   updateDepartment,
 } from "@/features/departments/actions";
 import type { DepartmentRow } from "@/features/departments/queries";
+import { submitForm } from "@/lib/form";
 
 type DialogState =
   | { mode: "closed" }
@@ -131,7 +132,7 @@ export function DepartmentManager({ rows }: { rows: DepartmentRow[] }) {
       {/* ฟอร์มเพิ่ม/แก้ไข */}
       <Dialog open={isForm} onOpenChange={(open) => (open ? null : close())}>
         <DialogContent className="sm:max-w-[460px]">
-          <form action={(fd) => submit(fd, dialog.mode === "edit" ? "edit" : "create")}>
+          <form onSubmit={submitForm((fd) => submit(fd, dialog.mode === "edit" ? "edit" : "create"))}>
             <DialogHeader>
               <DialogTitle>{editing ? "แก้ไขคณะ / หน่วยงาน" : "เพิ่มคณะ / หน่วยงาน"}</DialogTitle>
               <DialogDescription>

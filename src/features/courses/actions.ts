@@ -2,11 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { assertCourseAccess, requireCourseCreator } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
 import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
-import { CourseStatus, InstructorRole, LessonType, Role } from "@/generated/prisma/enums";
+import { parseRichTextField, type RichTextDoc } from "@/lib/rich-text-doc";
+import { findReadyAsset } from "@/features/uploads/service";
 import {
+  AssetKind,
+  CourseStatus,
+  InstructorRole,
+  LessonType,
+  Role,
+  VideoSource,
+} from "@/generated/prisma/enums";
+import {
+  attachmentRemoveSchema,
+  attachmentSchema,
+  attachmentUpdateSchema,
   completionRuleSchema,
   courseSchema,
   courseUpdateSchema,
@@ -43,7 +56,38 @@ function readCourseForm(formData: FormData) {
     sequential: formData.get("sequential") === "on" || formData.get("sequential") === "true",
     categoryId: formData.get("categoryId"),
     departmentId: formData.get("departmentId"),
+    coverAssetId: formData.get("coverAssetId"),
   };
+}
+
+/**
+ * FR-05.1 — แปลงรหัส Asset ของภาพปกเป็น object key ที่เก็บลง `Course.coverKey`
+ *
+ * ผู้ใช้ต้องเป็นคนอัปโหลดไฟล์นั้นเอง หรือไฟล์นั้นเป็นปกของคอร์สนี้อยู่แล้ว
+ * (ผู้สอนร่วมกดบันทึกฟอร์มที่มีปกของอีกคนได้ โดยไม่เปิดให้ใครหยิบไฟล์ของคนอื่นมาใช้)
+ */
+async function resolveCoverKey(
+  assetId: string | null,
+  userId: string,
+  currentKey: string | null,
+): Promise<{ ok: true; key: string | null } | { ok: false; message: string }> {
+  if (!assetId) return { ok: true, key: null };
+
+  const asset = await findReadyAsset(assetId, AssetKind.IMAGE);
+  if (!asset) return { ok: false, message: "ไม่พบภาพปกที่อัปโหลดไว้ กรุณาอัปโหลดใหม่" };
+  if (asset.uploadedById !== userId && asset.key !== currentKey) {
+    return { ok: false, message: "ไม่มีสิทธิ์ใช้ไฟล์ภาพนี้" };
+  }
+  return { ok: true, key: asset.key };
+}
+
+/**
+ * อ่านคำอธิบายคอร์ส/เนื้อหาบทเรียนจากฟอร์ม แล้วกรองด้วย allowlist ฝั่ง server (FR-05.4)
+ * เนื้อหาว่างต้องเขียนเป็น `DbNull` ไม่ใช่ `null` ของ JavaScript — ไม่งั้น Prisma
+ * จะเก็บเป็นค่า JSON `null` ซึ่งคนละความหมายกับ "ไม่มีเนื้อหา"
+ */
+function readRichText(formData: FormData, field: string): RichTextDoc | typeof Prisma.DbNull {
+  return parseRichTextField(formData.get(field)) ?? Prisma.DbNull;
 }
 
 /** FR-04.1 — สร้างคอร์สใหม่ (ผู้สร้างเป็นผู้สอนเจ้าของคอร์สทันที) */
@@ -66,9 +110,16 @@ export async function createCourse(
   const departmentId =
     user.role === Role.INSTRUCTOR ? user.departmentId : parsed.data.departmentId;
 
+  const { coverAssetId, ...courseData } = parsed.data;
+
+  const cover = await resolveCoverKey(coverAssetId, user.id, null);
+  if (!cover.ok) return { ok: false, message: cover.message };
+
   const created = await db.course.create({
     data: {
-      ...parsed.data,
+      ...courseData,
+      coverKey: cover.key,
+      description: readRichText(formData, "description"),
       departmentId,
       status: CourseStatus.DRAFT,
       instructors: { create: { userId: user.id, role: InstructorRole.OWNER } },
@@ -98,12 +149,22 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
     return { ok: false, message: "ข้อมูลไม่ถูกต้อง", fieldErrors: zodToFieldErrors(parsed.error) };
   }
 
-  const { id, ...data } = parsed.data;
+  const { id, coverAssetId, ...data } = parsed.data;
 
   const before = await db.course.findUniqueOrThrow({
     where: { id },
-    select: { title: true, slug: true, visibility: true, departmentId: true, status: true },
+    select: {
+      title: true,
+      slug: true,
+      visibility: true,
+      departmentId: true,
+      status: true,
+      coverKey: true,
+    },
   });
+
+  const cover = await resolveCoverKey(coverAssetId, access.user.id, before.coverKey);
+  if (!cover.ok) return { ok: false, message: cover.message };
 
   const duplicate = await db.course.findUnique({ where: { slug: data.slug } });
   if (duplicate && duplicate.id !== id) {
@@ -115,7 +176,12 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
 
   const after = await db.course.update({
     where: { id },
-    data: { ...data, departmentId },
+    data: {
+      ...data,
+      departmentId,
+      coverKey: cover.key,
+      description: readRichText(formData, "description"),
+    },
     select: { title: true, slug: true, visibility: true, departmentId: true },
   });
 
@@ -270,24 +336,62 @@ function readLessonForm(formData: FormData) {
     liveUrl: formData.get("liveUrl"),
     liveStartAt: formData.get("liveStartAt"),
     liveEndAt: formData.get("liveEndAt"),
+    recordingUrl: formData.get("recordingUrl"),
+    assetId: formData.get("assetId"),
   };
 }
 
+type LessonData = ReturnType<typeof lessonSchema.parse>;
+
+/**
+ * FR-05.1 — ไฟล์ที่ผูกกับบทเรียน: วิดีโอที่อัปโหลดเอง (VIDEO+UPLOAD) และเอกสาร PDF
+ * ใช้กติกาสิทธิ์ชุดเดียวกับภาพปก — ต้องเป็นคนอัปโหลดเอง หรือไฟล์นั้นผูกกับบทเรียนนี้อยู่แล้ว
+ */
+async function resolveLessonAsset(
+  data: LessonData,
+  userId: string,
+  currentAssetId: string | null,
+): Promise<{ ok: true; assetId: string | null } | { ok: false; message: string }> {
+  const kind =
+    data.type === LessonType.PDF
+      ? AssetKind.PDF
+      : data.type === LessonType.VIDEO && data.videoSource === VideoSource.UPLOAD
+        ? AssetKind.VIDEO
+        : null;
+
+  // ชนิดบทเรียนที่ไม่ต้องใช้ไฟล์ → ตัดการอ้างอิงเดิมทิ้ง ไม่ให้เหลือไฟล์ค้างที่ไม่มีใครเห็น
+  if (!kind || !data.assetId) return { ok: true, assetId: null };
+
+  const asset = await findReadyAsset(data.assetId, kind);
+  if (!asset) return { ok: false, message: "ไม่พบไฟล์ที่อัปโหลดไว้ กรุณาอัปโหลดใหม่" };
+  if (asset.uploadedById !== userId && asset.id !== currentAssetId) {
+    return { ok: false, message: "ไม่มีสิทธิ์ใช้ไฟล์นี้" };
+  }
+  return { ok: true, assetId: asset.id };
+}
+
 /** แปลงผลจาก schema เป็นข้อมูลที่เขียนลง Lesson โดยล้างฟิลด์ที่ไม่เกี่ยวกับชนิดนั้นทิ้ง */
-function lessonWriteData(data: ReturnType<typeof lessonSchema.parse>) {
+function lessonWriteData(
+  data: LessonData,
+  extra: { assetId: string | null; content: RichTextDoc | typeof Prisma.DbNull },
+) {
   const isVideo = data.type === LessonType.VIDEO;
   const isLive = data.type === LessonType.LIVE;
+  const isText = data.type === LessonType.TEXT;
 
   return {
     title: data.title,
     type: data.type,
     isPreview: data.isPreview,
     videoSource: isVideo ? data.videoSource : null,
-    videoUrl: isVideo ? data.videoUrl : null,
+    videoUrl: isVideo && data.videoSource !== VideoSource.UPLOAD ? data.videoUrl : null,
     durationSec: isVideo ? data.durationSec : null,
     liveUrl: isLive ? data.liveUrl : null,
     liveStartAt: isLive ? data.liveStartAt : null,
     liveEndAt: isLive ? data.liveEndAt : null,
+    recordingUrl: isLive ? data.recordingUrl : null,
+    content: isText ? extra.content : Prisma.DbNull,
+    assetId: extra.assetId,
   };
 }
 
@@ -307,6 +411,9 @@ export async function createLesson(formData: FormData): Promise<ActionResult> {
     return { ok: false, message: "ข้อมูลไม่ถูกต้อง", fieldErrors: zodToFieldErrors(parsed.error) };
   }
 
+  const asset = await resolveLessonAsset(parsed.data, access.user.id, null);
+  if (!asset.ok) return { ok: false, message: asset.message };
+
   const last = await db.lesson.findFirst({
     where: { sectionId },
     orderBy: { position: "desc" },
@@ -314,7 +421,14 @@ export async function createLesson(formData: FormData): Promise<ActionResult> {
   });
 
   const created = await db.lesson.create({
-    data: { sectionId, position: (last?.position ?? 0) + 1, ...lessonWriteData(parsed.data) },
+    data: {
+      sectionId,
+      position: (last?.position ?? 0) + 1,
+      ...lessonWriteData(parsed.data, {
+        assetId: asset.assetId,
+        content: readRichText(formData, "content"),
+      }),
+    },
     select: { id: true, title: true },
   });
 
@@ -337,7 +451,13 @@ export async function updateLesson(formData: FormData): Promise<ActionResult> {
 
   const lesson = await db.lesson.findUnique({
     where: { id: idParsed.data.id },
-    select: { sectionId: true, title: true, type: true, section: { select: { courseId: true } } },
+    select: {
+      sectionId: true,
+      title: true,
+      type: true,
+      assetId: true,
+      section: { select: { courseId: true } },
+    },
   });
   if (!lesson) return { ok: false, message: "ไม่พบบทเรียนที่ต้องการแก้ไข" };
 
@@ -348,7 +468,16 @@ export async function updateLesson(formData: FormData): Promise<ActionResult> {
     return { ok: false, message: "ข้อมูลไม่ถูกต้อง", fieldErrors: zodToFieldErrors(parsed.error) };
   }
 
-  await db.lesson.update({ where: { id: idParsed.data.id }, data: lessonWriteData(parsed.data) });
+  const asset = await resolveLessonAsset(parsed.data, access.user.id, lesson.assetId);
+  if (!asset.ok) return { ok: false, message: asset.message };
+
+  await db.lesson.update({
+    where: { id: idParsed.data.id },
+    data: lessonWriteData(parsed.data, {
+      assetId: asset.assetId,
+      content: readRichText(formData, "content"),
+    }),
+  });
 
   await writeAudit({
     actorId: access.user.id,
@@ -385,6 +514,133 @@ export async function deleteLesson(formData: FormData): Promise<ActionResult> {
 
   revalidateCourse(lesson.section.courseId);
   return { ok: true, message: `ลบบทเรียน "${lesson.title}" แล้ว` };
+}
+
+// ───────────── ไฟล์ประกอบบทเรียน (FR-05.7) ─────────────
+
+/** หาบทเรียนพร้อมคอร์สเจ้าของ เพื่อตรวจสิทธิ์ก่อนแตะไฟล์ประกอบ */
+async function lessonCourseId(lessonId: string): Promise<string | null> {
+  const lesson = await db.lesson.findUnique({
+    where: { id: lessonId },
+    select: { section: { select: { courseId: true } } },
+  });
+  return lesson?.section.courseId ?? null;
+}
+
+/** แนบไฟล์ประกอบเข้ากับบทเรียน — ค่าตั้งต้นคือ "ดูได้แต่ดาวน์โหลดไม่ได้" ตาม M15 */
+export async function addAttachment(formData: FormData): Promise<ActionResult> {
+  const parsed = attachmentSchema.safeParse({
+    lessonId: formData.get("lessonId"),
+    assetId: formData.get("assetId"),
+    downloadable: formData.get("downloadable") === "on" || formData.get("downloadable") === "true",
+  });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง" };
+  }
+
+  const courseId = await lessonCourseId(parsed.data.lessonId);
+  if (!courseId) return { ok: false, message: "ไม่พบบทเรียนที่ต้องการแนบไฟล์" };
+  const access = await assertCourseAccess(courseId, "teach");
+
+  const asset = await findReadyAsset(parsed.data.assetId, AssetKind.FILE);
+  if (!asset) return { ok: false, message: "ไม่พบไฟล์ที่อัปโหลดไว้ กรุณาอัปโหลดใหม่" };
+  if (asset.uploadedById !== access.user.id) {
+    return { ok: false, message: "ไม่มีสิทธิ์ใช้ไฟล์นี้" };
+  }
+
+  const exists = await db.lessonAttachment.findFirst({
+    where: { lessonId: parsed.data.lessonId, assetId: asset.id },
+    select: { id: true },
+  });
+  if (exists) return { ok: false, message: "ไฟล์นี้ถูกแนบไว้แล้ว" };
+
+  await db.lessonAttachment.create({
+    data: {
+      lessonId: parsed.data.lessonId,
+      assetId: asset.id,
+      downloadable: parsed.data.downloadable,
+    },
+  });
+
+  await writeAudit({
+    actorId: access.user.id,
+    action: "lesson.addAttachment",
+    entity: "Lesson",
+    entityId: parsed.data.lessonId,
+    after: { assetId: asset.id, originalName: asset.originalName },
+  });
+
+  revalidateCourse(courseId);
+  return { ok: true, message: `แนบไฟล์ ${asset.originalName} แล้ว` };
+}
+
+/** เปิด/ปิดสิทธิ์ดาวน์โหลดของไฟล์ประกอบ (FR-05.7) */
+export async function setAttachmentDownloadable(formData: FormData): Promise<ActionResult> {
+  const parsed = attachmentUpdateSchema.safeParse({
+    id: formData.get("id"),
+    downloadable: formData.get("downloadable") === "on" || formData.get("downloadable") === "true",
+  });
+  if (!parsed.success) return { ok: false, message: "ข้อมูลไม่ถูกต้อง" };
+
+  const attachment = await db.lessonAttachment.findUnique({
+    where: { id: parsed.data.id },
+    select: { lessonId: true, asset: { select: { originalName: true } } },
+  });
+  if (!attachment) return { ok: false, message: "ไม่พบไฟล์ประกอบ" };
+
+  const courseId = await lessonCourseId(attachment.lessonId);
+  if (!courseId) return { ok: false, message: "ไม่พบบทเรียนของไฟล์นี้" };
+  const access = await assertCourseAccess(courseId, "teach");
+
+  await db.lessonAttachment.update({
+    where: { id: parsed.data.id },
+    data: { downloadable: parsed.data.downloadable },
+  });
+
+  await writeAudit({
+    actorId: access.user.id,
+    action: "lesson.setAttachmentDownloadable",
+    entity: "Lesson",
+    entityId: attachment.lessonId,
+    after: { attachmentId: parsed.data.id, downloadable: parsed.data.downloadable },
+  });
+
+  revalidateCourse(courseId);
+  return {
+    ok: true,
+    message: parsed.data.downloadable
+      ? `เปิดให้ดาวน์โหลด ${attachment.asset.originalName} แล้ว`
+      : `ปิดการดาวน์โหลด ${attachment.asset.originalName} แล้ว`,
+  };
+}
+
+/** เอาไฟล์ประกอบออกจากบทเรียน (ตัว Asset ยังอยู่ ให้ lifecycle ของ storage จัดการต่อ) */
+export async function removeAttachment(formData: FormData): Promise<ActionResult> {
+  const parsed = attachmentRemoveSchema.safeParse({ id: formData.get("id") });
+  if (!parsed.success) return { ok: false, message: "ข้อมูลไม่ถูกต้อง" };
+
+  const attachment = await db.lessonAttachment.findUnique({
+    where: { id: parsed.data.id },
+    select: { lessonId: true, assetId: true, asset: { select: { originalName: true } } },
+  });
+  if (!attachment) return { ok: false, message: "ไม่พบไฟล์ประกอบ" };
+
+  const courseId = await lessonCourseId(attachment.lessonId);
+  if (!courseId) return { ok: false, message: "ไม่พบบทเรียนของไฟล์นี้" };
+  const access = await assertCourseAccess(courseId, "teach");
+
+  await db.lessonAttachment.delete({ where: { id: parsed.data.id } });
+
+  await writeAudit({
+    actorId: access.user.id,
+    action: "lesson.removeAttachment",
+    entity: "Lesson",
+    entityId: attachment.lessonId,
+    before: { assetId: attachment.assetId, originalName: attachment.asset.originalName },
+  });
+
+  revalidateCourse(courseId);
+  return { ok: true, message: `เอาไฟล์ ${attachment.asset.originalName} ออกแล้ว` };
 }
 
 /**

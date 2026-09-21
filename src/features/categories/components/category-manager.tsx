@@ -24,6 +24,7 @@ import { Field } from "@/components/shared/field";
 import { EmptyState } from "@/components/shared/empty-state";
 import { createCategory, deleteCategory, updateCategory } from "@/features/categories/actions";
 import type { CategoryRow } from "@/features/categories/queries";
+import { submitForm } from "@/lib/form";
 
 type DialogState =
   | { mode: "closed" }
@@ -142,7 +143,7 @@ export function CategoryManager({ rows }: { rows: CategoryRow[] }) {
       {/* ฟอร์มเพิ่ม/แก้ไข */}
       <Dialog open={isForm} onOpenChange={(open) => (open ? null : close())}>
         <DialogContent className="sm:max-w-[460px]">
-          <form action={(fd) => submit(fd, dialog.mode === "edit" ? "edit" : "create")}>
+          <form onSubmit={submitForm((fd) => submit(fd, dialog.mode === "edit" ? "edit" : "create"))}>
             <DialogHeader>
               <DialogTitle>{editing ? "แก้ไขหมวดหมู่" : "เพิ่มหมวดหมู่"}</DialogTitle>
               <DialogDescription>

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/rbac";
 import { isAtLeast, type SessionUser } from "@/lib/roles";
-import { Role } from "@/generated/prisma/enums";
+import { AssetKind, Role } from "@/generated/prisma/enums";
 
 /**
  * ตัวช่วยร่วมของ Route Handler ตระกูล /api/upload/*
@@ -29,6 +29,51 @@ export async function requireUploader(): Promise<SessionUser | ApiFailure> {
 
 export function isFailure(value: SessionUser | ApiFailure): value is ApiFailure {
   return "response" in value;
+}
+
+export type ReadyAsset = {
+  id: string;
+  key: string;
+  mime: string;
+  originalName: string;
+  size: bigint;
+  uploadedById: string;
+};
+
+/**
+ * หา Asset ที่อัปโหลดเสร็จแล้วและเป็นชนิดที่ต้องการ ก่อนให้ฟีเจอร์อื่นอ้างถึง
+ *
+ * ผู้เรียกต้องตรวจต่อเองว่า **ผู้ใช้คนนี้มีสิทธิ์ใช้ไฟล์นี้หรือไม่** — โดยทั่วไปคือ
+ * ต้องเป็นคนอัปโหลดเอง หรือไฟล์นั้นถูกผูกกับคอร์ส/บทเรียนนั้นอยู่ก่อนแล้ว
+ * (ผู้สอนร่วมจึงแก้ฟอร์มที่มีไฟล์ของอีกคนได้ โดยไม่เปิดให้ใครหยิบไฟล์ของคนอื่นมาใช้)
+ */
+export async function findReadyAsset(
+  assetId: string,
+  kind: AssetKind,
+): Promise<ReadyAsset | null> {
+  const asset = await db.asset.findUnique({
+    where: { id: assetId },
+    select: {
+      id: true,
+      key: true,
+      kind: true,
+      mime: true,
+      originalName: true,
+      size: true,
+      status: true,
+      uploadedById: true,
+    },
+  });
+  if (!asset || asset.kind !== kind || asset.status !== "READY") return null;
+
+  return {
+    id: asset.id,
+    key: asset.key,
+    mime: asset.mime,
+    originalName: asset.originalName,
+    size: asset.size,
+    uploadedById: asset.uploadedById,
+  };
 }
 
 /** หา Asset ที่ยังอัปโหลดค้างอยู่ และต้องเป็นของผู้ใช้คนนี้เท่านั้น */

@@ -37,6 +37,7 @@ import type { UserRow } from "@/features/users/queries";
 import { ROLE_LABEL, type SessionUser } from "@/lib/roles";
 import { Role } from "@/generated/prisma/enums";
 import { formatDate } from "@/lib/dates";
+import { submitForm } from "@/lib/form";
 
 const ROLE_TONE: Record<Role, string> = {
   SUPER_ADMIN: "bg-danger-bg text-danger-fg",
@@ -220,7 +221,7 @@ export function UserTable({
         onOpenChange={(open) => (open ? null : setDialog({ mode: "closed" }))}
       >
         <DialogContent className="sm:max-w-[440px]">
-          <form action={(fd) => submit(fd, "role")}>
+          <form onSubmit={submitForm((fd) => submit(fd, "role"))}>
             <DialogHeader>
               <DialogTitle>เปลี่ยนบทบาทและคณะ</DialogTitle>
               <DialogDescription>

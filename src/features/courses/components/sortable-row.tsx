@@ -44,6 +44,13 @@ export function SortableList<T extends { id: string }>({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  /**
+   * dnd-kit ตั้ง id ของข้อความประกาศให้ screen reader จากตัวนับที่เดินต่อไปเรื่อย ๆ
+   * ฝั่ง server กับ client จึงนับได้ไม่ตรงกันจนเกิด hydration mismatch และ
+   * `aria-describedby` ของปุ่มจับชี้ไปยัง id ที่ไม่มีอยู่จริง — ตั้ง id เองให้คงที่
+   */
+  const dndId = React.useId();
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -57,6 +64,7 @@ export function SortableList<T extends { id: string }>({
 
   return (
     <DndContext
+      id={dndId}
       sensors={sensors}
       collisionDetection={closestCenter}
       modifiers={[restrictToVerticalAxis, restrictToParentElement]}

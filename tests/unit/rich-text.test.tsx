@@ -68,6 +68,64 @@ describe("RichText (NFR §9 — render ตาม allowlist)", () => {
     expect(screen.getByText("ฝังข้อมูล")).toBeInTheDocument();
   });
 
+  it("แสดงรูปที่ชี้มาที่ /api/media และข้ามรูปที่ชี้ออกนอกระบบ (FR-05.4)", () => {
+    render(
+      <RichText
+        content={doc(
+          { type: "image", attrs: { src: "/api/media/clh0000000000000000000000", alt: "แผนผัง" } },
+          { type: "image", attrs: { src: "https://evil.example/pixel.png", alt: "แอบติดตาม" } },
+        )}
+      />,
+    );
+    const images = screen.getAllByRole("img");
+    expect(images).toHaveLength(1);
+    expect(images[0]).toHaveAttribute("src", "/api/media/clh0000000000000000000000");
+    expect(screen.queryByAltText("แอบติดตาม")).not.toBeInTheDocument();
+  });
+
+  it("ฝัง iframe ได้เฉพาะโดเมนที่อนุญาต (FR-05.4)", () => {
+    const { container } = render(
+      <RichText
+        content={doc(
+          { type: "youtube", attrs: { src: "https://www.youtube-nocookie.com/embed/abc" } },
+          { type: "youtube", attrs: { src: "https://evil.example/embed/abc" } },
+        )}
+      />,
+    );
+    const frames = container.querySelectorAll("iframe");
+    expect(frames).toHaveLength(1);
+    expect(frames[0]).toHaveAttribute("src", "https://www.youtube-nocookie.com/embed/abc");
+  });
+
+  it("แสดงตารางพร้อมหัวตาราง (FR-05.4)", () => {
+    render(
+      <RichText
+        content={doc({
+          type: "table",
+          content: [
+            {
+              type: "tableRow",
+              content: [
+                { type: "tableHeader", content: [para("สัปดาห์")] },
+                { type: "tableHeader", content: [para("หัวข้อ")] },
+              ],
+            },
+            {
+              type: "tableRow",
+              content: [
+                { type: "tableCell", content: [para("1")] },
+                { type: "tableCell", content: [para("แนะนำรายวิชา")] },
+              ],
+            },
+          ],
+        })}
+      />,
+    );
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.getAllByRole("columnheader")).toHaveLength(2);
+    expect(screen.getByRole("cell", { name: "แนะนำรายวิชา" })).toBeInTheDocument();
+  });
+
   it("node ที่ไม่รู้จักไม่ทำให้เนื้อหาข้างในหาย", () => {
     render(
       <RichText content={doc({ type: "iframeEmbed", content: [para("ข้อความข้างใน")] })} />,

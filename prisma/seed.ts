@@ -1,8 +1,11 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { hashPassword } from "better-auth/crypto";
-import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaClient, type Prisma } from "../src/generated/prisma/client";
 import {
+  AssetKind,
+  AssetStatus,
   CourseStatus,
   EnrollPolicy,
   InstructorRole,
@@ -23,6 +26,95 @@ const db = new PrismaClient({
 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@krirk.ac.th";
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe!2026";
+
+/**
+ * ไฟล์ตัวอย่างของบทเรียน (M05)
+ *
+ * ต่อ storage ตรงด้วย client ของตัวเองเหมือน `scripts/storage-init.ts`
+ * เพราะ `src/lib/storage.ts` เป็น server-only ของ Next จึง import จากสคริปต์ Node ไม่ได้
+ */
+const BUCKET = process.env.S3_BUCKET ?? "lms";
+
+const s3 = new S3Client({
+  region: process.env.S3_REGION ?? "auto",
+  endpoint: process.env.S3_ENDPOINT,
+  forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== "false",
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? "",
+  },
+});
+
+/**
+ * PDF ขนาดเล็กที่เปิดได้จริง — ประกอบเองเพื่อไม่ต้องเก็บไฟล์ไบนารีไว้ในรีโป
+ * ตาราง xref ต้องชี้ตำแหน่งไบต์ของแต่ละ object จึงคำนวณระหว่างต่อไฟล์
+ */
+function buildSamplePdf(): Buffer {
+  const lf = "\n";
+  const text = "Krirk LMS - sample lesson document";
+  const stream = `BT /F1 18 Tf 60 760 Td (${text}) Tj ET`;
+  const objects = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] " +
+      "/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+    [`<< /Length ${stream.length} >>`, "stream", stream, "endstream"].join(lf),
+  ];
+
+  let pdf = `%PDF-1.4${lf}`;
+  const offsets: number[] = [];
+  objects.forEach((body, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj${lf}${body}${lf}endobj${lf}`;
+  });
+
+  const xrefAt = pdf.length;
+  pdf += `xref${lf}0 ${objects.length + 1}${lf}0000000000 65535 f ${lf}`;
+  for (const offset of offsets) pdf += `${String(offset).padStart(10, "0")} 00000 n ${lf}`;
+  pdf += `trailer${lf}<< /Size ${objects.length + 1} /Root 1 0 R >>${lf}`;
+  pdf += `startxref${lf}${xrefAt}${lf}%%EOF${lf}`;
+
+  return Buffer.from(pdf, "latin1");
+}
+
+/** อัปโหลดไฟล์ตัวอย่างแล้วบันทึกเป็น Asset — คืน null เมื่อ storage ยังไม่พร้อม */
+async function ensureSampleAsset(input: {
+  key: string;
+  kind: AssetKind;
+  mime: string;
+  originalName: string;
+  body: Buffer;
+  uploadedById: string;
+}): Promise<{ id: string } | null> {
+  try {
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: input.key,
+        Body: input.body,
+        ContentType: input.mime,
+      }),
+    );
+  } catch {
+    return null;
+  }
+
+  return db.asset.upsert({
+    where: { key: input.key },
+    update: { status: AssetStatus.READY, size: BigInt(input.body.byteLength) },
+    create: {
+      key: input.key,
+      kind: input.kind,
+      mime: input.mime,
+      size: BigInt(input.body.byteLength),
+      originalName: input.originalName,
+      status: AssetStatus.READY,
+      uploadedById: input.uploadedById,
+    },
+    select: { id: true },
+  });
+}
 
 /** สร้าง/อัปเดตผู้ใช้พร้อม credential account ของ Better Auth */
 async function upsertUser(input: {
@@ -146,47 +238,132 @@ async function main() {
     create: { courseId: course.id, userId: instructor.id, role: InstructorRole.OWNER },
   });
 
-  const hasSections = await db.section.count({ where: { courseId: course.id } });
-  if (hasSections === 0) {
-    await db.section.create({
-      data: {
-        courseId: course.id,
-        title: "บทนำ",
-        position: 1,
-        lessons: {
-          create: [
+  // ── บทเรียนตัวอย่างครบทั้ง 6 ชนิด (M05) ──
+  // ไฟล์จริงของบทเรียน PDF และไฟล์ประกอบถูกอัปโหลดเข้า storage ด้วย
+  // ถ้า MinIO ยังไม่ขึ้น seed จะข้ามสองชนิดนี้ไปแทนที่จะพัง
+  const pdfAsset = await ensureSampleAsset({
+    key: "pdf/seed/sample-document.pdf",
+    kind: AssetKind.PDF,
+    mime: "application/pdf",
+    originalName: "เอกสารประกอบบทเรียน.pdf",
+    body: buildSamplePdf(),
+    uploadedById: instructor.id,
+  });
+
+  const worksheetAsset = await ensureSampleAsset({
+    key: "file/seed/sample-worksheet.txt",
+    kind: AssetKind.FILE,
+    mime: "text/plain",
+    originalName: "ใบงานประจำบท.txt",
+    body: Buffer.from("ใบงานตัวอย่างของ KRIRK LMS", "utf8"),
+    uploadedById: instructor.id,
+  });
+
+  const section =
+    (await db.section.findFirst({
+      where: { courseId: course.id, position: 1 },
+      select: { id: true },
+    })) ??
+    (await db.section.create({
+      data: { courseId: course.id, title: "บทนำ", position: 1 },
+      select: { id: true },
+    }));
+
+  /** สร้างบทเรียนเฉพาะที่ยังไม่มี — seed จึงรันซ้ำได้และเพิ่มชนิดใหม่ให้ฐานข้อมูลเดิมได้ด้วย */
+  async function ensureLesson(
+    title: string,
+    data: Omit<Prisma.LessonUncheckedCreateInput, "sectionId" | "title">,
+  ) {
+    const existing = await db.lesson.findFirst({
+      where: { sectionId: section.id, title },
+      select: { id: true },
+    });
+    if (existing) return existing;
+    return db.lesson.create({
+      data: { ...data, sectionId: section.id, title },
+      select: { id: true },
+    });
+  }
+
+  const textLesson = await ensureLesson("ระบบนี้ใช้ทำอะไรได้บ้าง", {
+    type: LessonType.TEXT,
+    position: 1,
+    isPreview: true,
+    content: {
+      type: "doc",
+      content: [
+        {
+          type: "heading",
+          attrs: { level: 2 },
+          content: [{ type: "text", text: "สิ่งที่คุณจะได้จากคอร์สนี้" }],
+        },
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "บทเรียนตัวอย่างสำหรับตรวจการแสดงผลเนื้อหาแบบ " },
+            { type: "text", marks: [{ type: "bold" }], text: "ข้อความจัดรูปแบบ" },
+            { type: "text", text: " ทั้งรายการ ตาราง และโค้ด" },
+          ],
+        },
+        {
+          type: "bulletList",
+          content: [
             {
-              title: "ระบบนี้ใช้ทำอะไรได้บ้าง",
-              type: LessonType.TEXT,
-              position: 1,
-              isPreview: true,
-              content: {
-                type: "doc",
-                content: [
-                  {
-                    type: "paragraph",
-                    content: [
-                      {
-                        type: "text",
-                        text: "บทเรียนตัวอย่างสำหรับตรวจสอบการแสดงผลเนื้อหาแบบข้อความ",
-                      },
-                    ],
-                  },
-                ],
-              },
+              type: "listItem",
+              content: [
+                { type: "paragraph", content: [{ type: "text", text: "ค้นหาและลงทะเบียนคอร์ส" }] },
+              ],
             },
             {
-              title: "วิดีโอแนะนำการใช้งาน",
-              type: LessonType.VIDEO,
-              position: 2,
-              videoSource: VideoSource.YOUTUBE,
-              videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-              durationSec: 213,
+              type: "listItem",
+              content: [
+                { type: "paragraph", content: [{ type: "text", text: "ติดตามความคืบหน้าของตนเอง" }] },
+              ],
             },
           ],
         },
-      },
+      ],
+    },
+  });
+
+  await ensureLesson("วิดีโอแนะนำการใช้งาน", {
+    type: LessonType.VIDEO,
+    position: 2,
+    videoSource: VideoSource.YOUTUBE,
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    durationSec: 213,
+  });
+
+  if (pdfAsset) {
+    await ensureLesson("เอกสารประกอบการเรียน", {
+      type: LessonType.PDF,
+      position: 3,
+      assetId: pdfAsset.id,
     });
+  }
+
+  await ensureLesson("คาบถาม-ตอบสด", {
+    type: LessonType.LIVE,
+    position: 4,
+    liveUrl: "https://meet.google.com/abc-defg-hij",
+    liveStartAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    liveEndAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
+  });
+
+  // สองชนิดนี้ยังไม่มีเนื้อหาของตัวเองจนกว่าจะถึง M07/M08 (เฟส 2)
+  await ensureLesson("แบบทดสอบท้ายบท", { type: LessonType.QUIZ, position: 5 });
+  await ensureLesson("งานที่ต้องส่ง", { type: LessonType.ASSIGNMENT, position: 6 });
+
+  if (worksheetAsset) {
+    const attached = await db.lessonAttachment.findFirst({
+      where: { lessonId: textLesson.id, assetId: worksheetAsset.id },
+      select: { id: true },
+    });
+    if (!attached) {
+      await db.lessonAttachment.create({
+        data: { lessonId: textLesson.id, assetId: worksheetAsset.id, downloadable: true },
+      });
+    }
   }
 
   // ── คอร์สเพิ่มเติมสำหรับทดสอบตัวกรองของคลังคอร์ส (M03) ──

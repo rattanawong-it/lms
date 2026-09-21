@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Layers, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Layers, Loader2, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,9 @@ import {
 } from "@/components/ui/select";
 import { Field } from "@/components/shared/field";
 import { EmptyState } from "@/components/shared/empty-state";
+import { RichTextField } from "@/components/editor/rich-text-field";
+import { AssetField } from "@/features/uploads/components/asset-field";
+import { AttachmentManager } from "@/features/courses/components/attachment-manager";
 import {
   createLesson,
   createSection,
@@ -41,7 +44,8 @@ import {
 } from "@/features/courses/lib/labels";
 import { SortableItem, SortableList } from "@/features/courses/components/sortable-row";
 import type { CurriculumSection } from "@/features/courses/queries";
-import { LessonType, VideoSource } from "@/generated/prisma/enums";
+import { AssetKind, LessonType, VideoSource } from "@/generated/prisma/enums";
+import { submitForm } from "@/lib/form";
 
 type Lesson = CurriculumSection["lessons"][number];
 
@@ -52,6 +56,7 @@ type DialogState =
   | { mode: "section-delete"; section: CurriculumSection }
   | { mode: "lesson-create"; sectionId: string }
   | { mode: "lesson-edit"; lesson: Lesson }
+  | { mode: "lesson-files"; lesson: Lesson }
   | { mode: "lesson-delete"; lesson: Lesson };
 
 /** ค่าที่ input type="datetime-local" ต้องการ */
@@ -147,6 +152,16 @@ export function CurriculumEditor({
   }
 
   const editingLesson = dialog.mode === "lesson-edit" ? dialog.lesson : null;
+
+  /**
+   * กล่องไฟล์ประกอบบันทึกทีละไฟล์แล้ว `router.refresh()` ทันที
+   * จึงต้องอ่านบทเรียนจาก state ชุดล่าสุดเสมอ ไม่ใช่ snapshot ที่ติดมากับตอนเปิดกล่อง
+   * ไม่งั้นไฟล์ที่เพิ่งแนบจะไม่โผล่จนกว่าจะปิดแล้วเปิดใหม่
+   */
+  const filesLesson =
+    dialog.mode === "lesson-files"
+      ? (sections.flatMap((s) => s.lessons).find((l) => l.id === dialog.lesson.id) ?? dialog.lesson)
+      : null;
   const isLessonForm = dialog.mode === "lesson-create" || dialog.mode === "lesson-edit";
   const isSectionForm = dialog.mode === "section-create" || dialog.mode === "section-edit";
   const editingSection = dialog.mode === "section-edit" ? dialog.section : null;
@@ -243,6 +258,19 @@ export function CurriculumEditor({
                               <span className="text-muted-foreground shrink-0 text-[12px]">
                                 {LESSON_TYPE_LABEL[lesson.type as LessonType] ?? lesson.type}
                               </span>
+                              {lesson.attachments.length > 0 ? (
+                                <span className="text-muted-foreground num shrink-0 text-[11.5px]">
+                                  {lesson.attachments.length} ไฟล์
+                                </span>
+                              ) : null}
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label={`ไฟล์ประกอบของ ${lesson.title}`}
+                                onClick={() => setDialog({ mode: "lesson-files", lesson })}
+                              >
+                                <Paperclip className="size-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
@@ -288,9 +316,9 @@ export function CurriculumEditor({
       <Dialog open={isSectionForm} onOpenChange={(open) => (open ? null : close())}>
         <DialogContent className="sm:max-w-[420px]">
           <form
-            action={(fd) =>
-              run(() => (editingSection ? updateSection(fd) : createSection(fd)))
-            }
+            onSubmit={submitForm((fd) =>
+              run(() => (editingSection ? updateSection(fd) : createSection(fd))),
+            )}
           >
             <DialogHeader>
               <DialogTitle>{editingSection ? "แก้ไขชื่อบท" : "เพิ่มบท"}</DialogTitle>
@@ -332,7 +360,7 @@ export function CurriculumEditor({
       <Dialog open={isLessonForm} onOpenChange={(open) => (open ? null : close())}>
         <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-[520px]">
           <form
-            action={(fd) => run(() => (editingLesson ? updateLesson(fd) : createLesson(fd)))}
+            onSubmit={submitForm((fd) => run(() => (editingLesson ? updateLesson(fd) : createLesson(fd))))}
           >
             <DialogHeader>
               <DialogTitle>{editingLesson ? "แก้ไขบทเรียน" : "เพิ่มบทเรียน"}</DialogTitle>
@@ -377,6 +405,12 @@ export function CurriculumEditor({
                     ))}
                   </SelectContent>
                 </Select>
+                {/* ช่อง Select ไม่ได้ใช้ <Field> จึงต้องแสดงข้อความผิดพลาดของตัวเอง */}
+                {fieldErrors.type ? (
+                  <p role="alert" className="text-danger-fg text-[12px] font-medium">
+                    {fieldErrors.type}
+                  </p>
+                ) : null}
                 {LESSON_TYPE_PHASE[lessonType] ? (
                   <p className="text-muted-foreground text-[11.5px]">
                     ตอนนี้บันทึกได้แค่ชื่อและตำแหน่ง — {LESSON_TYPE_PHASE[lessonType]}
@@ -413,10 +447,15 @@ export function CurriculumEditor({
                   </div>
 
                   {videoSource === VideoSource.UPLOAD ? (
-                    <p className="bg-muted text-muted-foreground rounded-lg px-3 py-2.5 text-[12px] leading-relaxed">
-                      การอัปโหลดไฟล์วิดีโอเปิดใช้งานในขั้น 4 ตอนนี้บันทึกบทเรียนไว้ก่อนได้
-                      แล้วค่อยกลับมาแนบไฟล์
-                    </p>
+                    <AssetField
+                      key={`video-${editingLesson?.id ?? "new"}`}
+                      label="ไฟล์วิดีโอ"
+                      name="assetId"
+                      kind={AssetKind.VIDEO}
+                      hint="MP4 หรือ WebM · อัปโหลดต่อได้แม้ไฟล์ใหญ่ และยกเลิกกลางคันได้"
+                      defaultValue={editingLesson?.asset ?? null}
+                      error={fieldErrors.assetId}
+                    />
                   ) : (
                     <Field
                       label="ลิงก์วิดีโอ"
@@ -438,6 +477,29 @@ export function CurriculumEditor({
                     error={fieldErrors.durationSec}
                   />
                 </>
+              ) : null}
+
+              {lessonType === LessonType.PDF ? (
+                <AssetField
+                  key={`pdf-${editingLesson?.id ?? "new"}`}
+                  label="ไฟล์เอกสาร"
+                  name="assetId"
+                  kind={AssetKind.PDF}
+                  hint="ผู้เรียนจะเห็นเอกสารนี้แบบอ่านอย่างเดียว ไม่มีปุ่มดาวน์โหลด (FR-05.3)"
+                  defaultValue={editingLesson?.asset ?? null}
+                  error={fieldErrors.assetId}
+                />
+              ) : null}
+
+              {lessonType === LessonType.TEXT ? (
+                <RichTextField
+                  key={`text-${editingLesson?.id ?? "new"}`}
+                  name="content"
+                  label="เนื้อหาบทความ"
+                  defaultValue={editingLesson?.content}
+                  minHeight={260}
+                  hint="ใส่หัวข้อ รูป ตาราง โค้ด ลิงก์ และวิดีโอฝังได้"
+                />
               ) : null}
 
               {lessonType === LessonType.LIVE ? (
@@ -465,6 +527,14 @@ export function CurriculumEditor({
                       error={fieldErrors.liveEndAt}
                     />
                   </div>
+                  <Field
+                    label="ลิงก์วิดีโอบันทึกย้อนหลัง (ไม่บังคับ)"
+                    name="recordingUrl"
+                    defaultValue={editingLesson?.recordingUrl ?? ""}
+                    placeholder="https://..."
+                    hint="ใส่ทีหลังได้เมื่อสอนจบแล้ว ผู้เรียนที่พลาดคาบจะได้ดูย้อนหลัง"
+                    error={fieldErrors.recordingUrl}
+                  />
                 </>
               ) : null}
 
@@ -491,6 +561,39 @@ export function CurriculumEditor({
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* ไฟล์ประกอบ (FR-05.7) — อยู่คนละ dialog กับฟอร์มบทเรียน เพราะบันทึกทันทีทีละไฟล์ */}
+      <Dialog
+        open={dialog.mode === "lesson-files"}
+        onOpenChange={(open) => (open ? null : close())}
+      >
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>ไฟล์ประกอบ</DialogTitle>
+            <DialogDescription>
+              {filesLesson
+                ? `ไฟล์ที่แนบกับบทเรียน "${filesLesson.title}" — ผู้เรียนดาวน์โหลดได้เฉพาะไฟล์ที่เปิดสิทธิ์ไว้`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+
+          {filesLesson ? (
+            <div className="py-4">
+              <AttachmentManager
+                key={filesLesson.id}
+                lessonId={filesLesson.id}
+                attachments={filesLesson.attachments}
+              />
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={close}>
+              ปิด
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

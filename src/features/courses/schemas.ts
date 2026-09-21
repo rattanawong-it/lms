@@ -45,6 +45,8 @@ export const courseSchema = z.object({
   sequential: z.coerce.boolean().default(false),
   categoryId: optionalId,
   departmentId: optionalId,
+  /** FR-05.1 — รหัส Asset ของภาพปกที่อัปโหลดไว้แล้ว (ค่าว่าง = ไม่มีปก) */
+  coverAssetId: optionalId,
 });
 export type CourseInput = z.input<typeof courseSchema>;
 
@@ -138,6 +140,15 @@ export const lessonSchema = z
       .trim()
       .nullish()
       .transform((v) => (v ? new Date(v) : null)),
+    /** FR-05.5 — ลิงก์วิดีโอบันทึกย้อนหลังของคาบเรียนสด */
+    recordingUrl: z
+      .string()
+      .trim()
+      .max(500)
+      .nullish()
+      .transform((v) => (v ? v : null)),
+    /** FR-05.1 — ไฟล์ที่อัปโหลดไว้แล้วสำหรับบทเรียนวิดีโอ (UPLOAD) และ PDF */
+    assetId: optionalId,
   })
   .superRefine((data, ctx) => {
     if (data.type === LessonType.VIDEO) {
@@ -148,7 +159,13 @@ export const lessonSchema = z
           message: "เลือกที่มาของวิดีโอ",
         });
       }
-      // วิดีโอที่อัปโหลดเองจะผูก assetId ตอนอัปโหลดเสร็จ (ขั้น 4) จึงยังไม่บังคับที่นี่
+      if (data.videoSource === VideoSource.UPLOAD && !data.assetId) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["assetId"],
+          message: "อัปโหลดไฟล์วิดีโอก่อน",
+        });
+      }
       if (data.videoSource !== VideoSource.UPLOAD && !data.videoUrl) {
         ctx.addIssue({
           code: "custom",
@@ -165,7 +182,18 @@ export const lessonSchema = z
       }
     }
 
+    if (data.type === LessonType.PDF && !data.assetId) {
+      ctx.addIssue({ code: "custom", path: ["assetId"], message: "อัปโหลดไฟล์ PDF ก่อน" });
+    }
+
     if (data.type === LessonType.LIVE) {
+      if (data.recordingUrl && !isHttpUrl(data.recordingUrl)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["recordingUrl"],
+          message: "ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://",
+        });
+      }
       if (!data.liveUrl) {
         ctx.addIssue({ code: "custom", path: ["liveUrl"], message: "กรอกลิงก์ห้องเรียนสด" });
       } else if (!isHttpUrl(data.liveUrl)) {
@@ -194,6 +222,20 @@ export const lessonSchema = z
   });
 
 export const lessonUpdateSchema = z.object({ id: z.cuid("ไม่พบบทเรียนที่ต้องการแก้ไข") });
+
+/** FR-05.7 — ไฟล์ประกอบบทเรียน พร้อมธงว่าอนุญาตให้ดาวน์โหลดหรือไม่ */
+export const attachmentSchema = z.object({
+  lessonId: z.cuid("ไม่พบบทเรียน"),
+  assetId: z.cuid("ไม่พบไฟล์ที่แนบ"),
+  downloadable: z.coerce.boolean().default(false),
+});
+
+export const attachmentUpdateSchema = z.object({
+  id: z.cuid("ไม่พบไฟล์ประกอบ"),
+  downloadable: z.coerce.boolean().default(false),
+});
+
+export const attachmentRemoveSchema = z.object({ id: z.cuid("ไม่พบไฟล์ประกอบ") });
 
 /** ลิงก์ต้องเป็น http/https เท่านั้น — กัน javascript: และ data: */
 export function isHttpUrl(value: string): boolean {
