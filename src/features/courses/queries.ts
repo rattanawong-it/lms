@@ -119,6 +119,7 @@ export type CourseEditor = {
   visibility: string;
   enrollPolicy: string;
   sequential: boolean;
+  protectionEnabled: boolean;
   categoryId: string | null;
   departmentId: string | null;
   completionRule: CompletionRule;
@@ -145,6 +146,7 @@ export async function getCourseForEdit(courseId: string): Promise<CourseEditor> 
       visibility: true,
       enrollPolicy: true,
       sequential: true,
+      protectionEnabled: true,
       categoryId: true,
       departmentId: true,
       completionRule: true,

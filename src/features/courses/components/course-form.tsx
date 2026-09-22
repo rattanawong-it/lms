@@ -252,6 +252,20 @@ export function CourseForm({
         </Label>
       </div>
 
+      {/* FR-15.9 — สวิตช์ระดับคอร์ส · ผู้ดูแลระบบยังปิดทับได้อีกชั้นจาก /admin/screen-events */}
+      <div className="flex items-start gap-2.5">
+        <Checkbox
+          id="protectionEnabled"
+          name="protectionEnabled"
+          defaultChecked={course?.protectionEnabled ?? true}
+          className="mt-0.5"
+        />
+        <Label htmlFor="protectionEnabled" className="text-[13px] leading-relaxed font-normal">
+          ป้องกันการคัดลอกเนื้อหา — ลายน้ำ, ปิดคลิกขวา/คัดลอก, เบลอเมื่อสลับหน้าต่าง
+          และไม่ให้สั่งพิมพ์
+        </Label>
+      </div>
+
       <div className="flex justify-end gap-2 pt-1">
         <Button type="submit" size="lg" disabled={pending}>
           {pending ? <Loader2 className="size-4 animate-spin" /> : null}

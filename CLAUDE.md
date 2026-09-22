@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 1 (MVP) — จบขั้น 5/7 · งานถัดไปคือขั้น 6 M15 Content Protection + M05 ฝั่งผู้เรียน |
+| สถานะปัจจุบัน | Phase 1 (MVP) — จบขั้น 6/7 (ผ่านจุดตรวจที่ 2) · งานถัดไปคือขั้น 7 M11 Announcement (in-app) แล้วปิดเฟส |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -65,12 +65,16 @@ pnpm db:studio
 - **Tailwind v4 + shadcn/ui** (`src/components/ui`) · ฟอนต์ **Anuphan** (ไทย) + **Inter** (อังกฤษ/ตัวเลข) + **JetBrains Mono** (โค้ด) ประกาศเป็น `--font-sans` / `--font-mono` ใน `globals.css`
 - **S3-compatible storage** — MinIO ตอนพัฒนา, Cloudflare R2 ตอน deploy โดยเปลี่ยนแค่ env `S3_*` (D-01)
 - **ตรวจสิทธิ์ 2 ชั้น:** `proxy.ts` เช็คแค่ว่ามี session cookie (optimistic, ไม่ query DB) → สิทธิ์จริงตรวจซ้ำใน Data Access Layer ทุกครั้ง (NFR-04 deny by default)
+- **CSP อยู่ใน `proxy.ts`** (nonce ใหม่ทุก request ตามคู่มือ Next 16) ส่วน security header คงที่อยู่ใน `next.config.ts`
+  จะฝัง iframe, โหลดสคริปต์ หรือเสิร์ฟสื่อจากโดเมนใหม่ **ต้องแก้ `buildCsp()` ด้วยเสมอ** ไม่งั้นเบราว์เซอร์บล็อกเงียบ ๆ
 
 ```
 src/
   app/(public) (auth) (learn) (instructor) (admin)   หน้าเว็บ แยกตามกลุ่มผู้ใช้
-    (learn)/learn/[courseId]/[lessonId]              หน้าเรียน — ขั้น 6 เติม player/PDF/watermark ตรงนี้
+    (learn)/learn/[courseId]/[lessonId]              หน้าเรียน (สารบัญ + สื่อ + ProtectedViewer)
   app/api/{auth,health,media,upload}                 route handler
+  app/api/{lesson-media,lesson-file,events/screen}   เสิร์ฟ PDF · ไฟล์ประกอบ · รับรายงานหน้าจอ
+  components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
   lib/         โครงพื้นฐานที่ใช้ร่วมกันทุกฟีเจอร์
@@ -94,6 +98,7 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `file-type.ts` | ตรวจ magic bytes ว่า MIME ที่ client แจ้งตรงกับเนื้อไฟล์จริง |
 | `object-key.ts` | ตั้ง object key ที่ปลอดภัย |
 | `audit.ts` | `writeAudit()` — บันทึก AuditLog |
+| `rate-limit.ts` | จำกัดความถี่แบบ fixed window ในหน่วยความจำ (ขอ signed URL, รายงานหน้าจอ) — **นับแยกต่อ process** |
 | `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |
 | `mail.ts` · `env.ts` · `rich-text-doc.ts` · `utils.ts` | อีเมล · env ที่ผ่าน Zod · เอกสาร Tiptap แบบ sanitize แล้ว · `cn()` |
 
@@ -124,7 +129,16 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 
 **ไฟล์อัปโหลด** — client ขอ presign → อัปโหลดตรงไป storage → `POST /api/upload/complete`
 ฝั่ง server ตรวจ `checkUpload()` (ชนิด+ขนาด) และ magic bytes เสมอ · ไฟล์ > 20 MB ใช้ multipart (ชิ้นละ 10 MB)
-วิดีโอ/PDF ของบทเรียน **ต้องเสิร์ฟผ่าน signed URL ≤ 5 นาที หลังตรวจ enrollment** (FR-15.7) — ห้ามใส่ลิงก์ตรงไปที่ bucket
+
+**ไฟล์บทเรียนของผู้เรียน** — ทุกเส้นทางต้องผ่าน `getLessonAccess()` (ตรวจ enrollment + กติกาเรียนตามลำดับ) ก่อนเสมอ
+| ชนิด | เส้นทาง | เหตุผล |
+|---|---|---|
+| วิดีโอ | signed URL ≤ 5 นาที ตรงไป storage · ขอตอนกดเล่น | ไฟล์ถึง 2 GB ไม่ควรวิ่งผ่านเซิร์ฟเวอร์ · ไม่ฝังใน RSC payload |
+| PDF | `/api/lesson-media/[lessonId]` stream + Range | pdf.js ติด CORS ข้ามโดเมน · object key ไม่หลุด · ตรวจสิทธิ์ทุก request |
+| ไฟล์ประกอบ | `/api/lesson-file/[attachmentId]` → redirect ไป signed URL | เฉพาะไฟล์ที่ผู้สอนติ๊กให้ดาวน์โหลด (FR-05.7) |
+
+**เนื้อหาบทเรียนต้องอยู่ใน `<ProtectedViewer>`** — ลายน้ำ, ปิดคลิกขวา/คัดลอก, เบลอเมื่อเสียโฟกัส และ `@media print`
+ผูกกับ attribute `data-protected` · เปิดใช้เมื่อเปิดทั้งสวิตช์ระดับระบบและระดับคอร์ส (FR-15.9)
 
 **UI/A11y** — mobile-first ทดสอบที่ 375 / 768 / 1280px · ทุกหน้ามี loading / empty / error state
 touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG AA
@@ -140,7 +154,13 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **MinIO ต้องใช้ path-style** (`S3_FORCE_PATH_STYLE=true`) ส่วน R2 ไม่ต้อง — ต่างกันแค่ env
 - **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
 - **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว
-- **`/api/media/[assetId]` ปัจจุบันรับเฉพาะรูปภาพ** — เส้นทางสำหรับวิดีโอ/PDF ของผู้เรียนต้องทำในขั้น 6
+- **`/api/media/[assetId]` รับเฉพาะรูปภาพ** — วิดีโอ/PDF ของบทเรียนไปตามตารางใน §5 ไม่ใช่เส้นทางนี้
+- **pdf.js v6 วาง `destroy()` ไว้ที่ loading task ไม่ใช่ที่ `PDFDocumentProxy`** เรียกผิดตัวแล้ว throw ตอน unmount
+  จน client navigation พังทั้งหน้า (`PDFDocumentProxy` มีแต่ `cleanup()`)
+- **ห้ามให้ React remount node ที่ถูกลบออกจาก DOM ไปแล้วจากภายนอก** — React จะเรียก `removeChild`
+  กับ node ที่ไม่มีพ่อแม่แล้ว throw จนทั้ง subtree หลุด · ลายน้ำจึงใช้วิธี **appendChild ของเดิมกลับเข้าไป**
+- **โมดูลที่มี `server-only` import ใน vitest ไม่ได้** — jsdom ถูกนับเป็น client · `vitest.config.ts`
+  alias ไปที่ `tests/unit/stubs/server-only.ts` ให้แล้ว
 - **`<RichText>` คืน `null` เมื่อไม่มีเนื้อหา แต่ `<RichText/>` เป็น element ที่ยัง truthy เสมอ**
   จะเช็คว่าบทเรียนมีเนื้อหาไหม ให้ถาม `parseRichTextDoc(content)` ไม่ใช่เช็คค่า JSX
 - **เพิ่ม route ใหม่แล้ว `pnpm typecheck` แดงเรื่อง `AppRoutes`** → รัน `npx next typegen` ก่อน (หรือ `pnpm dev`/`pnpm build` สักครั้ง)

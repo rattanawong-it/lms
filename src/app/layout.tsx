@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Anuphan, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -48,7 +49,11 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // next-themes แทรก <script> ของตัวเองเพื่อกันจอกะพริบตอนโหลด
+  // สคริปต์นั้นไม่ได้ผ่าน Next จึงต้องส่ง nonce ที่ proxy.ts ออกให้เอง ไม่งั้น CSP บล็อก
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="th"
@@ -56,7 +61,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${inter.variable} ${anuphan.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
-        <ThemeProvider>
+        <ThemeProvider nonce={nonce}>
           {/* shadcn รุ่นนี้ไม่ได้ใส่ TooltipProvider มาให้ใน SidebarProvider แล้ว
               จึงต้องครอบที่ root เพื่อให้ tooltip ของ sidebar ใช้งานได้ */}
           <TooltipProvider delayDuration={200}>

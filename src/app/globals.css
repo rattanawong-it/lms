@@ -283,3 +283,23 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/**
+ * M15 · FR-15.4 — สั่งพิมพ์แล้วต้องไม่ได้เนื้อหาบทเรียนติดไปด้วย
+ *
+ * ซ่อนเฉพาะกล่อง `[data-protected]` ของ `<ProtectedViewer>` ไม่ใช่ทั้งหน้า
+ * ผู้เรียนจึงยังพิมพ์หน้าที่ไม่ใช่เนื้อหาหวงห้าม (เช่น ใบประกาศ) ได้ตามปกติ
+ */
+@media print {
+  /* ซ่อน "ของข้างใน" ไม่ใช่ตัวกล่อง — กล่องที่ display:none จะไม่วาด ::after ให้ */
+  [data-protected] > * {
+    display: none !important;
+  }
+
+  [data-protected]::after {
+    content: "เนื้อหาบทเรียนนี้ไม่อนุญาตให้พิมพ์";
+    display: block !important;
+    padding: 24px;
+    text-align: center;
+  }
+}

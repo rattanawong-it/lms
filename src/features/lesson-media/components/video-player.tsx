@@ -35,11 +35,15 @@ export function VideoPlayer({
   lessonId,
   durationSec,
   canSaveProgress,
+  protectionActive = false,
 }: {
   lessonId: string;
   durationSec: number | null;
   /** false เมื่อผู้ดูเป็นผู้สอน/ผู้ดูแลที่ไม่ได้ลงทะเบียน — ดูได้แต่ไม่บันทึก */
   canSaveProgress: boolean;
+  /** เปิดการป้องกันอยู่ → ซ่อนปุ่มเต็มจอของตัวเล่น ให้ใช้ปุ่มของ `<ProtectedViewer>` แทน
+   *  เพราะ fullscreen ที่ `<video>` จะพาวิดีโอหลุดออกไปจากลายน้ำที่ครอบอยู่ (§6.2) */
+  protectionActive?: boolean;
 }) {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const issuedRef = React.useRef<Issued | null>(null);
@@ -204,7 +208,7 @@ export function VideoPlayer({
         playsInline
         preload="metadata"
         // FR-15.7 — ไม่มีปุ่มดาวน์โหลด และไม่ให้หลุดไปเล่นในหน้าต่างลอยที่ลายน้ำตามไปไม่ถึง
-        controlsList="nodownload noplaybackrate"
+        controlsList={`nodownload noplaybackrate${protectionActive ? " nofullscreen" : ""}`}
         disablePictureInPicture
         className="bg-foreground aspect-video w-full rounded-xl"
         onLoadedMetadata={(event) => {

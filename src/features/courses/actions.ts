@@ -54,6 +54,9 @@ function readCourseForm(formData: FormData) {
     visibility: formData.get("visibility"),
     enrollPolicy: formData.get("enrollPolicy"),
     sequential: formData.get("sequential") === "on" || formData.get("sequential") === "true",
+    protectionEnabled:
+      formData.get("protectionEnabled") === "on" ||
+      formData.get("protectionEnabled") === "true",
     categoryId: formData.get("categoryId"),
     departmentId: formData.get("departmentId"),
     coverAssetId: formData.get("coverAssetId"),

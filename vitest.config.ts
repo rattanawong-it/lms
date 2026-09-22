@@ -12,6 +12,10 @@ export default defineConfig({
     setupFiles: ["tests/unit/setup.ts"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "src") },
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+      // ดูเหตุผลใน tests/unit/stubs/server-only.ts
+      "server-only": path.resolve(__dirname, "tests/unit/stubs/server-only.ts"),
+    },
   },
 });

@@ -184,18 +184,31 @@
 - **Test:** `tests/unit/progress.test.ts` (สูตร % + sequential + completionRule) · `tests/unit/enrollment-schemas.test.ts`
   · `tests/e2e/enrollment.spec.ts` (ลงทะเบียน → my-courses → เรียนจบ → เรียนต่อ → ลงทะเบียนกลุ่ม)
 
-### ขั้น 6 — M15 Content Protection + M05 ฝั่งผู้เรียน ✋ *จุดตรวจที่ 2*
-- เติมลงใน `/learn/[courseId]/[lessonId]` ที่ขั้น 5 ทำไว้ — ไม่ต้องสร้างหน้าใหม่
-- `<ProtectedViewer>` ตาม system-design §6.2 ครอบ `<VideoPlayer>` / `<PdfCanvasViewer>` / `<RichTextRenderer>`
-- FR-15.1–15.4 บล็อกคลิกขวา/เลือก/คัดลอก/ลาก, ดักคีย์, เบลอเมื่อเสียโฟกัส, `@media print`
-- FR-15.5 dynamic watermark + `MutationObserver` สร้างกลับเมื่อถูกลบ
-- FR-15.6 DevTools heuristic
-- FR-15.7 signed URL ≤ 5 นาที ออกให้หลังตรวจ enrollment แล้วเท่านั้น
-- FR-15.8 `POST /api/events/screen` — รวม event debounce 5 วิ ส่งด้วย `sendBeacon` + rate limit
-- FR-15.9 สวิตช์เปิด/ปิดระดับระบบ (`SystemSetting`) และระดับคอร์ส (`Course.protectionEnabled`)
-- FR-05.2, 05.3, 05.6 — player, pdf.js canvas, ย้ายสารบัญไปเป็น drawer บนมือถือ
-- ต่อ `saveProgress()` ของ M06 เข้ากับตัวเล่นวิดีโอ (ทุก 15 วินาที + ดูครบ 90% = จบอัตโนมัติ)
-- **ต้องแก้ CSP ใน `next.config.ts`:** ตอนนี้ยังไม่มี CSP เลย ต้องเพิ่มให้อนุญาต frame เฉพาะ youtube/vimeo และ media จากโดเมน storage
+### ขั้น 6 — M15 Content Protection + M05 ฝั่งผู้เรียน — ✅ เสร็จ 2026-09-22 ✋ *จุดตรวจที่ 2*
+
+แบ่งเป็นสองคอมมิต: **6a** ส่งเนื้อหาถึงผู้เรียน · **6b** ป้องกันเนื้อหา
+
+**6a — M05 ฝั่งผู้เรียน**
+- FR-05.2 `<VideoPlayer>` — signed URL ขอตอนกดเล่น, ปรับความเร็ว, จำตำแหน่ง, ต่อ `saveProgress()` ทุก 15 วิ
+  และดูครบ 90% = จบอัตโนมัติ · ลิงก์ YouTube/Vimeo ฝังผ่าน `youtube-nocookie` / `player.vimeo.com`
+- FR-05.3 `<PdfCanvasViewer>` — canvas ล้วน ไม่มี text layer · ไฟล์มาจาก `/api/lesson-media/[lessonId]`
+  (ดู CHANGELOG #14 ว่าทำไม PDF ไม่ใช้ signed URL ตรงเหมือนวิดีโอ)
+- FR-05.5 ปุ่มเข้าห้องเรียนสดเปิดก่อนเวลา 15 นาที · FR-05.6 สารบัญเป็น drawer บนจอเล็ก
+- FR-05.7 ดาวน์โหลดได้เฉพาะไฟล์ที่ผู้สอนอนุญาต ผ่าน `/api/lesson-file/[attachmentId]`
+- `getLessonAccess()` เป็นด่านตรวจสิทธิ์เดียวของทั้งความคืบหน้าและการเปิดไฟล์
+
+**6b — M15 Content Protection**
+- `<ProtectedViewer>` ตาม system-design §6.2 ครอบเนื้อหาบทเรียนทุกชนิดที่จุดเดียว
+- FR-15.1/15.3/15.4 บล็อกคลิกขวา/เลือก/คัดลอก/ลาก · เบลอเมื่อเสียโฟกัส · `@media print` ซ่อนเนื้อหา
+- FR-15.2 ดักคีย์เท่าที่เบราว์เซอร์ยอมให้ (ดูข้อจำกัดที่ spec §M15)
+- FR-15.5 ลายน้ำสลับตำแหน่งทุก 20–30 วิ · `MutationObserver` **เอา node เดิมกลับเข้าที่** เมื่อถูกลบ
+- FR-15.6 DevTools heuristic แบบไม่ทำลาย — เบลอ + บันทึก แล้วกลับมาเองเมื่อเลิกสงสัย
+- FR-15.7 signed URL ≤ 5 นาที ออกหลังตรวจ enrollment + กติกาเรียนตามลำดับ
+- FR-15.8 `POST /api/events/screen` — รวม event ทุก 5 วิ ส่งด้วย `sendBeacon` + rate limit
+  · รายงานที่ `/admin/screen-events`
+- FR-15.9 สวิตช์ระดับระบบ (`SystemSetting`) และระดับคอร์ส (`Course.protectionEnabled`)
+- **CSP แบบ nonce อยู่ใน `proxy.ts`** (ไม่ใช่ `next.config.ts` ตามที่ร่างไว้ — ดู CHANGELOG #15)
+  อนุญาต frame เฉพาะ youtube-nocookie/vimeo และ media จากโดเมน storage ที่อ่านมาจาก env
 
 ### ขั้น 7 — M11 in-app + ปิดเฟส
 - FR-11.1 ประกาศ 3 ระดับ + ปักหมุด

@@ -43,6 +43,8 @@ export const courseSchema = z.object({
   visibility: z.enum(Visibility),
   enrollPolicy: z.enum(EnrollPolicy),
   sequential: z.coerce.boolean().default(false),
+  /** FR-15.9 — ปิดการป้องกันเนื้อหาเฉพาะคอร์สนี้ได้ (ระดับระบบเป็นอีกสวิตช์หนึ่ง) */
+  protectionEnabled: z.coerce.boolean().default(true),
   categoryId: optionalId,
   departmentId: optionalId,
   /** FR-05.1 — รหัส Asset ของภาพปกที่อัปโหลดไว้แล้ว (ค่าว่าง = ไม่มีปก) */

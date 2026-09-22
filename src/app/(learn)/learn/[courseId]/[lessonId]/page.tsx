@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RichText } from "@/components/shared/rich-text";
+import { ProtectedViewer } from "@/components/protected-viewer/protected-viewer";
 import { LessonCompleteButton } from "@/features/enrollment/components/lesson-actions";
 import { LessonOutline } from "@/features/enrollment/components/lesson-outline";
 import { OutlineDrawer } from "@/features/enrollment/components/outline-drawer";
@@ -22,6 +23,8 @@ import { PdfCanvasViewer } from "@/features/lesson-media/components/pdf-viewer";
 import { VideoPlayer } from "@/features/lesson-media/components/video-player";
 import { toEmbedUrl } from "@/features/lesson-media/lib/embed";
 import { LessonType, VideoSource } from "@/generated/prisma/enums";
+import { getProtectionState } from "@/features/protection/queries";
+import { requireUser } from "@/lib/rbac";
 import { parseRichTextDoc } from "@/lib/rich-text-doc";
 
 export async function generateMetadata(
@@ -82,6 +85,10 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
   const lesson = await getLearnLesson(courseId, lessonId);
   const outlineNav = <LessonOutline outline={outline} currentLessonId={lessonId} />;
 
+  // FR-15.9 — ต้องเปิดทั้งระดับระบบและระดับคอร์สจึงจะป้องกันจริง
+  const viewer = await requireUser();
+  const protection = await getProtectionState(viewer, outline.course.protectionEnabled);
+
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
       <div className="lg:order-2">
@@ -115,7 +122,18 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
         </div>
 
         <div className="mt-5">
-          <LessonBody lesson={lesson} canSaveProgress={!outline.isPreviewingAsStaff} />
+          <ProtectedViewer
+            enabled={protection.active}
+            watermark={protection.watermark}
+            lessonId={lesson.id}
+            allowFullscreen={lesson.type === LessonType.VIDEO}
+          >
+            <LessonBody
+              lesson={lesson}
+              canSaveProgress={!outline.isPreviewingAsStaff}
+              protectionActive={protection.active}
+            />
+          </ProtectedViewer>
         </div>
 
         {lesson.attachments.length > 0 ? (
@@ -190,9 +208,11 @@ function EmptyBody({ message }: { message: string }) {
 function LessonBody({
   lesson,
   canSaveProgress,
+  protectionActive,
 }: {
   lesson: Lesson;
   canSaveProgress: boolean;
+  protectionActive: boolean;
 }) {
   switch (lesson.type) {
     case LessonType.TEXT: {
@@ -210,6 +230,7 @@ function LessonBody({
             lessonId={lesson.id}
             durationSec={lesson.durationSec}
             canSaveProgress={canSaveProgress}
+            protectionActive={protectionActive}
           />
         );
       }
