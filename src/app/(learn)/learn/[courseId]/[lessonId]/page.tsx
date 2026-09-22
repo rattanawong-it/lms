@@ -5,21 +5,23 @@ import {
   ChevronLeft,
   ChevronRight,
   CircleCheckBig,
-  FileText,
+  Download,
   Lock,
   Paperclip,
-  Radio,
   ShieldAlert,
-  Video,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RichText } from "@/components/shared/rich-text";
 import { LessonCompleteButton } from "@/features/enrollment/components/lesson-actions";
 import { LessonOutline } from "@/features/enrollment/components/lesson-outline";
+import { OutlineDrawer } from "@/features/enrollment/components/outline-drawer";
 import { getLearnLesson, getLearnOutline } from "@/features/enrollment/queries";
-import { LessonType } from "@/generated/prisma/enums";
-import { formatDateTime } from "@/lib/dates";
+import { LivePanel } from "@/features/lesson-media/components/live-panel";
+import { PdfCanvasViewer } from "@/features/lesson-media/components/pdf-viewer";
+import { VideoPlayer } from "@/features/lesson-media/components/video-player";
+import { toEmbedUrl } from "@/features/lesson-media/lib/embed";
+import { LessonType, VideoSource } from "@/generated/prisma/enums";
 import { parseRichTextDoc } from "@/lib/rich-text-doc";
 
 export async function generateMetadata(
@@ -34,11 +36,10 @@ export async function generateMetadata(
 }
 
 /**
- * M06 — หน้าเรียน (โครงของขั้น 5)
+ * M05 · M06 — หน้าเรียน
  *
- * ขั้นนี้ทำเฉพาะสิ่งที่ M06 ต้องใช้: สารบัญ, การล็อกตามลำดับ, ปุ่มเรียนจบ และปุ่มบท ก่อนหน้า/ถัดไป
- * ตัวเล่นวิดีโอ, pdf.js และ `<ProtectedViewer>` (watermark + signed URL ≤ 5 นาที) อยู่ในขั้น 6
- * — ตอนนี้จึงยังไม่มีเส้นทางให้ผู้เรียนเปิดไฟล์วิดีโอ/PDF และหน้านี้บอกไว้ตรง ๆ
+ * ทุกอย่างที่เป็นเนื้อหาของบทเรียนอยู่ใน `<LessonBody>` เพื่อให้ขั้นต่อไป (M15)
+ * ครอบด้วย `<ProtectedViewer>` ได้ที่จุดเดียว
  */
 export default async function LessonPage(props: PageProps<"/learn/[courseId]/[lessonId]">) {
   const { courseId, lessonId } = await props.params;
@@ -79,12 +80,19 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
   }
 
   const lesson = await getLearnLesson(courseId, lessonId);
+  const outlineNav = <LessonOutline outline={outline} currentLessonId={lessonId} />;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
-      {/* สารบัญขึ้นก่อนบนจอเล็ก เพื่อให้เห็นว่าอยู่ตรงไหนของคอร์ส */}
       <div className="lg:order-2">
-        <LessonOutline outline={outline} currentLessonId={lessonId} />
+        {/* FR-05.6 — จอเล็กเก็บสารบัญไว้ใน drawer · จอ lg ขึ้นไปตรึงไว้ข้างเนื้อหา */}
+        <OutlineDrawer
+          completedLessons={outline.completedLessons}
+          totalLessons={outline.totalLessons}
+        >
+          {outlineNav}
+        </OutlineDrawer>
+        <div className="hidden lg:sticky lg:top-[78px] lg:block">{outlineNav}</div>
       </div>
 
       <article className="min-w-0 lg:order-1">
@@ -107,7 +115,7 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
         </div>
 
         <div className="mt-5">
-          <LessonBody lesson={lesson} />
+          <LessonBody lesson={lesson} canSaveProgress={!outline.isPreviewingAsStaff} />
         </div>
 
         {lesson.attachments.length > 0 ? (
@@ -120,9 +128,18 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
                 <li key={file.id} className="flex items-center gap-2.5 px-4 py-3 text-[13px]">
                   <Paperclip className="text-muted-foreground size-4 shrink-0" />
                   <span className="min-w-0 flex-1 truncate">{file.asset.originalName}</span>
-                  <span className="text-muted-foreground shrink-0 text-[11.5px]">
-                    {file.downloadable ? "ดาวน์โหลดได้ (ขั้น 6)" : "ดูในหน้าเรียนเท่านั้น"}
-                  </span>
+                  {/* FR-05.7 — ดาวน์โหลดได้เฉพาะไฟล์ที่ผู้สอนอนุญาตไว้ */}
+                  {file.downloadable ? (
+                    <Button asChild variant="outline" size="sm" className="shrink-0">
+                      <a href={`/api/lesson-file/${file.id}`}>
+                        <Download className="size-4" /> ดาวน์โหลด
+                      </a>
+                    </Button>
+                  ) : (
+                    <span className="text-muted-foreground shrink-0 text-[11.5px]">
+                      ผู้สอนไม่เปิดให้ดาวน์โหลด
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>
@@ -161,60 +178,72 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
 
 type Lesson = Awaited<ReturnType<typeof getLearnLesson>>;
 
-/** เนื้อหาของบทเรียนตามชนิด — ชนิดที่ต้องมีตัวเล่นสื่อยังรอขั้น 6 */
-function LessonBody({ lesson }: { lesson: Lesson }) {
-  if (lesson.type === LessonType.TEXT) {
-    // `<RichText>` คืน null เมื่อไม่มีเนื้อหา แต่ตัว element เองยัง truthy อยู่ดี
-    // จึงต้องถามจากตัวเอกสารว่าเหลือเนื้อหาไหม ก่อนตัดสินใจแสดงสถานะว่าง
-    const doc = parseRichTextDoc(lesson.content);
-    if (!doc) {
+function EmptyBody({ message }: { message: string }) {
+  return (
+    <p className="text-muted-foreground bg-card border-border rounded-xl border px-4 py-6 text-center text-[13px]">
+      {message}
+    </p>
+  );
+}
+
+/** เนื้อหาของบทเรียนตามชนิด — จุดเดียวที่ M15 จะเอา `<ProtectedViewer>` มาครอบในขั้นถัดไป */
+function LessonBody({
+  lesson,
+  canSaveProgress,
+}: {
+  lesson: Lesson;
+  canSaveProgress: boolean;
+}) {
+  switch (lesson.type) {
+    case LessonType.TEXT: {
+      // `<RichText>` คืน null เมื่อไม่มีเนื้อหา แต่ตัว element เองยัง truthy อยู่ดี
+      // จึงต้องถามจากตัวเอกสารว่าเหลือเนื้อหาไหม ก่อนตัดสินใจแสดงสถานะว่าง
+      const doc = parseRichTextDoc(lesson.content);
+      if (!doc) return <EmptyBody message="บทเรียนนี้ยังไม่มีเนื้อหา" />;
+      return <RichText content={doc} className="space-y-2" />;
+    }
+
+    case LessonType.VIDEO: {
+      if (lesson.videoSource === VideoSource.UPLOAD) {
+        return (
+          <VideoPlayer
+            lessonId={lesson.id}
+            durationSec={lesson.durationSec}
+            canSaveProgress={canSaveProgress}
+          />
+        );
+      }
+
+      const embed = toEmbedUrl(lesson.videoUrl);
+      if (!embed) return <EmptyBody message="ลิงก์วิดีโอของบทเรียนนี้ใช้ไม่ได้" />;
       return (
-        <p className="text-muted-foreground bg-card border-border rounded-xl border px-4 py-6 text-center text-[13px]">
-          บทเรียนนี้ยังไม่มีเนื้อหา
-        </p>
+        <iframe
+          src={embed}
+          title={lesson.title}
+          allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+          allowFullScreen
+          className="bg-foreground aspect-video w-full rounded-xl"
+        />
       );
     }
-    return <RichText content={doc} className="space-y-2" />;
+
+    case LessonType.PDF:
+      return (
+        <PdfCanvasViewer src={`/api/lesson-media/${lesson.id}`} title={lesson.title} />
+      );
+
+    case LessonType.LIVE:
+      return (
+        <LivePanel
+          liveUrl={lesson.liveUrl}
+          liveStartAt={lesson.liveStartAt}
+          liveEndAt={lesson.liveEndAt}
+          recordingUrl={lesson.recordingUrl}
+        />
+      );
+
+    default:
+      // QUIZ และ ASSIGNMENT เป็นงานของ M07/M08 ในเฟสถัดไป
+      return <EmptyBody message="บทเรียนชนิดนี้จะเปิดใช้งานในเฟสถัดไป" />;
   }
-
-  if (lesson.type === LessonType.LIVE) {
-    return (
-      <div className="bg-card border-border space-y-2 rounded-xl border p-4 text-[13px]">
-        <p className="flex items-center gap-2 font-semibold">
-          <Radio className="size-4" /> คาบเรียนสด
-        </p>
-        {lesson.liveStartAt ? (
-          <p className="text-muted-foreground num">
-            เริ่ม {formatDateTime(lesson.liveStartAt)}
-            {lesson.liveEndAt ? ` – ${formatDateTime(lesson.liveEndAt)}` : ""}
-          </p>
-        ) : null}
-        {lesson.liveUrl ? (
-          <Button asChild size="sm" className="mt-1">
-            <a href={lesson.liveUrl} target="_blank" rel="noopener noreferrer">
-              เข้าห้องเรียนสด
-            </a>
-          </Button>
-        ) : null}
-      </div>
-    );
-  }
-
-  const isVideo = lesson.type === LessonType.VIDEO;
-
-  return (
-    <div className="bg-card border-border flex flex-col items-center rounded-xl border px-6 py-10 text-center">
-      <span className="bg-muted text-muted-foreground mb-3 flex size-12 items-center justify-center rounded-xl">
-        {isVideo ? <Video className="size-5" /> : <FileText className="size-5" />}
-      </span>
-      <p className="text-[14px] font-semibold">
-        {isVideo ? "ตัวเล่นวิดีโอ" : "ตัวอ่านเอกสาร"}จะเปิดใช้งานในขั้นถัดไป
-      </p>
-      <p className="text-muted-foreground mt-1.5 max-w-[420px] text-[12.5px] leading-relaxed">
-        ไฟล์ของบทเรียนนี้ต้องเสิร์ฟผ่าน signed URL อายุไม่เกิน 5 นาที
-        พร้อมลายน้ำและการป้องกันการคัดลอก (FR-15.7) ซึ่งทำใน M15 ขั้น 6
-        ระหว่างนี้ยังกด “เรียนจบบทนี้” เพื่อบันทึกความคืบหน้าได้
-      </p>
-    </div>
-  );
 }

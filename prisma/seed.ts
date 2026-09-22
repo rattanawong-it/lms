@@ -78,6 +78,33 @@ function buildSamplePdf(): Buffer {
   return Buffer.from(pdf, "latin1");
 }
 
+/**
+ * MP4 ขนาดจิ๋วสำหรับทดสอบเส้นทาง "วิดีโออัปโหลด" (FR-05.2 · FR-15.7)
+ *
+ * มีแค่กล่อง `ftyp` และ `mdat` เปล่า ๆ — พอให้ผ่านการตรวจ magic bytes และให้ชุดเทสต์
+ * พิสูจน์ได้ว่า signed URL ออกถูกต้อง แต่ **เล่นจริงไม่ได้** เพราะไม่มี track อยู่ข้างใน
+ * ถ้าต้องการไฟล์ที่เล่นได้จริงให้ผู้สอนอัปโหลดเองผ่านหน้าจัดสารบัญ
+ */
+function buildSampleMp4(): Buffer {
+  const box = (type: string, payload: Buffer) => {
+    const header = Buffer.alloc(8);
+    header.writeUInt32BE(payload.byteLength + 8, 0);
+    header.write(type, 4, "ascii");
+    return Buffer.concat([header, payload]);
+  };
+
+  const ftyp = box(
+    "ftyp",
+    Buffer.concat([
+      Buffer.from("isom", "ascii"),
+      Buffer.from([0, 0, 2, 0]), // minor version
+      Buffer.from("isomiso2mp41", "ascii"), // compatible brands
+    ]),
+  );
+
+  return Buffer.concat([ftyp, box("mdat", Buffer.alloc(0))]);
+}
+
 /** อัปโหลดไฟล์ตัวอย่างแล้วบันทึกเป็น Asset — คืน null เมื่อ storage ยังไม่พร้อม */
 async function ensureSampleAsset(input: {
   key: string;
@@ -250,6 +277,15 @@ async function main() {
     uploadedById: instructor.id,
   });
 
+  const videoAsset = await ensureSampleAsset({
+    key: "video/seed/sample-lesson.mp4",
+    kind: AssetKind.VIDEO,
+    mime: "video/mp4",
+    originalName: "วิดีโอตัวอย่าง.mp4",
+    body: buildSampleMp4(),
+    uploadedById: instructor.id,
+  });
+
   const worksheetAsset = await ensureSampleAsset({
     key: "file/seed/sample-worksheet.txt",
     kind: AssetKind.FILE,
@@ -334,25 +370,35 @@ async function main() {
     durationSec: 213,
   });
 
+  if (videoAsset) {
+    await ensureLesson("วิดีโออัปโหลด (ไฟล์ตัวอย่าง เล่นจริงไม่ได้)", {
+      type: LessonType.VIDEO,
+      position: 3,
+      videoSource: VideoSource.UPLOAD,
+      assetId: videoAsset.id,
+      durationSec: 30,
+    });
+  }
+
   if (pdfAsset) {
     await ensureLesson("เอกสารประกอบการเรียน", {
       type: LessonType.PDF,
-      position: 3,
+      position: 4,
       assetId: pdfAsset.id,
     });
   }
 
   await ensureLesson("คาบถาม-ตอบสด", {
     type: LessonType.LIVE,
-    position: 4,
+    position: 5,
     liveUrl: "https://meet.google.com/abc-defg-hij",
     liveStartAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     liveEndAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
   });
 
   // สองชนิดนี้ยังไม่มีเนื้อหาของตัวเองจนกว่าจะถึง M07/M08 (เฟส 2)
-  await ensureLesson("แบบทดสอบท้ายบท", { type: LessonType.QUIZ, position: 5 });
-  await ensureLesson("งานที่ต้องส่ง", { type: LessonType.ASSIGNMENT, position: 6 });
+  await ensureLesson("แบบทดสอบท้ายบท", { type: LessonType.QUIZ, position: 6 });
+  await ensureLesson("งานที่ต้องส่ง", { type: LessonType.ASSIGNMENT, position: 7 });
 
   if (worksheetAsset) {
     const attached = await db.lessonAttachment.findFirst({

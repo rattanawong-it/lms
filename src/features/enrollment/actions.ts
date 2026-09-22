@@ -18,9 +18,8 @@ import {
   calcProgressPct,
   meetsCompletionRule,
   reachedVideoCompletion,
-  unlockedLessonIds,
-  type OutlineLesson,
 } from "@/features/enrollment/lib/progress";
+import { getLessonAccess, type LessonAccess } from "@/features/enrollment/queries";
 import {
   bulkEnrollSchema,
   decisionSchema,
@@ -499,81 +498,11 @@ export async function removeEnrollment(formData: FormData): Promise<ActionResult
 
 /* ────────────────────────── FR-06.3–06.5 ความคืบหน้า ────────────────────────── */
 
-type LessonContext = {
-  courseId: string;
-  slug: string;
-  sequential: boolean;
-  completionRule: Prisma.JsonValue;
-  durationSec: number | null;
-  lessons: OutlineLesson[];
-  enrollmentId: string | null;
-};
-
 /**
- * ข้อมูลที่ทุก action ของความคืบหน้าต้องใช้ร่วมกัน — คอร์สของบทเรียนนี้,
- * สถานะจบของทุกบท (เพื่อตัดสินการล็อก) และ enrollment ของผู้เรียนคนนี้
- *
- * ไม่รับ `courseId` จาก client เลย — ย้อนขึ้นไปจาก `lessonId` แล้วตรวจสิทธิ์ตามคอร์สที่เจอจริง
+ * ด่านตรวจสิทธิ์ของบทเรียนย้ายไปอยู่ที่ `getLessonAccess()` ใน queries.ts
+ * เพราะเส้นทางไฟล์วิดีโอ/PDF (M05 · FR-15.7) ต้องใช้ด่านเดียวกันนี้
  */
-async function lessonContext(lessonId: string): Promise<LessonContext | null> {
-  const lesson = await db.lesson.findUnique({
-    where: { id: lessonId },
-    select: {
-      durationSec: true,
-      section: {
-        select: {
-          course: {
-            select: {
-              id: true,
-              slug: true,
-              sequential: true,
-              completionRule: true,
-              sections: {
-                orderBy: { position: "asc" },
-                select: {
-                  lessons: {
-                    orderBy: { position: "asc" },
-                    select: { id: true, isPreview: true },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-  if (!lesson) return null;
-
-  const course = lesson.section.course;
-  const access = await assertCourseAccess(course.id, "learn");
-
-  const enrollment = await db.enrollment.findUnique({
-    where: { userId_courseId: { userId: access.user.id, courseId: course.id } },
-    select: {
-      id: true,
-      progress: { where: { completed: true }, select: { lessonId: true } },
-    },
-  });
-
-  const completed = new Set((enrollment?.progress ?? []).map((p) => p.lessonId));
-
-  return {
-    courseId: course.id,
-    slug: course.slug,
-    sequential: course.sequential,
-    completionRule: course.completionRule,
-    durationSec: lesson.durationSec,
-    enrollmentId: enrollment?.id ?? null,
-    lessons: course.sections.flatMap((s) =>
-      s.lessons.map((l) => ({
-        id: l.id,
-        isPreview: l.isPreview,
-        completed: completed.has(l.id),
-      })),
-    ),
-  };
-}
+type LessonContext = LessonAccess;
 
 /**
  * FR-06.3 — เขียน LessonProgress แล้วคำนวณ progressPct ใหม่ใน transaction เดียวกัน
@@ -643,11 +572,6 @@ async function writeProgress(
   });
 }
 
-/** บทเรียนนี้เปิดเรียนได้ตามกติกา sequential หรือไม่ — ตรวจฝั่ง server ทุกครั้ง (FR-06.5) */
-function assertUnlocked(ctx: LessonContext, lessonId: string): boolean {
-  return unlockedLessonIds(ctx.lessons, ctx.sequential).has(lessonId);
-}
-
 /**
  * FR-06.3/06.4 — บันทึกตำแหน่งวิดีโอล่าสุด เรียกทุก 15 วินาทีและตอนหยุดเล่น
  *
@@ -663,18 +587,18 @@ export async function saveProgress(input: {
   const parsed = saveProgressSchema.safeParse(input);
   if (!parsed.success) return { ok: false, message: "ข้อมูลความคืบหน้าไม่ถูกต้อง" };
 
-  const ctx = await lessonContext(parsed.data.lessonId);
+  const ctx = await getLessonAccess(parsed.data.lessonId);
   if (!ctx) return { ok: false, message: "ไม่พบบทเรียน" };
 
   // ผู้สอน/ผู้ดูแลที่เปิดดูหน้าเรียนไม่มี enrollment — ดูได้แต่ไม่บันทึกความคืบหน้า
   if (!ctx.enrollmentId) return { ok: true, message: "ดูในฐานะผู้สอน ไม่บันทึกความคืบหน้า" };
-  if (!assertUnlocked(ctx, parsed.data.lessonId)) {
+  if (!ctx.unlocked) {
     return { ok: false, message: "ต้องเรียนบทก่อนหน้าให้จบก่อน" };
   }
 
   const alreadyCompleted = ctx.lessons.find((l) => l.id === parsed.data.lessonId)?.completed;
   const autoComplete =
-    !alreadyCompleted && reachedVideoCompletion(parsed.data.positionSec, ctx.durationSec);
+    !alreadyCompleted && reachedVideoCompletion(parsed.data.positionSec, ctx.lesson.durationSec);
 
   const result = await writeProgress({ ...ctx, enrollmentId: ctx.enrollmentId }, parsed.data.lessonId, {
     lastPositionSec: parsed.data.positionSec,
@@ -707,12 +631,12 @@ export async function markLessonComplete(formData: FormData): Promise<ActionResu
     return { ok: false, message: "ข้อมูลไม่ถูกต้อง", fieldErrors: zodToFieldErrors(parsed.error) };
   }
 
-  const ctx = await lessonContext(parsed.data.lessonId);
+  const ctx = await getLessonAccess(parsed.data.lessonId);
   if (!ctx) return { ok: false, message: "ไม่พบบทเรียน" };
   if (!ctx.enrollmentId) {
     return { ok: false, message: "คุณกำลังดูในฐานะผู้สอน จึงไม่บันทึกความคืบหน้า" };
   }
-  if (!assertUnlocked(ctx, parsed.data.lessonId)) {
+  if (!ctx.unlocked) {
     return { ok: false, message: "ต้องเรียนบทก่อนหน้าให้จบก่อน" };
   }
 

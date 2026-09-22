@@ -54,3 +54,14 @@ export function formatRelative(value: Date | string | number, base: Date = new D
   }
   return "เมื่อสักครู่";
 }
+
+/**
+ * ความยาวเป็นวินาที → "12 นาที" / "1 ชม. 5 นาที" (คืน null เมื่อไม่รู้ความยาว)
+ * ใช้ร่วมกันระหว่างหน้ารายละเอียดคอร์ส สารบัญ และตัวเล่นวิดีโอ
+ */
+export function formatDuration(seconds: number | null | undefined): string | null {
+  if (!seconds || seconds <= 0) return null;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes} นาที`;
+  return `${Math.floor(minutes / 60)} ชม. ${minutes % 60} นาที`;
+}

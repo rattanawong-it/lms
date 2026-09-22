@@ -170,11 +170,22 @@ export type ObjectStream = {
   mime: string;
   size: number | null;
   etag: string | null;
+  /** ค่าของ header `Content-Range` เมื่อขอมาเป็นช่วง — null เมื่อส่งทั้งไฟล์ */
+  contentRange: string | null;
 };
 
-export async function getObjectStream(key: string): Promise<ObjectStream | null> {
+/**
+ * `range` ส่งค่า header `Range` ของ request ต่อไปให้ storage ตรง ๆ (เช่น `bytes=0-1023`)
+ * ใช้กับ PDF ที่ pdf.js ทยอยขอทีละช่วง — ไม่ต้องดึงทั้งไฟล์มาก่อนแล้วค่อยตัดเอง
+ */
+export async function getObjectStream(
+  key: string,
+  options: { range?: string | null } = {},
+): Promise<ObjectStream | null> {
   try {
-    const result = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    const result = await s3.send(
+      new GetObjectCommand({ Bucket: BUCKET, Key: key, Range: options.range ?? undefined }),
+    );
     const body = result.Body?.transformToWebStream();
     if (!body) return null;
     return {
@@ -182,6 +193,7 @@ export async function getObjectStream(key: string): Promise<ObjectStream | null>
       mime: result.ContentType ?? "application/octet-stream",
       size: result.ContentLength ?? null,
       etag: result.ETag ?? null,
+      contentRange: result.ContentRange ?? null,
     };
   } catch {
     return null;

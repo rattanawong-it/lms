@@ -110,7 +110,14 @@ test.describe("ผู้เรียนลงทะเบียนและบ�
       timeout: 30_000,
     });
     await expect(page.getByText("เรียนจบแล้ว").first()).toBeVisible();
-    await expect(page.getByText(/เรียนแล้ว [1-9]\d*\/\d+ บทเรียน/)).toBeVisible();
+
+    // จำนวนบทที่เรียนจบอยู่คนละที่กันตามขนาดจอ — จอ lg อยู่ในสารบัญข้างเนื้อหา
+    // ส่วนจอเล็กอยู่บนปุ่มเปิด drawer (FR-05.6) จึงรับได้ทั้งสองแบบ
+    const inSidebar = page.getByText(/เรียนแล้ว [1-9]\d*\/\d+ บทเรียน/);
+    const onDrawerButton = page.getByRole("button", {
+      name: /สารบัญบทเรียน \([1-9]\d*\/\d+\)/,
+    });
+    await expect(inSidebar.or(onDrawerButton).first()).toBeVisible();
   });
 
   test('ปุ่ม "เรียนต่อ" พากลับมาที่บทเรียนล่าสุด (FR-06.4)', async ({ page }, info) => {

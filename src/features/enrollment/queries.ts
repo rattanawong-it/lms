@@ -9,6 +9,7 @@ import { parseCompletionRule } from "@/features/courses/schemas";
 import {
   isLessonUnlocked,
   resumeLessonId,
+  unlockedLessonIds,
   type OutlineLesson,
 } from "@/features/enrollment/lib/progress";
 
@@ -469,5 +470,103 @@ export async function getCourseRoster(courseId: string): Promise<CourseRoster> {
       expired: enrolled.filter((r) => r.expired && r.status !== EnrollmentStatus.COMPLETED).length,
       active: enrolled.filter((r) => r.status === EnrollmentStatus.ACTIVE && !r.expired).length,
     },
+  };
+}
+
+/* ────────────────── ด่านเดียวของ "บทเรียนนี้เปิดให้คนนี้ดูได้ไหม" ────────────────── */
+
+export type LessonAccess = {
+  userId: string;
+  courseId: string;
+  slug: string;
+  sequential: boolean;
+  completionRule: Prisma.JsonValue;
+  /** null = ผู้สอน/ผู้ดูแลที่ไม่ได้ลงทะเบียน — ดูได้แต่ไม่บันทึกความคืบหน้า */
+  enrollmentId: string | null;
+  /** ทุกบทของคอร์สเรียงตามลำดับจริง พร้อมสถานะจบ — ใช้ตัดสินการล็อก */
+  lessons: OutlineLesson[];
+  lesson: { id: string; type: string; isPreview: boolean; durationSec: number | null };
+  /** ผ่านกติกาเรียนตามลำดับแล้วหรือยัง (FR-06.5) */
+  unlocked: boolean;
+  lastPositionSec: number;
+};
+
+/**
+ * ด่านร่วมของทุกเส้นทางที่แตะเนื้อหาบทเรียน — ทั้ง action ของความคืบหน้า (M06)
+ * และการออก URL ของไฟล์วิดีโอ/PDF (M05 · FR-15.7)
+ *
+ * ไม่รับ `courseId` จาก client เลย — ย้อนขึ้นไปจาก `lessonId` แล้วตรวจสิทธิ์ตามคอร์สที่เจอจริง
+ * คืน `null` เมื่อไม่มีบทเรียนนั้น ส่วนกรณีไม่มีสิทธิ์จะถูก `assertCourseAccess` ตัดไปก่อนแล้ว
+ */
+export async function getLessonAccess(lessonId: string): Promise<LessonAccess | null> {
+  const lesson = await db.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      id: true,
+      type: true,
+      isPreview: true,
+      durationSec: true,
+      section: {
+        select: {
+          course: {
+            select: {
+              id: true,
+              slug: true,
+              sequential: true,
+              completionRule: true,
+              sections: {
+                orderBy: { position: "asc" },
+                select: {
+                  lessons: {
+                    orderBy: { position: "asc" },
+                    select: { id: true, isPreview: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+  if (!lesson) return null;
+
+  const course = lesson.section.course;
+  const access = await assertCourseAccess(course.id, "learn");
+
+  const enrollment = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId: access.user.id, courseId: course.id } },
+    select: {
+      id: true,
+      progress: { select: { lessonId: true, completed: true, lastPositionSec: true } },
+    },
+  });
+
+  const progress = new Map((enrollment?.progress ?? []).map((p) => [p.lessonId, p] as const));
+
+  const lessons: OutlineLesson[] = course.sections.flatMap((s) =>
+    s.lessons.map((l) => ({
+      id: l.id,
+      isPreview: l.isPreview,
+      completed: progress.get(l.id)?.completed ?? false,
+    })),
+  );
+
+  return {
+    userId: access.user.id,
+    courseId: course.id,
+    slug: course.slug,
+    sequential: course.sequential,
+    completionRule: course.completionRule,
+    enrollmentId: enrollment?.id ?? null,
+    lessons,
+    lesson: {
+      id: lesson.id,
+      type: lesson.type,
+      isPreview: lesson.isPreview,
+      durationSec: lesson.durationSec,
+    },
+    unlocked: unlockedLessonIds(lessons, course.sequential).has(lesson.id),
+    lastPositionSec: progress.get(lesson.id)?.lastPositionSec ?? 0,
   };
 }

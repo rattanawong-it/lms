@@ -19,7 +19,7 @@ import { getCourseBySlug, getCourseMeta } from "@/features/catalog/queries";
 import { EnrollPanel } from "@/features/enrollment/components/enroll-panel";
 import { getEnrollmentState } from "@/features/enrollment/queries";
 import { getSessionUser } from "@/lib/rbac";
-import { formatDate } from "@/lib/dates";
+import { formatDate, formatDuration } from "@/lib/dates";
 import { CourseStatus, LessonType } from "@/generated/prisma/enums";
 
 /** FR-03.5 — metadata + OpenGraph ของหน้ารายละเอียดคอร์ส */
@@ -58,13 +58,6 @@ const LESSON_TYPE_LABEL: Record<string, string> = {
   [LessonType.QUIZ]: "แบบทดสอบ",
   [LessonType.ASSIGNMENT]: "งานที่ต้องส่ง",
 };
-
-function formatDuration(seconds: number | null): string | null {
-  if (!seconds || seconds <= 0) return null;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} นาที`;
-  return `${Math.floor(minutes / 60)} ชม. ${minutes % 60} นาที`;
-}
 
 /** M03 · FR-03.3 — หน้ารายละเอียดคอร์ส */
 export default async function CourseDetailPage(props: PageProps<"/courses/[slug]">) {
