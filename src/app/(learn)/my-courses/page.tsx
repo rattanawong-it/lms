@@ -1,22 +1,26 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/shared/page-header";
-import { PhaseNotice } from "@/components/shared/phase-notice";
+import { MyCoursesView } from "@/features/enrollment/components/my-courses-view";
+import { listMyCourses } from "@/features/enrollment/queries";
 
 export const metadata: Metadata = { title: "คอร์สของฉัน" };
 
-export default function MyCoursesPage() {
+/** M06 · FR-06.6 — คอร์สของฉัน แยกเป็น กำลังเรียน / เรียนจบ / หมดอายุ */
+export default async function MyCoursesPage() {
+  const courses = await listMyCourses();
+  const total = courses.active.length + courses.completed.length + courses.expired.length;
+
   return (
     <>
-      <PageHeader title="คอร์สของฉัน" description="M06 · กำลังเรียน / เรียนจบ / หมดอายุ" />
-      <PhaseNotice
-        phase="Phase 1 – MVP"
-        title="หน้าคอร์สของฉันกำลังพัฒนา"
-        items={[
-          "FR-06.6 แยกคอร์สเป็น กำลังเรียน / เรียนจบ / หมดอายุ",
-          "FR-06.3 แถบความคืบหน้ารายคอร์สจาก LessonProgress",
-          "FR-06.4 ปุ่ม \"เรียนต่อ\" กลับไปยังบทเรียนและตำแหน่งวิดีโอล่าสุด",
-        ]}
+      <PageHeader
+        title="คอร์สของฉัน"
+        description={
+          total > 0
+            ? `ลงทะเบียนไว้ทั้งหมด ${total} คอร์ส`
+            : "คอร์สที่คุณลงทะเบียนไว้จะแสดงที่นี่"
+        }
       />
+      <MyCoursesView courses={courses} />
     </>
   );
 }

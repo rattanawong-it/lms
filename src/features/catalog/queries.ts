@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { getSessionUser } from "@/lib/rbac";
 import { isAtLeast, type SessionUser } from "@/lib/roles";
-import { CourseStatus, Role, Visibility } from "@/generated/prisma/enums";
+import { CourseStatus, EnrollPolicy, Role, Visibility } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 import { mediaSrc } from "@/lib/rich-text-doc";
 import { CATALOG_PAGE_SIZE, type CatalogParams } from "@/features/catalog/schemas";
@@ -249,8 +249,10 @@ export async function catalogFilterOptions(): Promise<CatalogFilterOptions> {
 
 export type CourseDetail = CourseCard & {
   description: unknown;
-  enrollPolicy: string;
+  enrollPolicy: EnrollPolicy;
   sequential: boolean;
+  /** ผู้ดูคนนี้เป็นผู้สอนหรือผู้ดูแลของคอร์ส — เข้าหน้าเรียนได้โดยไม่ต้องลงทะเบียน (M06) */
+  viewerCanTeach: boolean;
   visibility: Visibility;
   status: CourseStatus;
   sections: {
@@ -336,6 +338,7 @@ export async function getCourseBySlug(slug: string): Promise<CourseDetail | null
     description: course.description,
     enrollPolicy: course.enrollPolicy,
     sequential: course.sequential,
+    viewerCanTeach: canPreviewDraft,
     visibility: course.visibility,
     status: course.status,
     sections: course.sections.map((s) => ({

@@ -172,16 +172,20 @@
 - **ยังไม่ทำในขั้นนี้ (อยู่ในขั้น 6):** ตัวเล่นวิดีโอ, pdf.js, หน้าเรียนของผู้เรียน และการออก signed URL
   ของเนื้อหาหลังตรวจ enrollment — ตอนนี้ไฟล์ที่อัปโหลดแล้วยังไม่มีหน้าไหนเปิดดูได้นอกจากฟอร์มของผู้สอน
 
-### ขั้น 5 — M06 Enrollment & Progress
-- FR-06.1 นโยบาย `OPEN` / `APPROVAL` / `INVITE_ONLY` + หน้าคำขออนุมัติ
-- FR-06.2 ลงทะเบียนกลุ่ม (เลือกผู้ใช้ / CSV — ใช้ `features/users/lib/csv.ts` เดิมได้) + วันหมดสิทธิ์
-- FR-06.3 บันทึกความคืบหน้า: ดูวิดีโอเกิน 90% หรือกด "เรียนจบบทนี้" → คำนวณ `progressPct` ใน transaction
-- FR-06.4 "เรียนต่อ" จาก `lastLessonId` + `lastPositionSec`
-- FR-06.5 บังคับเรียนตามลำดับ (ตรวจฝั่ง server ไม่ใช่แค่ซ่อนปุ่ม)
-- FR-06.6 `/my-courses` แยก กำลังเรียน / เรียนจบ / หมดอายุ
-- **Test:** unit ของสูตรคำนวณ % และกติกา sequential เป็นหัวใจ — เขียนก่อน UI
+### ขั้น 5 — M06 Enrollment & Progress — ✅ เสร็จ 2026-09-22
+- FR-06.1 นโยบาย `OPEN` / `APPROVAL` / `INVITE_ONLY` + คิวคำขออนุมัติใน `/teach/courses/[id]/students`
+- FR-06.2 ลงทะเบียนกลุ่มจากรายการอีเมลหรือเนื้อหา CSV ที่วางลงมา + วันหมดสิทธิ์ (รายคนและทั้งกลุ่ม)
+- FR-06.3 บันทึกความคืบหน้า: กด "เรียนจบบทนี้" ได้แล้ว · ดูวิดีโอครบ 90% พร้อมใน `saveProgress()` รอ player ขั้น 6
+  → คำนวณ `progressPct` ใน transaction เดียวกับที่เขียน `LessonProgress`
+- FR-06.4 "เรียนต่อ" จาก `lastLessonId` — `/learn/[courseId]` คำนวณปลายทางแล้ว redirect
+- FR-06.5 บังคับเรียนตามลำดับ ตรวจทั้งตอน render หน้าและใน action (ไม่ใช่แค่ซ่อนลิงก์ในสารบัญ)
+- FR-06.6 `/my-courses` แยก กำลังเรียน / เรียนจบ / หมดอายุ + แถบคำขอที่รออนุมัติ
+- **โครงหน้าเรียน** `/learn/[courseId]/[lessonId]` (ดู CHANGELOG #11) — สารบัญ + ล็อก + ปุ่มเรียนจบ ยังไม่มีสื่อ
+- **Test:** `tests/unit/progress.test.ts` (สูตร % + sequential + completionRule) · `tests/unit/enrollment-schemas.test.ts`
+  · `tests/e2e/enrollment.spec.ts` (ลงทะเบียน → my-courses → เรียนจบ → เรียนต่อ → ลงทะเบียนกลุ่ม)
 
 ### ขั้น 6 — M15 Content Protection + M05 ฝั่งผู้เรียน ✋ *จุดตรวจที่ 2*
+- เติมลงใน `/learn/[courseId]/[lessonId]` ที่ขั้น 5 ทำไว้ — ไม่ต้องสร้างหน้าใหม่
 - `<ProtectedViewer>` ตาม system-design §6.2 ครอบ `<VideoPlayer>` / `<PdfCanvasViewer>` / `<RichTextRenderer>`
 - FR-15.1–15.4 บล็อกคลิกขวา/เลือก/คัดลอก/ลาก, ดักคีย์, เบลอเมื่อเสียโฟกัส, `@media print`
 - FR-15.5 dynamic watermark + `MutationObserver` สร้างกลับเมื่อถูกลบ
@@ -189,7 +193,8 @@
 - FR-15.7 signed URL ≤ 5 นาที ออกให้หลังตรวจ enrollment แล้วเท่านั้น
 - FR-15.8 `POST /api/events/screen` — รวม event debounce 5 วิ ส่งด้วย `sendBeacon` + rate limit
 - FR-15.9 สวิตช์เปิด/ปิดระดับระบบ (`SystemSetting`) และระดับคอร์ส (`Course.protectionEnabled`)
-- FR-05.2, 05.3, 05.6 — player, pdf.js canvas, หน้าเรียนพร้อมสารบัญ (drawer บนมือถือ)
+- FR-05.2, 05.3, 05.6 — player, pdf.js canvas, ย้ายสารบัญไปเป็น drawer บนมือถือ
+- ต่อ `saveProgress()` ของ M06 เข้ากับตัวเล่นวิดีโอ (ทุก 15 วินาที + ดูครบ 90% = จบอัตโนมัติ)
 - **ต้องแก้ CSP ใน `next.config.ts`:** ตอนนี้ยังไม่มี CSP เลย ต้องเพิ่มให้อนุญาต frame เฉพาะ youtube/vimeo และ media จากโดเมน storage
 
 ### ขั้น 7 — M11 in-app + ปิดเฟส

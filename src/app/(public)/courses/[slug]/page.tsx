@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import { RichText } from "@/components/shared/rich-text";
 import { RatingStars } from "@/features/catalog/components/course-card";
 import { getCourseBySlug, getCourseMeta } from "@/features/catalog/queries";
+import { EnrollPanel } from "@/features/enrollment/components/enroll-panel";
+import { getEnrollmentState } from "@/features/enrollment/queries";
 import { getSessionUser } from "@/lib/rbac";
 import { formatDate } from "@/lib/dates";
 import { CourseStatus, LessonType } from "@/generated/prisma/enums";
@@ -69,6 +71,9 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
   const { slug } = await props.params;
   const [course, viewer] = await Promise.all([getCourseBySlug(slug), getSessionUser()]);
   if (!course) notFound();
+
+  // FR-06.1 — สถานะการลงทะเบียนของผู้ใช้คนนี้ ตัดสินว่าแผงข้างขวาแสดงปุ่มอะไร
+  const enrollment = viewer ? await getEnrollmentState(course.id) : null;
 
   const totalLessons = course.sections.reduce((sum, s) => sum + s.lessons.length, 0);
   const description = <RichText content={course.description} className="space-y-1" />;
@@ -273,14 +278,15 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
               </dl>
 
               {viewer ? (
-                <>
-                  <Button className="w-full" size="lg" disabled>
-                    ลงทะเบียนเรียน
-                  </Button>
-                  <p className="text-muted-foreground text-center text-[11.5px] leading-relaxed">
-                    การลงทะเบียนและหน้าเรียนเปิดใช้งานใน M06 (ขั้น 5 ของแผน Phase 1)
-                  </p>
-                </>
+                <EnrollPanel
+                  courseId={course.id}
+                  enrollPolicy={course.enrollPolicy}
+                  state={enrollment?.kind ?? "none"}
+                  enrollmentId={enrollment?.enrollmentId ?? null}
+                  progressPct={enrollment?.progressPct ?? 0}
+                  expiresAt={enrollment?.expiresAt ?? null}
+                  canTeach={course.viewerCanTeach}
+                />
               ) : (
                 <>
                   <Button asChild className="w-full" size="lg">

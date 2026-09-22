@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 1 (MVP) — จบขั้น 4/7 · งานถัดไปคือขั้น 5 M06 Enrollment & Progress |
+| สถานะปัจจุบัน | Phase 1 (MVP) — จบขั้น 5/7 · งานถัดไปคือขั้น 6 M15 Content Protection + M05 ฝั่งผู้เรียน |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -44,7 +44,8 @@ pnpm dev            # next dev (Turbopack)
 pnpm lint           # eslint
 pnpm typecheck      # tsc --noEmit
 pnpm test           # vitest run  (tests/unit)
-pnpm test:e2e       # playwright  (tests/e2e)
+pnpm test:e2e --workers=2   # playwright (tests/e2e) — ค่าเริ่มต้น 5 workers หนักเกินเครื่องพัฒนา
+npx next typegen    # สร้าง type ของ route ใหม่ ก่อน typecheck จะผ่าน
 
 pnpm db:migrate     # prisma migrate dev
 pnpm db:generate    # prisma generate → src/generated/prisma
@@ -68,6 +69,7 @@ pnpm db:studio
 ```
 src/
   app/(public) (auth) (learn) (instructor) (admin)   หน้าเว็บ แยกตามกลุ่มผู้ใช้
+    (learn)/learn/[courseId]/[lessonId]              หน้าเรียน — ขั้น 6 เติม player/PDF/watermark ตรงนี้
   app/api/{auth,health,media,upload}                 route handler
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -109,6 +111,13 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 
 **การตรวจสิทธิ์** — ทุก query/action/route handler ต้องเรียก `require*` หรือ `assertCourseAccess` ก่อนแตะข้อมูล
 อย่าไว้ใจ `proxy.ts` และอย่าเชื่อ id ที่ส่งมาจาก client โดยไม่ตรวจความเป็นเจ้าของ
+action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`) ให้ย้อนขึ้นไปหาคอร์สจาก id นั้นแล้วตรวจสิทธิ์ตามคอร์สที่เจอจริง
+ไม่ใช่ตามค่า `courseId` ที่ฟอร์มส่งมาคู่กัน (ดู `lessonContext()` ใน `features/enrollment/actions.ts`)
+
+**ความคืบหน้าและวันหมดอายุ (M06)** — สูตรทั้งหมดอยู่ใน `features/enrollment/lib/progress.ts` เป็น pure function
+(ไม่มี `server-only` เพราะทั้งสองฝั่งใช้) · แก้ `LessonProgress.completed` เมื่อไรต้องคำนวณ `Enrollment.progressPct`
+ใน transaction เดียวกันเสมอ · **ไม่มีงานเปลี่ยน `status` เป็น `EXPIRED` อัตโนมัติ** ทุกที่ที่ตัดสินสิทธิ์ต้องเทียบ
+`expiresAt` กับเวลาปัจจุบันเอง (`isExpired()` ใน `features/enrollment/queries.ts` และใน `assertCourseAccess`)
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
@@ -132,3 +141,13 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
 - **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว
 - **`/api/media/[assetId]` ปัจจุบันรับเฉพาะรูปภาพ** — เส้นทางสำหรับวิดีโอ/PDF ของผู้เรียนต้องทำในขั้น 6
+- **`<RichText>` คืน `null` เมื่อไม่มีเนื้อหา แต่ `<RichText/>` เป็น element ที่ยัง truthy เสมอ**
+  จะเช็คว่าบทเรียนมีเนื้อหาไหม ให้ถาม `parseRichTextDoc(content)` ไม่ใช่เช็คค่า JSX
+- **เพิ่ม route ใหม่แล้ว `pnpm typecheck` แดงเรื่อง `AppRoutes`** → รัน `npx next typegen` ก่อน (หรือ `pnpm dev`/`pnpm build` สักครั้ง)
+- **Playwright `--workers` เริ่มต้น (5) หนักเกินเครื่องพัฒนา** — `page.goto` timeout แบบสุ่มในเทสต์ที่ไม่เกี่ยวกับงานที่แก้
+  รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
+- **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`
+  ไม่งั้นสองโปรเจกต์จะแย่งสถานะของกันเอง (ดู `tests/e2e/enrollment.spec.ts`)
+- **หน้าที่มีตารางกว้าง (`min-w-[…]` ใน `overflow-x-auto`) ทำให้ Chrome โหมดจำลองมือถือย่อทั้งหน้า**
+  (layout viewport กลายเป็น ~688px ทั้งที่ตั้ง 375px) แล้วพิกัดคลิกของ Playwright กับ element ที่ `position: fixed`
+  เช่นกล่องโต้ตอบจะไม่ตรงจนคลิกไปโดน overlay — ในเทสต์ให้ส่งฟอร์มด้วยปุ่ม Enter แทนการคลิก
