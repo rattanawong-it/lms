@@ -426,6 +426,7 @@ model Course {
   gradingScheme      Json?        // [{grade:"A",min:80},...]
   certificateEnabled Boolean      @default(false)
   certificateTemplate Json?
+  gradeScale         Json?        // S2 — [{grade:"A",min:80},…] ว่าง = เกณฑ์ตั้งต้น
   departmentId       String?
   department         Department?  @relation(fields: [departmentId], references: [id])
   categoryId         String?
@@ -567,6 +568,7 @@ model Question {
   explanation Json?
   points      Decimal      @default(1) @db.Decimal(6, 2)
   tags        String[]
+  archivedAt  DateTime?    // S1 — เก็บเข้าคลังแทนการลบ (Answer cascade)
   choices     Choice[]
   quizLinks   QuizQuestion[]
   answers     Answer[]
@@ -679,6 +681,7 @@ model Submission {
   feedback     String?
   gradedById   String?
   gradedAt     DateTime?
+  returnedAt   DateTime?        // S4 — ส่งกลับให้แก้ (เปิดส่งใหม่แม้เลยกำหนด)
   submittedAt  DateTime         @default(now())
   @@unique([assignmentId, userId, attemptNo])
   @@index([assignmentId, status])
@@ -716,6 +719,7 @@ model Grade {
   gradeItem   GradeItem @relation(fields: [gradeItemId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   score       Decimal?  @db.Decimal(8, 2)
+  overridden  Boolean   @default(false) // S3 — ผู้สอนแก้มือ ผลสอบใหม่ไม่ทับ
   updatedAt   DateTime  @updatedAt
   @@unique([gradeItemId, userId])
 }
@@ -939,10 +943,10 @@ flowchart LR
 |---|---|---|
 | `(public)` | `/`, `/courses`, `/courses/[slug]`, `/verify/[code]` | ทุกคน |
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
-| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
-| `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,quizzes,assignments,gradebook,qa,announcements}` | INSTRUCTOR+ |
+| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
+| `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,assignments,gradebook,qa,announcements}` | INSTRUCTOR+ |
 | `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,announcements,reports,screen-events,audit,settings}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
-| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live}`, `/api/health` | ตามแต่ละ endpoint |
+| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live}`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
 

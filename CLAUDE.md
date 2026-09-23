@@ -27,7 +27,7 @@
 |---|---|
 | [`docs/spec.md`](./docs/spec.md) | ต้องทำอะไร (FR/NFR, checklist รายโมดูล, สถานะงาน §3.0.1, roadmap) |
 | [`docs/system-design.md`](./docs/system-design.md) | ทำอย่างไร (สถาปัตยกรรม, data model, authorization, flow, โครงสร้างโฟลเดอร์ §11) |
-| [`docs/phase-1-plan.md`](./docs/phase-1-plan.md) | ลำดับงานของเฟสปัจจุบัน 7 ขั้น + จุดหยุดตรวจ |
+| [`docs/phase-2-plan.md`](./docs/phase-2-plan.md) | ลำดับงานของเฟสปัจจุบัน (Phase 2 — อนุมัติแล้ว 2026-09-23) + จุดหยุดตรวจ · แผนเฟสก่อนหน้าอยู่ `phase-1-plan.md` |
 | [`docs/CHANGELOG-REQUIREMENTS.md`](./docs/CHANGELOG-REQUIREMENTS.md) | อะไรเปลี่ยนไปจาก baseline เพราะอะไร |
 
 **กฎการเปลี่ยนแปลง:** แก้ requirement, Prisma schema, โครงสร้างโฟลเดอร์ หรือ tech stack
