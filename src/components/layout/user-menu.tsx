@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LayoutDashboard, LogOut, Settings, ShieldCheck, User } from "lucide-react";
+import { Award, LayoutDashboard, LogOut, Settings, ShieldCheck, User } from "lucide-react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth-client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,6 +58,11 @@ export function UserMenu({ user }: { user: SessionUser }) {
         <DropdownMenuItem asChild>
           <Link href="/dashboard">
             <LayoutDashboard className="size-4" /> หน้าหลัก
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/certificates">
+            <Award className="size-4" /> ใบประกาศของฉัน
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

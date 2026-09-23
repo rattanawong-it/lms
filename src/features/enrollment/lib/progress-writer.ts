@@ -10,6 +10,7 @@ import {
   type QuizOutcome,
 } from "@/features/enrollment/lib/progress";
 import { courseTotalFor } from "@/features/gradebook/lib/total";
+import { issueCertificate } from "@/features/certificates/lib/issue";
 
 /**
  * FR-06.3 — จุดเดียวที่เขียนความคืบหน้าและตัดสินการจบคอร์ส
@@ -27,7 +28,7 @@ export type ProgressTarget = {
   totalLessons: number;
 };
 
-export type ProgressResult = { progressPct: number; courseCompleted: boolean; justCompleted: boolean };
+export type ProgressResult = { courseId: string; progressPct: number; courseCompleted: boolean; justCompleted: boolean };
 
 /**
  * FR-04.7 · M07 · M09 — ผลประเมินของผู้เรียนในคอร์ส
@@ -122,6 +123,7 @@ export async function writeProgress(
     });
 
     return {
+      courseId: target.courseId,
       progressPct,
       courseCompleted,
       justCompleted: courseCompleted && current.status !== EnrollmentStatus.COMPLETED,
@@ -159,9 +161,13 @@ export async function progressTargetFor(userId: string, courseId: string): Promi
   };
 }
 
-/** แจ้งผู้เรียนเมื่อเพิ่งจบคอร์ส — ใช้ร่วมระหว่างปุ่มเรียนจบและการสอบผ่าน */
+/**
+ * เพิ่งจบคอร์ส → แจ้งผู้เรียน + ออกใบประกาศ (M10 · flow §5.6)
+ * จุดเดียวที่ทุกทางที่ทำให้จบคอร์สผ่าน (ปุ่มเรียนจบ, วิดีโอ, สอบผ่าน, ส่งงาน, คะแนนรวมถึงเกณฑ์)
+ */
 export async function notifyCourseCompleted(result: ProgressResult, userId: string): Promise<void> {
   if (!result.justCompleted) return;
+  await issueCertificate(userId, result.courseId);
   await notify({
     userIds: [userId],
     type: NotificationType.ENROLLED,

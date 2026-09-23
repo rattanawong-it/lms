@@ -533,6 +533,8 @@ export async function saveProgress(input: {
       entityId: parsed.data.lessonId,
       after: { progressPct: result.progressPct },
     });
+    // ดูวิดีโอจนจบบทสุดท้ายก็ทำให้จบคอร์สได้ — แจ้งเตือน + ออกใบประกาศเหมือนปุ่มเรียนจบ
+    await notifyCourseCompleted(result, ctx.userId);
     revalidateLearner(ctx.courseId, ctx.slug);
   }
 

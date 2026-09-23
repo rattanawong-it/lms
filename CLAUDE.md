@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 1 (MVP) — **จบครบ 7 ขั้น** (2026-09-23) · งานถัดไปคือ Phase 2 (M07–M10) บน branch `phase-2` |
+| สถานะปัจจุบัน | Phase 2 (Assessment: M07–M10) — **ครบ 6 ขั้น** (2026-09-23) บน branch `phase-2` · รอจุดตรวจที่ 1–2 และเกณฑ์ตัดเกรดจริง (Q6) |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -75,6 +75,7 @@ src/
   app/api/{auth,health,media,upload}                 route handler
   app/api/{lesson-media,lesson-file,events/screen}   เสิร์ฟ PDF · ไฟล์ประกอบ · รับรายงานหน้าจอ
   app/api/submission-file                            เสิร์ฟไฟล์งานที่ผู้เรียนส่ง (เจ้าของ/ผู้สอนของคอร์ส)
+  app/api/certificate/[code] · (public)/verify/[code] ดาวน์โหลดใบประกาศ · หน้าตรวจสอบสาธารณะ (M10)
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
@@ -83,6 +84,7 @@ src/
   generated/prisma/                                   ผลจาก prisma generate (ห้ามแก้มือ)
 prisma/ schema.prisma · migrations · seed.ts
 tests/  unit (Vitest) · e2e (Playwright)
+assets/fonts/anuphan/  TTF สำหรับ PDF ใบประกาศ (OFL)
 docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 ```
 
@@ -145,6 +147,10 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 · คะแนนรวม/เกรดคำนวณด้วย `weightedTotal()`/`gradeFor()` ใน `lib/calc.ts` เท่านั้น (เศษส่วนตรงตัว ปัดครั้งเดียว)
 · เกณฑ์ตัดเกรดตั้งต้นอยู่ที่ `DEFAULT_GRADE_SCALE` จุดเดียว
 
+**ใบประกาศ (M10)** — ออกที่ `notifyCourseCompleted()` จุดเดียว (ทุกทางที่ทำให้จบคอร์สต้องเรียกฟังก์ชันนี้)
+· **ทุกข้อความที่เข้า PDF ต้องผ่าน `pdfText()`/`pdfWords()`** และมาจาก `buildCertificateModel()` เท่านั้น (บั๊ก `ำ` ของ react-pdf)
+· ใบที่ออกแล้วไม่เพิกถอนอัตโนมัติ — เพิกถอนได้โดยผู้ดูแลที่ `/admin/certificates`
+
 **การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
@@ -205,6 +211,9 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
 - **`loading.tsx` ทำให้ `forbidden()`/`notFound()` ที่เรียกในหน้าตอบสถานะ 200** (stream ออกไปก่อนแล้ว — UI 403 ยังแสดงถูก)
   หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้
+- **react-pdf กับภาษาไทย** — ตัดบรรทัดได้แค่ที่ช่องว่าง และถ้าให้จุดตัดผ่าน `registerHyphenationCallback` จะเติม "-" ทุกจุด
+  ฟอนต์ Anuphan ไม่มี glyph ของ zero-width space · วิธีที่ใช้: คำละ `<Text>` ใน `<View>` flex-wrap (`pdfWords()`)
+  · ดูผลจริงด้วย `CERT_PDF_OUT=ไฟล์.pdf npx vitest run tests/unit/certificate.test.ts` แล้วเปิดไฟล์
 - **อ่าน `e.currentTarget.value` ก่อนเรียก `setState(updater)` เสมอ** — updater ทำงานทีหลัง ตอนนั้น `currentTarget` เป็น null แล้ว
   หน้าพังทั้งหน้า ("This page couldn't load") ตอนพิมพ์ครั้งแรก
 - **ห้าม import ค่าคงที่ (ไม่ใช่ component) จากไฟล์ `"use client"` เข้า Server Component** — ได้ client reference ไม่ใช่ค่าจริง ให้วางไว้ใน `schemas.ts`/`lib/`

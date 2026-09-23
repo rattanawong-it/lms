@@ -944,8 +944,8 @@ flowchart LR
 | `(public)` | `/`, `/courses`, `/courses/[slug]`, `/verify/[code]` | ทุกคน |
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
 | `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
-| `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,qa,announcements}` | INSTRUCTOR+ |
-| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,announcements,reports,screen-events,audit,settings}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
+| `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
+| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,announcements,reports,screen-events,audit,settings}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
 | API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live}`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
@@ -1317,7 +1317,7 @@ LMS/
 │  │  ├─ (learn)/   dashboard/, my-courses/, learn/[courseId]/[lessonId]/, quiz/[attemptId]/, certificates/, notifications/, announcements/, settings/
 │  │  ├─ (instructor)/teach/...
 │  │  ├─ (admin)/admin/...
-│  │  ├─ api/       auth/[...all]/, upload/, media/[assetId]/, events/screen/, line/webhook/, cron/, health/
+│  │  ├─ api/       auth/[...all]/, upload/, media/[assetId]/, lesson-media/, lesson-file/, submission-file/, certificate/[code]/, events/screen/, line/webhook/, cron/, health/
 │  │  ├─ layout.tsx, globals.css, not-found.tsx, forbidden.tsx
 │  ├─ components/
 │  │  ├─ ui/                   (shadcn — ไม่แก้ด้วยมือ)
@@ -1326,13 +1326,14 @@ LMS/
 │  │  └─ shared/               data-table, empty-state, rich-text, file-uploader
 │  ├─ features/
 │  │  ├─ auth/ users/ departments/ catalog/ course-builder/ content/ enrollment/
-│  │  ├─ questions/ quiz/ assignment/ gradebook/ certificate/ announcements/ notifications/
+│  │  ├─ questions/ quiz/ assignments/ gradebook/ certificates/ announcements/ notifications/
 │  │  ├─ line/ qa/ review/ protection/ reports/ audit/ settings/
 │  │  │   └─ (แต่ละโฟลเดอร์) queries.ts · actions.ts · schemas.ts · components/ · lib/
 │  ├─ lib/                     auth.ts, auth-client.ts, db.ts, rbac.ts (server), roles.ts (client-safe), permissions.ts,
 │  │                          storage.ts, notify/, audit.ts, utils.ts, dates.ts, env.ts, mail.ts, action-result.ts,
 │  │                          csv.ts, xlsx.ts (server), decimal.ts
 │  └─ generated/prisma/        (gitignored)
+├─ assets/fonts/anuphan/       TTF ของใบประกาศ PDF (ตัว render ฝั่ง server ใช้ next/font ไม่ได้) + OFL.txt
 ├─ proxy.ts
 ├─ tests/
 │  ├─ unit/                    Vitest — roles, csv, safe-next (และ grading/progress ในเฟสถัดไป)

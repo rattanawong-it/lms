@@ -228,6 +228,24 @@ export async function readHead(key: string): Promise<Uint8Array | null> {
   }
 }
 
+/**
+ * เขียนไฟล์ที่ server สร้างเอง (ใบประกาศ PDF — M10) ลง storage ตรง ๆ
+ * ไฟล์ที่ผู้ใช้อัปโหลดยังต้องผ่าน presign → complete (ตรวจ magic bytes) เหมือนเดิม
+ */
+export async function putObject(key: string, body: Uint8Array, mime: string): Promise<void> {
+  await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: body, ContentType: mime }));
+}
+
+/** อ่านทั้งไฟล์เข้าหน่วยความจำ — ใช้กับไฟล์เล็กเท่านั้น (โลโก้/ลายเซ็นบนใบประกาศ ≤ 5 MB) */
+export async function readObject(key: string): Promise<Uint8Array | null> {
+  try {
+    const result = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+    return (await result.Body?.transformToByteArray()) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export async function deleteObject(key: string): Promise<void> {
   await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }

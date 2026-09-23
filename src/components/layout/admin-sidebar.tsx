@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Award,
   Building2,
   ClipboardList,
   FileBarChart,
@@ -68,6 +69,7 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
         roles: [Role.SUPER_ADMIN],
       },
       { href: "/admin/courses", label: "คอร์สรออนุมัติ", icon: ClipboardList },
+      { href: "/admin/certificates", label: "ใบประกาศ", icon: Award },
       { href: "/admin/assessment", label: "การประเมินผล", icon: FileBarChart, phase: "เฟส 2" },
     ],
   },

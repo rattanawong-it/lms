@@ -92,7 +92,8 @@
 | **M07 Quiz / Exam** | ✅ เสร็จ (รอจุดตรวจที่ 1) | Phase 2 ขั้น 1–3 | คลังข้อสอบ · แบบทดสอบ/ทำข้อสอบ · ตรวจอัตนัย + ผลสอบของผู้สอน · `features/questions`, `features/quiz` |
 | **M08 Assignment** | ✅ เสร็จ | Phase 2 ขั้น 4 | `features/assignments` · ผู้เรียนอัปโหลดได้เฉพาะในบริบทของงาน · `/api/submission-file/[assetId]` |
 | **M09 Gradebook** | ✅ เสร็จ | Phase 2 ขั้น 5 | `features/gradebook` · เกณฑ์ตัดเกรดยังเป็นค่าชั่วคราว (Q6) |
-| M10, M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 2–3 | ตาม roadmap §6 |
+| **M10 Certificate** | ✅ เสร็จ (รอจุดตรวจที่ 2) | Phase 2 ขั้น 6 | `features/certificates` · PDF ด้วย `@react-pdf/renderer` + Anuphan · `/verify/[code]` สาธารณะ |
+| M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 3 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
@@ -280,8 +281,8 @@
 | FR-10.4 | ผู้เรียนดาวน์โหลดใบประกาศของตนเองได้ (เป็นไฟล์ที่อนุญาตให้ดาวน์โหลด) |
 | FR-10.5 | แอดมินเพิกถอนใบประกาศได้ (หน้า verify จะแสดงว่า "ถูกเพิกถอน") |
 
-- [ ] FR-10.1 · [ ] FR-10.2 · [ ] FR-10.3 · [ ] FR-10.4 · [ ] FR-10.5
-- [ ] DoD ครบ 7 ข้อ
+- [x] FR-10.1 · [x] FR-10.2 · [x] FR-10.3 · [x] FR-10.4 · [x] FR-10.5
+- [~] DoD ครบ 7 ข้อ — รอจุดตรวจที่ 2
 
 ### M11 — Announcement & Notification (P0)
 | ID | Requirement |
@@ -419,7 +420,7 @@
 |---|---|---|---|
 | **Phase 0 – Foundation** | M00 (เอกสารกำกับ), Scaffold, DB schema, M01, M02, Layout responsive | ระบบ login และโครง role พร้อมใช้ | ✅ เสร็จ |
 | **Phase 1 – MVP** | M03, M04, M05, M06, M15, M11 (in-app) | สร้างคอร์ส เรียน และป้องกันเนื้อหาได้ | ✅ เสร็จ 2026-09-23 |
-| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | 🔸 ขั้น 5/6 ([`phase-2-plan.md`](./phase-2-plan.md)) |
+| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | ✅ ครบ 6 ขั้น 2026-09-23 — รอจุดตรวจที่ 1–2 ([`phase-2-plan.md`](./phase-2-plan.md)) |
 | **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | ⬜ ยังไม่เริ่ม |
 | **Phase 4 – Commerce** | M18, DRM (ทางเลือก) | ขายคอร์ส | ⬜ ยังไม่เริ่ม |
 
