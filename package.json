@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "prepare": "node scripts/install-git-hooks.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",

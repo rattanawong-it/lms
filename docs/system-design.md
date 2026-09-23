@@ -1338,6 +1338,7 @@ LMS/
 ├─ tests/
 │  ├─ unit/                    Vitest — roles, csv, safe-next (และ grading/progress ในเฟสถัดไป)
 │  └─ e2e/                     Playwright — viewport 375 และ 1280
+├─ .githooks/pre-commit        lint → next typegen → typecheck → unit (ติดตั้งผ่าน `prepare` → scripts/install-git-hooks.mjs)
 ├─ vitest.config.ts, playwright.config.ts
 ├─ .github/workflows/ci.yml    lint → typecheck → unit → migrate+seed → e2e
 ├─ docker-compose.yml

@@ -55,6 +55,9 @@ pnpm db:studio
 ```
 
 **ก่อนคอมมิตทุกครั้ง:** `pnpm lint && pnpm typecheck && pnpm test` (CI รันชุดเดียวกันใน `.github/workflows/ci.yml`)
+— **บังคับด้วย pre-commit hook** ใน `.githooks/pre-commit` (ติดตั้งเองตอน `pnpm install` ผ่านสคริปต์ `prepare`
+→ `git config core.hooksPath .githooks`) · ไม่ผ่าน = commit ไม่เกิด · ห้ามข้ามด้วย `--no-verify`
+· e2e ไม่อยู่ใน hook — **ก่อน commit ปิดขั้นงานให้รัน `pnpm test:e2e --workers=2` ทั้งชุดเอง**
 บริการท้องถิ่น: Postgres `5432` · MinIO `9000` (คอนโซล `9001`) · Mailpit `8025` (อ่านอีเมลยืนยัน/รีเซ็ตรหัสผ่าน)
 
 ## 4. สถาปัตยกรรมย่อ

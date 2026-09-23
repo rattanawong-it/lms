@@ -1,0 +1,15 @@
+#!/bin/sh
+# ตรวจก่อนคอมมิตทุกครั้ง (CLAUDE.md §3) — ชุดเดียวกับที่ CI รันก่อน e2e
+# ติดตั้งอัตโนมัติด้วย `pnpm install` (สคริปต์ prepare → git config core.hooksPath .githooks)
+# e2e ไม่อยู่ในนี้ (ต้องเปิด DB/MinIO และใช้เวลาหลายนาที) — CI รันให้ และรันเองด้วย `pnpm test:e2e --workers=2` ก่อนปิดขั้นงาน
+set -e
+
+echo "▶ pre-commit: lint · typecheck · unit test"
+
+pnpm lint
+# route ใหม่ต้องสร้าง type ก่อน ไม่งั้น typecheck แดงเรื่อง AppRoutes (CLAUDE.md §6)
+pnpm exec next typegen > /dev/null
+pnpm typecheck
+pnpm test
+
+echo "✔ pre-commit ผ่าน"

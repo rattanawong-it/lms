@@ -11,5 +11,6 @@
 *.woff binary
 *.woff2 binary
 *.pdf binary
+*.ttf binary
 
 pnpm-lock.yaml linguist-generated=true
