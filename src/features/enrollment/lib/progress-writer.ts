@@ -9,6 +9,7 @@ import {
   meetsCompletionRule,
   type QuizOutcome,
 } from "@/features/enrollment/lib/progress";
+import { courseTotalFor } from "@/features/gradebook/lib/total";
 
 /**
  * FR-06.3 — จุดเดียวที่เขียนความคืบหน้าและตัดสินการจบคอร์ส
@@ -29,23 +30,28 @@ export type ProgressTarget = {
 export type ProgressResult = { progressPct: number; courseCompleted: boolean; justCompleted: boolean };
 
 /**
- * FR-04.7 · M07 — ผลแบบทดสอบของผู้เรียนในคอร์ส (ไม่มีแบบทดสอบ = undefined เงื่อนไขที่อิงแบบทดสอบถูกข้าม)
- * `totalScorePct` จะมาจากคะแนนรวมถ่วงน้ำหนักของสมุดคะแนนในขั้น 5 (Q4) — ตอนนี้ยังเป็น null
+ * FR-04.7 · M07 · M09 — ผลประเมินของผู้เรียนในคอร์ส
+ * `allPassed` — ผ่านแบบทดสอบครบทุกชุด (ไม่มีแบบทดสอบ = ผ่าน)
+ * `totalScorePct` — คะแนนรวมถ่วงน้ำหนักของสมุดคะแนน (Q4) · คำนวณเฉพาะเมื่อคอร์สตั้งคะแนนขั้นต่ำ
  */
-async function quizOutcome(
+async function assessmentOutcome(
   tx: Prisma.TransactionClient,
   userId: string,
   courseId: string,
-): Promise<QuizOutcome | undefined> {
+  needTotal: boolean,
+): Promise<QuizOutcome> {
   const quizzes = await tx.quiz.findMany({ where: { courseId }, select: { id: true } });
-  if (quizzes.length === 0) return undefined;
-
-  const passed = await tx.quizAttempt.findMany({
-    where: { userId, passed: true, quizId: { in: quizzes.map((q) => q.id) } },
-    select: { quizId: true },
-    distinct: ["quizId"],
-  });
-  return { allPassed: passed.length === quizzes.length, totalScorePct: null };
+  const passed = quizzes.length
+    ? await tx.quizAttempt.findMany({
+        where: { userId, passed: true, quizId: { in: quizzes.map((q) => q.id) } },
+        select: { quizId: true },
+        distinct: ["quizId"],
+      })
+    : [];
+  return {
+    allPassed: passed.length === quizzes.length,
+    totalScorePct: needTotal ? await courseTotalFor(tx, courseId, userId) : null,
+  };
 }
 
 /**
@@ -85,11 +91,11 @@ export async function writeProgress(
     });
 
     const progressPct = calcProgressPct(completedCount, target.totalLessons);
-    // minScore อิงคะแนนรวมของสมุดคะแนน (Q4) ซึ่งยังไม่มีจนถึงขั้น 5 — ยังไม่บังคับใช้
+    // minScore อิงคะแนนรวมถ่วงน้ำหนักของสมุดคะแนน (Q4) — น้ำหนักยังไม่ครบ 100% = ยังไม่ผ่านเงื่อนไขนี้
     const courseCompleted = meetsCompletionRule(
       progressPct,
-      { ...rule, minScore: null },
-      await quizOutcome(tx, target.userId, target.courseId),
+      rule,
+      await assessmentOutcome(tx, target.userId, target.courseId, rule.minScore !== null),
     );
 
     const current = await tx.enrollment.findUniqueOrThrow({

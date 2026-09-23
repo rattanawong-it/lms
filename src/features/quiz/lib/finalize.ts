@@ -9,6 +9,7 @@ import {
 } from "@/features/enrollment/lib/progress-writer";
 import { gradeAnswer, totalAttempt } from "@/features/quiz/lib/grading";
 import { isOverdue, parseSlots } from "@/features/quiz/lib/attempt";
+import { afterScoreChange } from "@/features/gradebook/lib/sync";
 
 /**
  * M07 · FR-07.4 / FR-07.5 — ปิด attempt: ตรวจทุกข้อ รวมคะแนน และบันทึกผล
@@ -103,6 +104,8 @@ export async function finalizeAttempt(
     after: { score: totals.score, maxScore: totals.maxScore, passed: totals.passed, pending: totals.pending },
   });
 
+  // M09 — ตรวจเสร็จแล้วเท่านั้นที่เข้าสมุดคะแนน (ยังมีอัตนัยรอตรวจ = รอ reviewAnswer)
+  if (!totals.pending) await afterScoreChange(attempt.quiz.courseId, attempt.userId);
   if (totals.passed) await recordPass(attempt.userId, attempt.quiz.courseId, attempt.quiz.lessonId);
   return { finalized: true, passed: totals.passed };
 }

@@ -14,17 +14,7 @@ import {
   type QuestionImportPreview,
 } from "@/features/questions/actions";
 import { IMPORT_MAX_BYTES, IMPORT_MAX_ROWS, QUESTION_TYPE_LABEL } from "@/features/questions/schemas";
-
-/** ข้อมูล base64 จาก server → ดาวน์โหลดเป็นไฟล์ในเบราว์เซอร์ */
-function saveBase64(file: { filename: string; mime: string; base64: string }) {
-  const bytes = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
-  const url = URL.createObjectURL(new Blob([bytes], { type: file.mime }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = file.filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+import { saveBase64 } from "@/components/shared/save-file";
 
 /** M07 · FR-07.7 — นำเข้าข้อสอบจาก CSV หรือ Excel (ตรวจทุกแถวก่อนยืนยัน) */
 export function QuestionImport({ courseId, onDone }: { courseId: string; onDone: () => void }) {

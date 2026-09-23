@@ -1,0 +1,140 @@
+import { describe, expect, it } from "vitest";
+import {
+  bandsError,
+  DEFAULT_GRADE_SCALE,
+  gradeFor,
+  parseGradeScale,
+  weightedTotal,
+  weightSum,
+} from "@/features/gradebook/lib/calc";
+import { cellScoreSchema, gradeScaleSchema, manualItemSchema, weightsSchema } from "@/features/gradebook/schemas";
+import { meetsCompletionRule } from "@/features/enrollment/lib/progress";
+
+const scores = (entries: Record<string, number | null>) => new Map(Object.entries(entries));
+
+describe("คะแนนรวมถ่วงน้ำหนัก (FR-09.2)", () => {
+  const items = [
+    { id: "quiz", maxScore: 100, weight: 30 },
+    { id: "work", maxScore: 20, weight: 50 },
+    { id: "attend", maxScore: 10, weight: 20 },
+  ];
+
+  it("รวม = Σ คะแนน/เต็ม × น้ำหนัก", () => {
+    // 80/100×30 + 15/20×50 + 9/10×20 = 24 + 37.5 + 18
+    expect(weightedTotal(items, scores({ quiz: 80, work: 15, attend: 9 }))).toBe(79.5);
+  });
+
+  it("ช่องที่ยังไม่มีคะแนนนับเป็น 0", () => {
+    expect(weightedTotal(items, scores({ quiz: 80, work: null }))).toBe(24);
+  });
+
+  it("น้ำหนักรวมไม่เท่ากับ 100 → ยังคำนวณไม่ได้ (null)", () => {
+    expect(weightedTotal([{ id: "a", maxScore: 10, weight: 60 }], scores({ a: 10 }))).toBeNull();
+    expect(weightedTotal([], scores({}))).toBeNull();
+  });
+
+  it("น้ำหนักทศนิยมไม่เพี้ยนแบบ float (33.33 + 33.33 + 33.34 = 100)", () => {
+    expect(weightSum([33.33, 33.33, 33.34])).toBe(100);
+    expect(weightSum([0.1, 0.2, 99.7])).toBe(100);
+    const thirds = [
+      { id: "a", maxScore: 3, weight: 33.33 },
+      { id: "b", maxScore: 3, weight: 33.33 },
+      { id: "c", maxScore: 3, weight: 33.34 },
+    ];
+    expect(weightedTotal(thirds, scores({ a: 3, b: 3, c: 3 }))).toBe(100);
+  });
+
+  it("ปัดครั้งเดียวที่ 2 ตำแหน่ง (ครึ่งขึ้น) — ไม่ปัดระหว่างทาง", () => {
+    // 1/3 × 100 = 33.333… → 33.33
+    expect(weightedTotal([{ id: "a", maxScore: 3, weight: 100 }], scores({ a: 1 }))).toBe(33.33);
+    // 2/3 × 100 = 66.666… → 66.67
+    expect(weightedTotal([{ id: "a", maxScore: 3, weight: 100 }], scores({ a: 2 }))).toBe(66.67);
+    // สองรายการที่ถ้าปัดแยกกันจะได้ 33.33 + 33.33 = 66.66 แต่รวมตรงตัวได้ 66.67
+    const halves = [
+      { id: "a", maxScore: 3, weight: 50 },
+      { id: "b", maxScore: 3, weight: 50 },
+    ];
+    expect(weightedTotal(halves, scores({ a: 2, b: 2 }))).toBe(66.67);
+  });
+
+  it("กรณีขอบ 79.995 → ปัดเป็น 80.00 แล้วได้ A (ตัวเลขที่เห็น = ตัวเลขที่ใช้ตัดเกรด)", () => {
+    const total = weightedTotal([{ id: "a", maxScore: 200, weight: 100 }], scores({ a: 159.99 }));
+    expect(total).toBe(80);
+    expect(gradeFor(total, DEFAULT_GRADE_SCALE)).toBe("A");
+    const below = weightedTotal([{ id: "a", maxScore: 200, weight: 100 }], scores({ a: 159.98 }));
+    expect(below).toBe(79.99);
+    expect(gradeFor(below, DEFAULT_GRADE_SCALE)).toBe("B+");
+  });
+});
+
+describe("เกณฑ์ตัดเกรด", () => {
+  it("ค่าตั้งต้น (Q6) ครอบคลุมทุกช่วง", () => {
+    expect(bandsError(DEFAULT_GRADE_SCALE)).toBeNull();
+    expect(gradeFor(100, DEFAULT_GRADE_SCALE)).toBe("A");
+    expect(gradeFor(75, DEFAULT_GRADE_SCALE)).toBe("B+");
+    expect(gradeFor(74.99, DEFAULT_GRADE_SCALE)).toBe("B");
+    expect(gradeFor(50, DEFAULT_GRADE_SCALE)).toBe("D");
+    expect(gradeFor(0, DEFAULT_GRADE_SCALE)).toBe("F");
+    expect(gradeFor(null, DEFAULT_GRADE_SCALE)).toBeNull();
+  });
+
+  it("อ่านจาก DB: ค่าเสีย/ว่าง → ค่าตั้งต้น", () => {
+    expect(parseGradeScale(null)).toEqual(DEFAULT_GRADE_SCALE);
+    expect(parseGradeScale([{ grade: "ผ่าน", min: 50 }])).toEqual(DEFAULT_GRADE_SCALE);
+    expect(parseGradeScale([{ grade: "S", min: 60 }, { grade: "U", min: 0 }])).toEqual([
+      { grade: "S", min: 60 },
+      { grade: "U", min: 0 },
+    ]);
+  });
+
+  it("ตรวจโครงเกณฑ์", () => {
+    expect(bandsError([{ grade: "A", min: 50 }, { grade: "a", min: 0 }])).toBe("ชื่อเกรดซ้ำกัน");
+    expect(bandsError([{ grade: "A", min: 50 }, { grade: "B", min: 60 }, { grade: "F", min: 0 }])).toBe(
+      "คะแนนขั้นต่ำต้องเรียงจากมากไปน้อยและไม่ซ้ำกัน",
+    );
+    expect(bandsError([{ grade: "A", min: 50 }, { grade: "F", min: 10 }])).toBe("เกรดสุดท้ายต้องเริ่มที่ 0 เพื่อให้ทุกคะแนนมีเกรด");
+  });
+});
+
+describe("schema สมุดคะแนน (ข้อความไทย)", () => {
+  it("เกณฑ์ตัดเกรด", () => {
+    expect(gradeScaleSchema.safeParse([{ grade: "S", min: "60" }, { grade: "U", min: "0" }]).success).toBe(true);
+    expect(gradeScaleSchema.safeParse([{ grade: "", min: 0 }]).error?.issues.map((i) => i.message)).toContain(
+      "กรุณาใส่ชื่อเกรด",
+    );
+  });
+
+  it("น้ำหนัก 0–100 ทศนิยมไม่เกิน 2 ตำแหน่ง", () => {
+    const id = "ckv0000000000000000000000";
+    expect(weightsSchema.parse([{ id, weight: "12.5" }])).toEqual([{ id, weight: 12.5 }]);
+    expect(weightsSchema.safeParse([{ id, weight: "101" }]).error?.issues[0]?.message).toBe("น้ำหนักไม่เกิน 100%");
+    expect(weightsSchema.safeParse([{ id, weight: "1.234" }]).error?.issues[0]?.message).toBe(
+      "น้ำหนักละเอียดได้ไม่เกิน 2 ตำแหน่ง",
+    );
+  });
+
+  it("ช่องคะแนน: ว่าง = ลบคะแนน", () => {
+    expect(cellScoreSchema.parse("")).toBeNull();
+    expect(cellScoreSchema.parse(" 8.5 ")).toBe(8.5);
+    expect(cellScoreSchema.safeParse("-1").error?.issues[0]?.message).toBe("คะแนนต้องเป็นตัวเลขที่ไม่ติดลบ");
+    expect(cellScoreSchema.safeParse("abc").success).toBe(false);
+  });
+
+  it("รายการกรอกเอง", () => {
+    expect(manualItemSchema.parse({ title: " เข้าเรียน ", maxScore: "10" })).toEqual({ title: "เข้าเรียน", maxScore: 10 });
+    expect(manualItemSchema.safeParse({ title: "", maxScore: "0" }).error?.issues.map((i) => i.message)).toEqual([
+      "กรุณาตั้งชื่อรายการ",
+      "คะแนนเต็มต้องมากกว่า 0",
+    ]);
+  });
+});
+
+describe("เงื่อนไขจบคอร์สที่อิงคะแนนรวม (Q4)", () => {
+  const rule = { minProgress: 100, requireQuizPass: false, minScore: 60 };
+
+  it("คะแนนรวมถึงขั้นต่ำ → จบ · ไม่ถึง/ยังคำนวณไม่ได้ → ยังไม่จบ", () => {
+    expect(meetsCompletionRule(100, rule, { allPassed: true, totalScorePct: 60 })).toBe(true);
+    expect(meetsCompletionRule(100, rule, { allPassed: true, totalScorePct: 59.99 })).toBe(false);
+    expect(meetsCompletionRule(100, rule, { allPassed: true, totalScorePct: null })).toBe(false);
+  });
+});

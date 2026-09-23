@@ -23,6 +23,7 @@ import {
   submitAssignmentSchema,
 } from "@/features/assignments/schemas";
 import { gradeScoreError, submissionFileError, submitState } from "@/features/assignments/lib/rules";
+import { afterScoreChange } from "@/features/gradebook/lib/sync";
 
 /**
  * M08 · FR-08.1–08.4 — ตั้งค่างาน การส่งงานของผู้เรียน และการตรวจของผู้สอน
@@ -32,6 +33,7 @@ const idSchema = z.cuid();
 
 function revalidateAssignments(courseId: string) {
   revalidatePath(`/teach/courses/${courseId}/assignments`, "layout");
+  revalidatePath(`/teach/courses/${courseId}/gradebook`, "layout");
   revalidatePath("/learn", "layout");
   revalidatePath("/dashboard");
 }
@@ -258,6 +260,8 @@ export async function submitAssignment(formData: FormData): Promise<ActionResult
     after: { assignmentId: assignment.id, attemptNo: created.attemptNo, isLate: created.isLate, files: assets.length },
   });
 
+  // ส่งใหม่หลังถูกส่งกลับ = คะแนนเดิมในสมุดหายไปจนกว่าจะตรวจใหม่ (M09)
+  await afterScoreChange(assignment.courseId, access.userId);
   // บทงานนับว่าเรียนจบเมื่อส่งแล้ว ไม่ต้องรอตรวจ (phase-2-plan ขั้น 4)
   const target = await progressTargetFor(access.userId, assignment.courseId);
   if (target) await notifyCourseCompleted(await writeProgress(target, assignment.lessonId, { completed: true }), access.userId);
@@ -344,6 +348,7 @@ export async function gradeSubmission(formData: FormData): Promise<ActionResult>
   });
 
   const { assignment } = submission;
+  await afterScoreChange(assignment.courseId, submission.userId);
   await notify({
     userIds: [submission.userId],
     type: NotificationType.GRADED,

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, CircleCheck, CirclePlay, FileText, Lock, Radio } from "lucide-react";
+import { BookOpen, BookOpenCheck, CircleCheck, CirclePlay, FileText, Lock, Radio } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { LearnOutline } from "@/features/enrollment/queries";
 import { LessonType } from "@/generated/prisma/enums";
@@ -43,6 +43,15 @@ export function LessonOutline({
             aria-label={`ความคืบหน้าของคอร์ส ${outline.progressPct} เปอร์เซ็นต์`}
           />
         </div>
+        {/* M09 · FR-09.4 — ผู้สอนดูคะแนนทุกคนที่สมุดคะแนน จึงแสดงลิงก์นี้เฉพาะผู้เรียน */}
+        {outline.isPreviewingAsStaff ? null : (
+          <Link
+            href={`/learn/${outline.course.id}/grades`}
+            className="text-primary mt-2 inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-medium hover:underline"
+          >
+            <BookOpenCheck className="size-4" aria-hidden /> คะแนนของฉัน
+          </Link>
+        )}
       </div>
 
       <ol className="max-h-[520px] overflow-y-auto p-2">

@@ -140,6 +140,11 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **งานที่ต้องส่ง (M08)** — กติกาส่ง/ส่งซ้ำ/ส่งช้าอยู่ใน `submitState()` (`features/assignments/lib/rules.ts`) ใช้ทั้งหน้าจอ ด่านอัปโหลด และ action
 · เมื่อมีการส่งหลายครั้ง นับ/ตรวจเฉพาะ**ครั้งล่าสุดของแต่ละคน** (`latestPerStudent()`) — ครั้งก่อนเป็นประวัติ
 
+**สมุดคะแนน (M09)** — คะแนนต้นทาง (ส่งข้อสอบ/ตรวจอัตนัย/ส่งงาน/ตรวจงาน) เปลี่ยนเมื่อไรต้องเรียก `afterScoreChange()`
+จาก `features/gradebook/lib/sync.ts` · ห้ามเขียน `Grade` ตรง ๆ นอก `sync.ts` และ `gradebook/actions.ts`
+· คะแนนรวม/เกรดคำนวณด้วย `weightedTotal()`/`gradeFor()` ใน `lib/calc.ts` เท่านั้น (เศษส่วนตรงตัว ปัดครั้งเดียว)
+· เกณฑ์ตัดเกรดตั้งต้นอยู่ที่ `DEFAULT_GRADE_SCALE` จุดเดียว
+
 **การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
@@ -200,6 +205,9 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
 - **`loading.tsx` ทำให้ `forbidden()`/`notFound()` ที่เรียกในหน้าตอบสถานะ 200** (stream ออกไปก่อนแล้ว — UI 403 ยังแสดงถูก)
   หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้
+- **อ่าน `e.currentTarget.value` ก่อนเรียก `setState(updater)` เสมอ** — updater ทำงานทีหลัง ตอนนั้น `currentTarget` เป็น null แล้ว
+  หน้าพังทั้งหน้า ("This page couldn't load") ตอนพิมพ์ครั้งแรก
+- **ห้าม import ค่าคงที่ (ไม่ใช่ component) จากไฟล์ `"use client"` เข้า Server Component** — ได้ client reference ไม่ใช่ค่าจริง ให้วางไว้ใน `schemas.ts`/`lib/`
 - **React Compiler ห้ามเรียก `Date.now()` / อ่าน ref ระหว่าง render** — เอาไปไว้ใน effect หรือเริ่มจากค่าที่ server ส่งมา
 - **หน้าที่มีตารางกว้าง (`min-w-[…]` ใน `overflow-x-auto`) ทำให้ Chrome โหมดจำลองมือถือย่อทั้งหน้า**
   (layout viewport กลายเป็น ~688px ทั้งที่ตั้ง 375px) แล้วพิกัดคลิกของ Playwright กับ element ที่ `position: fixed`

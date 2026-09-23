@@ -22,6 +22,7 @@ import {
 } from "@/features/quiz/lib/attempt";
 import { closeIfOverdue, finalizeAttempt, recordPass } from "@/features/quiz/lib/finalize";
 import { essayScoreError, recomputeAttempt } from "@/features/quiz/lib/grading";
+import { afterScoreChange } from "@/features/gradebook/lib/sync";
 
 /**
  * M07 · FR-07.3 / FR-07.4 / FR-07.5 — ตั้งค่าแบบทดสอบ การทำข้อสอบของผู้เรียน และการตรวจของผู้สอน
@@ -520,12 +521,15 @@ export async function reviewAnswer(formData: FormData): Promise<ActionResult> {
       link: `/quiz/${attempt.id}`,
     });
   }
+  // M09 — ผลรวมเปลี่ยน → สมุดคะแนน (และเงื่อนไขคะแนนขั้นต่ำของคอร์ส)
+  if (becameGraded || regraded) await afterScoreChange(attempt.quiz.courseId, attempt.userId);
   // ผ่านครั้งแรกเพราะคะแนนอัตนัย → บทแบบทดสอบนับว่าจบ · ผลที่ลดจากผ่านเป็นไม่ผ่านไม่ย้อนความคืบหน้า
   if (totals.passed && outcome.wasPassed !== true) {
     await recordPass(attempt.userId, attempt.quiz.courseId, attempt.quiz.lessonId);
   }
 
   revalidatePath(`/teach/courses/${attempt.quiz.courseId}/quizzes`, "layout");
+  revalidatePath(`/teach/courses/${attempt.quiz.courseId}/gradebook`, "layout");
   revalidatePath(`/quiz/${attempt.id}`);
   revalidatePath("/learn", "layout");
 

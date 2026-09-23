@@ -255,6 +255,7 @@ model Course {
   price              Decimal?     @db.Decimal(10, 2) // เฟส 2
   protectionEnabled  Boolean      @default(true)
   completionRule     Json         @default("{\"minProgress\":100}") // {minProgress, requireQuizPass, minScore}
+  gradeScale         Json?        // FR-09.2 เกณฑ์ตัดเกรด [{grade:"A",min:80},…] · null = ค่าตั้งต้นของระบบ
   gradingScheme      Json?        // [{grade:"A",min:80},...]
   certificateEnabled Boolean      @default(false)
   certificateTemplate Json?
@@ -550,6 +551,7 @@ model Grade {
   gradeItem   GradeItem @relation(fields: [gradeItemId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   score       Decimal?  @db.Decimal(8, 2)
+  overridden  Boolean   @default(false) // ผู้สอนแก้ทับ — ผลสอบ/งานครั้งใหม่ไม่เขียนทับ
   updatedAt   DateTime  @updatedAt
   @@unique([gradeItemId, userId])
 }
