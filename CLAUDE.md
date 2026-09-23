@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 1 (MVP) — จบขั้น 6/7 (ผ่านจุดตรวจที่ 2) · งานถัดไปคือขั้น 7 M11 Announcement (in-app) แล้วปิดเฟส |
+| สถานะปัจจุบัน | Phase 1 (MVP) — **จบครบ 7 ขั้น** (2026-09-23) · งานถัดไปคือ Phase 2 (M07–M10) บน branch `phase-2` |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -74,6 +74,7 @@ src/
     (learn)/learn/[courseId]/[lessonId]              หน้าเรียน (สารบัญ + สื่อ + ProtectedViewer)
   app/api/{auth,health,media,upload}                 route handler
   app/api/{lesson-media,lesson-file,events/screen}   เสิร์ฟ PDF · ไฟล์ประกอบ · รับรายงานหน้าจอ
+  app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -98,6 +99,7 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `file-type.ts` | ตรวจ magic bytes ว่า MIME ที่ client แจ้งตรงกับเนื้อไฟล์จริง |
 | `object-key.ts` | ตั้ง object key ที่ปลอดภัย |
 | `audit.ts` | `writeAudit()` — บันทึก AuditLog |
+| `notify/index.ts` | `notify()` — **จุดเดียวที่สร้างการแจ้งเตือน** (in-app ตอนนี้ · อีเมล/LINE เติมที่นี่ในเฟส 3) ไม่ throw |
 | `rate-limit.ts` | จำกัดความถี่แบบ fixed window ในหน่วยความจำ (ขอ signed URL, รายงานหน้าจอ) — **นับแยกต่อ process** |
 | `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |
 | `mail.ts` · `env.ts` · `rich-text-doc.ts` · `utils.ts` | อีเมล · env ที่ผ่าน Zod · เอกสาร Tiptap แบบ sanitize แล้ว · `cn()` |
@@ -123,6 +125,11 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 (ไม่มี `server-only` เพราะทั้งสองฝั่งใช้) · แก้ `LessonProgress.completed` เมื่อไรต้องคำนวณ `Enrollment.progressPct`
 ใน transaction เดียวกันเสมอ · **ไม่มีงานเปลี่ยน `status` เป็น `EXPIRED` อัตโนมัติ** ทุกที่ที่ตัดสินสิทธิ์ต้องเทียบ
 `expiresAt` กับเวลาปัจจุบันเอง (`isExpired()` ใน `features/enrollment/queries.ts` และใน `assertCourseAccess`)
+
+**การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
+ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
+ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
+และการแก้/ลบ/ปักหมุดตรวจกับระดับที่บันทึกใน DB ไม่ใช่ค่าจากฟอร์ม
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
@@ -168,6 +175,9 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
 - **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`
   ไม่งั้นสองโปรเจกต์จะแย่งสถานะของกันเอง (ดู `tests/e2e/enrollment.spec.ts`)
+- **`<Progress>` ของ shadcn ไม่ส่ง `value` ต่อให้ Radix** → ไม่มี `aria-valuenow` · เทสต์ให้อ่านจาก `aria-label` ที่ใส่เปอร์เซ็นต์ไว้
+- **checkbox ใน Zod v4** — `z.union([...]).nullish().transform(...)` ไม่ใช่ใส่ `z.undefined()` ใน union
+  (ไม่งั้น key ที่ไม่ถูกส่งมาจะไม่ผ่าน) และห้ามใช้ `z.coerce.boolean()` กับค่า `"false"` เพราะได้ `true`
 - **หน้าที่มีตารางกว้าง (`min-w-[…]` ใน `overflow-x-auto`) ทำให้ Chrome โหมดจำลองมือถือย่อทั้งหน้า**
   (layout viewport กลายเป็น ~688px ทั้งที่ตั้ง 375px) แล้วพิกัดคลิกของ Playwright กับ element ที่ `position: fixed`
   เช่นกล่องโต้ตอบจะไม่ตรงจนคลิกไปโดน overlay — ในเทสต์ให้ส่งฟอร์มด้วยปุ่ม Enter แทนการคลิก

@@ -210,12 +210,17 @@
 - **CSP แบบ nonce อยู่ใน `proxy.ts`** (ไม่ใช่ `next.config.ts` ตามที่ร่างไว้ — ดู CHANGELOG #15)
   อนุญาต frame เฉพาะ youtube-nocookie/vimeo และ media จากโดเมน storage ที่อ่านมาจาก env
 
-### ขั้น 7 — M11 in-app + ปิดเฟส
-- FR-11.1 ประกาศ 3 ระดับ + ปักหมุด
-- FR-11.2 กระดิ่ง + จำนวนยังไม่อ่าน + หน้ารวม + ทำเครื่องหมายอ่านแล้ว
-- `src/lib/notify/index.ts` เป็นจุดเดียวที่ยิง notification (เตรียมรับ email/LINE ในเฟส 3)
+### ขั้น 7 — M11 in-app + ปิดเฟส — ✅ เสร็จ 2026-09-23
+- FR-11.1 ประกาศ 3 ระดับ + ปักหมุด — ผู้สอนที่ `/teach/courses/[id]/announcements` · Super Admin/Dept Admin
+  ที่ `/admin/announcements` · ผู้รับอ่านที่ `/announcements` (ปักหมุดขึ้นก่อน) และ 3 รายการล่าสุดบน `/dashboard`
+- เผยแพร่แล้วสร้างแถว `Notification` ให้ผู้รับทุกคน · แก้ไขไม่แจ้งซ้ำ · ลบแล้วการแจ้งเตือนที่ชี้มาหายตาม (CHANGELOG #18)
+- FR-11.2 กระดิ่ง + จำนวนยังไม่อ่าน (top bar และ bottom nav) + `/notifications` แยก ทั้งหมด/ยังไม่อ่าน
+  + ทำเครื่องหมายอ่านแล้วรายตัว/ทั้งหมด · กดรายการ = อ่านแล้วและพาไปที่ลิงก์
+- `src/lib/notify/index.ts` เป็นจุดเดียวที่ยิง notification — ย้าย `notify()` เดิมออกจาก `features/enrollment/actions.ts`
 - **ยังไม่ทำในเฟสนี้:** FR-11.3 (email) และ FR-11.4 (ตั้งค่าช่องทาง) — อยู่ Phase 3 ตาม roadmap
-- e2e ปิดเฟส: สร้างคอร์ส → อนุมัติ → ลงทะเบียน → เรียน → ความคืบหน้าขึ้น → watermark ปรากฏ
+- **Test:** `tests/unit/announcements.test.ts` (สิทธิ์ตามระดับ, ผู้เห็นประกาศ, schema, `notify()`)
+  · `tests/e2e/announcements.spec.ts` · e2e ปิดเฟส `tests/e2e/phase-1.spec.ts`:
+  สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้าขึ้น → watermark ปรากฏ
 
 ---
 

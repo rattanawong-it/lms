@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ListTree, Settings } from "lucide-react";
+import { ListTree, Megaphone, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { RosterManager } from "@/features/enrollment/components/roster-manager";
@@ -35,6 +35,11 @@ export default async function CourseStudentsPage(
             <Button asChild variant="outline">
               <Link href={`/teach/courses/${id}`}>
                 <Settings className="size-4" /> ตั้งค่าคอร์ส
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/teach/courses/${id}/announcements`}>
+                <Megaphone className="size-4" /> ประกาศ
               </Link>
             </Button>
             <Button asChild variant="outline">

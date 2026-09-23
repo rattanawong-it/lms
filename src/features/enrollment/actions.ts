@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { assertCourseAccess, requireUser } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
+import { notify } from "@/lib/notify";
 import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
 import { parseCompletionRule } from "@/features/courses/schemas";
 import {
@@ -51,31 +52,6 @@ function revalidateLearner(courseId: string, slug?: string) {
 
 function revalidateRoster(courseId: string) {
   revalidatePath(`/teach/courses/${courseId}/students`);
-}
-
-/** แจ้งเตือนในแอป — UI อยู่ใน M11 (ขั้น 7) แต่เก็บแถวไว้ตั้งแต่ตอนนี้ตาม flow §5.3 */
-async function notify(input: {
-  userIds: string[];
-  type: NotificationType;
-  title: string;
-  body?: string;
-  link?: string;
-}): Promise<void> {
-  if (input.userIds.length === 0) return;
-  try {
-    await db.notification.createMany({
-      data: input.userIds.map((userId) => ({
-        userId,
-        type: input.type,
-        title: input.title,
-        body: input.body ?? null,
-        link: input.link ?? null,
-      })),
-    });
-  } catch (error) {
-    // การแจ้งเตือนล้มไม่ควรทำให้การลงทะเบียนที่สำเร็จแล้วกลายเป็นล้มเหลว
-    console.error("[enrollment] สร้างการแจ้งเตือนไม่สำเร็จ", error);
-  }
 }
 
 /* ────────────────────────── FR-06.1 ลงทะเบียน ────────────────────────── */

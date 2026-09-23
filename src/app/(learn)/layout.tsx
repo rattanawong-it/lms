@@ -1,5 +1,6 @@
 import { TopBar } from "@/components/layout/top-bar";
 import { BottomNav } from "@/components/layout/bottom-nav";
+import { getUnreadNotificationCount } from "@/features/notifications/queries";
 import { requireUser } from "@/lib/rbac";
 
 /**
@@ -8,14 +9,15 @@ import { requireUser } from "@/lib/rbac";
  */
 export default async function LearnLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser();
+  const unreadCount = await getUnreadNotificationCount();
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <TopBar user={user} />
+      <TopBar user={user} unreadCount={unreadCount} />
       <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 pt-5 pb-24 sm:px-6 md:pb-10">
         {children}
       </main>
-      <BottomNav />
+      <BottomNav unreadCount={unreadCount} />
     </div>
   );
 }

@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, BookOpen, Building2, MailWarning, ShieldCheck, Users } from "lucide-react";
+import {
+  ArrowRight,
+  BookOpen,
+  Building2,
+  MailWarning,
+  Megaphone,
+  Pin,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { PhaseNotice } from "@/components/shared/phase-notice";
 import { Button } from "@/components/ui/button";
@@ -8,6 +17,10 @@ import { StatCard } from "@/components/shared/stat-card";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/enums";
+import { formatDate } from "@/lib/dates";
+import { announcementSource } from "@/features/announcements/components/announcement-card";
+import { announcementLink } from "@/features/announcements/lib/audience";
+import { getMyAnnouncements } from "@/features/announcements/queries";
 
 export const metadata: Metadata = { title: "หน้าหลัก" };
 
@@ -19,6 +32,8 @@ export default async function DashboardPage() {
   const [departmentCount, userCount] = isStaff
     ? await Promise.all([db.department.count(), db.user.count()])
     : [0, 0];
+  // M11 · FR-11.1 — ประกาศล่าสุด 3 รายการ (ปักหมุดขึ้นก่อน)
+  const announcements = await getMyAnnouncements(3);
 
   return (
     <>
@@ -68,6 +83,50 @@ export default async function DashboardPage() {
           />
         </div>
       ) : null}
+
+      <section
+        aria-labelledby="dashboard-announcements"
+        className="bg-card border-border mb-5 rounded-xl border p-4 sm:p-5"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <h2
+            id="dashboard-announcements"
+            className="flex items-center gap-2 text-[15px] font-semibold"
+          >
+            <Megaphone className="text-primary size-[18px]" aria-hidden /> ประกาศล่าสุด
+          </h2>
+          <Link
+            href="/announcements"
+            className="text-primary flex min-h-11 items-center text-[12.5px] font-medium hover:underline"
+          >
+            ดูทั้งหมด
+          </Link>
+        </div>
+        {announcements.length === 0 ? (
+          <p className="text-muted-foreground mt-2 text-[13px]">ยังไม่มีประกาศ</p>
+        ) : (
+          <ul className="divide-line mt-1 divide-y">
+            {announcements.map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={announcementLink(a.id)}
+                  className="hover:bg-muted/60 -mx-2 flex items-start gap-2 rounded-lg px-2 py-2.5"
+                >
+                  {a.pinned ? (
+                    <Pin className="text-warning-fg mt-1 size-3.5 shrink-0" aria-label="ปักหมุด" />
+                  ) : null}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px] font-medium">{a.title}</span>
+                    <span className="text-muted-foreground block truncate text-[12px]">
+                      {announcementSource(a)} · {formatDate(a.publishedAt)}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <PhaseNotice

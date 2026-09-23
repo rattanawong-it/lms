@@ -939,9 +939,9 @@ flowchart LR
 |---|---|---|
 | `(public)` | `/`, `/courses`, `/courses/[slug]`, `/verify/[code]` | ทุกคน |
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
-| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/settings/*` | login แล้ว |
+| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,quizzes,assignments,gradebook,qa,announcements}` | INSTRUCTOR+ |
-| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,reports,screen-events,audit,settings}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
+| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,announcements,reports,screen-events,audit,settings}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
 | API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live}`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
@@ -1186,6 +1186,15 @@ flowchart LR
   pref --> line[LINE adapter<br/>push API]
 ```
 - `src/lib/notify/index.ts` เป็นจุดเดียวที่เรียกใช้ และเลือก adapter ตามการตั้งค่าของผู้ใช้
+  (Phase 1 มีแค่ in-app: ตัด id ซ้ำ, INSERT ชุดละ 1,000 แถว, ไม่ throw ให้งานหลักล้ม)
+- **ประกาศ (FR-11.1)** สร้างแถว `Notification` ชนิด `ANNOUNCEMENT` ให้ผู้รับทุกคนตอนเผยแพร่ ลิงก์ไปที่ `/announcements#a-<id>`
+  | ระดับ | ผู้ประกาศ | ผู้รับ |
+  |---|---|---|
+  | `GLOBAL` | Super Admin | ผู้ใช้ทุกคนที่ไม่ถูกระงับ |
+  | `DEPARTMENT` | Super Admin (ทุกคณะ) · Dept Admin (คณะตน) | ผู้ใช้ที่ `departmentId` ตรงกับคณะนั้น (ไม่รวมคณะย่อย) |
+  | `COURSE` | ผู้สอนของคอร์ส · ผู้ดูแลคณะเจ้าของคอร์ส | ผู้เรียน `ACTIVE` ที่ยังไม่หมดอายุ |
+
+  แก้ไขประกาศไม่แจ้งซ้ำและเปลี่ยนกลุ่มผู้รับไม่ได้ · ลบประกาศแล้วลบการแจ้งเตือนที่ชี้มาด้วย
 - เฟส 1 ส่ง email/LINE แบบ fire-and-forget หลัง commit ด้วย `after()` ของ Next.js ถ้าปริมาณมากขึ้น ให้เพิ่ม job queue (เช่น pg-boss บน PostgreSQL ตัวเดิม) โดยไม่ต้องเพิ่ม infra
 - Cron endpoint ป้องกันด้วย header `Authorization: Bearer ${CRON_SECRET}`
 
@@ -1301,7 +1310,7 @@ LMS/
 │  ├─ app/
 │  │  ├─ (public)/  page.tsx, courses/, courses/[slug]/, verify/[code]/
 │  │  ├─ (auth)/    login/, register/, forgot-password/, reset-password/
-│  │  ├─ (learn)/   dashboard/, my-courses/, learn/[courseId]/[lessonId]/, quiz/[attemptId]/, certificates/, notifications/, settings/
+│  │  ├─ (learn)/   dashboard/, my-courses/, learn/[courseId]/[lessonId]/, quiz/[attemptId]/, certificates/, notifications/, announcements/, settings/
 │  │  ├─ (instructor)/teach/...
 │  │  ├─ (admin)/admin/...
 │  │  ├─ api/       auth/[...all]/, upload/, media/[assetId]/, events/screen/, line/webhook/, cron/, health/
@@ -1313,7 +1322,7 @@ LMS/
 │  │  └─ shared/               data-table, empty-state, rich-text, file-uploader
 │  ├─ features/
 │  │  ├─ auth/ users/ departments/ catalog/ course-builder/ content/ enrollment/
-│  │  ├─ quiz/ assignment/ gradebook/ certificate/ announcement/ notification/
+│  │  ├─ quiz/ assignment/ gradebook/ certificate/ announcements/ notifications/
 │  │  ├─ line/ qa/ review/ protection/ reports/ audit/ settings/
 │  │  │   └─ (แต่ละโฟลเดอร์) queries.ts · actions.ts · schemas.ts · components/ · lib/
 │  ├─ lib/                     auth.ts, auth-client.ts, db.ts, rbac.ts (server), roles.ts (client-safe), permissions.ts,

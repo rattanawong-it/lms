@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, BookOpen, Home, User } from "lucide-react";
+import { Bell, BookOpen, Home, Megaphone, User } from "lucide-react";
 import { MOBILE_NAV } from "@/components/layout/main-nav";
 import { cn } from "@/lib/utils";
 
@@ -10,6 +10,7 @@ const ICONS = {
   home: Home,
   book: BookOpen,
   bell: Bell,
+  megaphone: Megaphone,
   user: User,
   teach: BookOpen,
   admin: BookOpen,

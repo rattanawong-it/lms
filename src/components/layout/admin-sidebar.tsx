@@ -74,7 +74,7 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   {
     label: "ระบบ",
     items: [
-      { href: "/admin/announcements", label: "ประกาศ", icon: Megaphone, phase: "เฟส 1" },
+      { href: "/admin/announcements", label: "ประกาศ", icon: Megaphone },
       {
         href: "/admin/screen-events",
         label: "ความปลอดภัยเนื้อหา",
