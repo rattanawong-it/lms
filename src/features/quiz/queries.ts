@@ -5,9 +5,11 @@ import { assertCourseAccess, requireUser } from "@/lib/rbac";
 import { toScore } from "@/lib/decimal";
 import { richTextToPlain } from "@/components/shared/rich-text";
 import { AttemptStatus, LessonType, QuestionType } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 import { getLessonAccess } from "@/features/enrollment/queries";
 import { getProtectionState } from "@/features/protection/queries";
 import {
+  type AttemptSlot,
   canRevealAnswers,
   parsePool,
   parseSlots,
@@ -15,12 +17,90 @@ import {
 } from "@/features/quiz/lib/attempt";
 import { closeIfOverdue } from "@/features/quiz/lib/finalize";
 
+/* ─────────────────────────── ข้อสอบในผลสอบ (ใช้ร่วมผู้เรียน/ผู้สอน) ─────────────────────────── */
+
+type ItemQuestion = {
+  id: string;
+  type: QuestionType;
+  prompt: Prisma.JsonValue;
+  explanation?: Prisma.JsonValue | null;
+  choices: { id: string; text: string; isCorrect?: boolean; matchKey?: string | null }[];
+};
+
+type ItemAnswer = {
+  questionId: string;
+  response: Prisma.JsonValue;
+  isCorrect: boolean | null;
+  score: Prisma.Decimal | null;
+  feedback: string | null;
+};
+
+/**
+ * เรียงข้อตาม snapshot ของ attempt แล้วประกอบคำตอบ ผล และเฉลย
+ * `reveal = false` → ไม่ใส่เฉลย (ผู้เรียนก่อนถึงเวลาเปิดเฉลย) · ผู้สอนเรียกด้วย `reveal = true` เสมอ
+ */
+function buildItems(
+  slots: AttemptSlot[],
+  questions: ItemQuestion[],
+  answerRows: ItemAnswer[],
+  { inProgress, reveal }: { inProgress: boolean; reveal: boolean },
+) {
+  const byId = new Map(questions.map((q) => [q.id, q]));
+  const answers = new Map(answerRows.map((a) => [a.questionId, a]));
+
+  return slots.flatMap((slot, index) => {
+    const q = byId.get(slot.q);
+    if (!q) return [];
+    const choiceById = new Map(q.choices.map((c) => [c.id, c]));
+    const answer = answers.get(slot.q);
+    const essay = q.type === QuestionType.ESSAY;
+    return [
+      {
+        number: index + 1,
+        questionId: q.id,
+        type: q.type,
+        points: slot.p,
+        prompt: q.prompt,
+        // ลำดับตามที่สุ่มไว้ใน snapshot · ข้อเติมคำ/อัตนัยไม่มีตัวเลือกให้เห็น
+        choices:
+          q.type === QuestionType.SHORT_TEXT || essay
+            ? []
+            : slot.c.flatMap((id) => {
+                const c = choiceById.get(id);
+                return c ? [{ id: c.id, text: c.text }] : [];
+              }),
+        rightOptions: slot.r ?? [],
+        response: answer?.response ?? null,
+        result: inProgress
+          ? null
+          : {
+              isCorrect: reveal ? (answer?.isCorrect ?? false) : null,
+              // คะแนนอัตนัยมาจากผู้สอน ไม่ได้บอกเฉลย — แสดงได้เสมอเมื่อตรวจแล้ว
+              score: reveal || essay ? toScore(answer?.score ?? null) : null,
+              feedback: answer?.feedback ?? null,
+              pending: essay && answer !== undefined && answer.score === null,
+            },
+        key: reveal
+          ? {
+              correctChoiceIds: q.choices.filter((c) => c.isCorrect).map((c) => c.id),
+              pairs: Object.fromEntries(q.choices.map((c) => [c.id, c.matchKey ?? ""])),
+              accepted: q.type === QuestionType.SHORT_TEXT ? q.choices.map((c) => c.text) : [],
+              explanation: q.explanation ?? null,
+            }
+          : null,
+      },
+    ];
+  });
+}
+
+export type AttemptItem = ReturnType<typeof buildItems>[number];
+
 /* ─────────────────────────── ผู้สอน (FR-07.3) ─────────────────────────── */
 
 export async function getCourseQuizzes(courseId: string) {
   await assertCourseAccess(courseId, "teach");
 
-  const [course, quizzes] = await Promise.all([
+  const [course, quizzes, pending] = await Promise.all([
     db.course.findUniqueOrThrow({ where: { id: courseId }, select: { id: true, title: true } }),
     db.quiz.findMany({
       where: { courseId },
@@ -38,15 +118,24 @@ export async function getCourseQuizzes(courseId: string) {
         _count: { select: { questions: true, attempts: true } },
       },
     }),
+    // ข้ออัตนัยรอตรวจ (FR-07.4) — นับเป็นจำนวน attempt
+    db.quizAttempt.groupBy({
+      by: ["quizId"],
+      where: { status: AttemptStatus.SUBMITTED, quiz: { courseId } },
+      _count: { _all: true },
+    }),
   ]);
+  const pendingByQuiz = new Map(pending.map((p) => [p.quizId, p._count._all]));
 
   return {
     course,
+    pendingTotal: pending.reduce((sum, p) => sum + p._count._all, 0),
     quizzes: quizzes.map((q) => ({
       ...q,
       pool: parsePool(q.randomPool),
       questionCount: q._count.questions,
       attemptCount: q._count.attempts,
+      pendingCount: pendingByQuiz.get(q.id) ?? 0,
     })),
   };
 }
@@ -293,53 +382,7 @@ export async function getAttemptView(attemptId: string) {
       },
     },
   });
-  const byId = new Map(questions.map((q) => [q.id, q]));
-  const answers = new Map(attempt.answers.map((a) => [a.questionId, a]));
-
-  const items = slots.flatMap((slot, index) => {
-    const q = byId.get(slot.q);
-    if (!q) return [];
-    const choiceById = new Map(q.choices.map((c) => [c.id, c]));
-    const answer = answers.get(slot.q);
-    return [
-      {
-        number: index + 1,
-        questionId: q.id,
-        type: q.type,
-        points: slot.p,
-        prompt: q.prompt,
-        // ลำดับตามที่สุ่มไว้ใน snapshot · ข้อเติมคำ/อัตนัยไม่มีตัวเลือกให้เห็น
-        choices:
-          q.type === QuestionType.SHORT_TEXT || q.type === QuestionType.ESSAY
-            ? []
-            : slot.c.flatMap((id) => {
-                const c = choiceById.get(id);
-                return c ? [{ id: c.id, text: c.text }] : [];
-              }),
-        rightOptions: slot.r ?? [],
-        response: answer?.response ?? null,
-        result: inProgress
-          ? null
-          : {
-              isCorrect: reveal ? (answer?.isCorrect ?? false) : null,
-              score: reveal ? toScore(answer?.score ?? null) : null,
-              feedback: answer?.feedback ?? null,
-              pending: q.type === QuestionType.ESSAY && answer !== undefined && answer.score === null,
-            },
-        key: reveal
-          ? {
-              correctChoiceIds: q.choices.filter((c) => "isCorrect" in c && c.isCorrect).map((c) => c.id),
-              pairs: Object.fromEntries(
-                q.choices.map((c) => [c.id, "matchKey" in c ? (c.matchKey ?? "") : ""]),
-              ),
-              accepted:
-                q.type === QuestionType.SHORT_TEXT ? q.choices.map((c) => c.text) : [],
-              explanation: "explanation" in q ? q.explanation : null,
-            }
-          : null,
-      },
-    ];
-  });
+  const items = buildItems(slots, questions, attempt.answers, { inProgress, reveal });
 
   const protection = await getProtectionState(user, quiz.course.protectionEnabled);
 
@@ -372,3 +415,199 @@ export async function getAttemptView(attemptId: string) {
 }
 
 export type AttemptView = Awaited<ReturnType<typeof getAttemptView>>;
+
+/* ─────────────────────────── ผู้สอนดูผลและตรวจ (FR-07.4) ─────────────────────────── */
+
+const studentSelect = { id: true, name: true, email: true, externalId: true } as const;
+
+/** attempt ที่เลยเวลาแล้วของแบบทดสอบเหล่านี้ถูกปิดก่อนแสดงผล (ไม่มี cron) */
+async function closeOverdueAttempts(where: Prisma.QuizAttemptWhereInput) {
+  const overdue = await db.quizAttempt.findMany({
+    where: { ...where, status: AttemptStatus.IN_PROGRESS, expiresAt: { lt: new Date() } },
+    select: { id: true, status: true, expiresAt: true },
+  });
+  for (const a of overdue) await closeIfOverdue(a);
+}
+
+const pctOf = (score: number | null, max: number | null) =>
+  score !== null && max ? Math.round((score / max) * 10000) / 100 : null;
+
+/** ผลสอบของแบบทดสอบหนึ่ง: ผู้สอบ × ครั้งที่สอบ × คะแนน */
+export async function getQuizResults(courseId: string, quizId: string) {
+  await assertCourseAccess(courseId, "teach");
+
+  const quiz = await db.quiz.findFirst({
+    where: { id: quizId, courseId },
+    select: { id: true, title: true, passingPct: true, maxAttempts: true, course: { select: { id: true, title: true } } },
+  });
+  if (!quiz) notFound();
+
+  await closeOverdueAttempts({ quizId });
+
+  const attempts = await db.quizAttempt.findMany({
+    where: { quizId },
+    orderBy: { attemptNo: "asc" },
+    select: {
+      id: true,
+      attemptNo: true,
+      status: true,
+      submittedAt: true,
+      score: true,
+      maxScore: true,
+      passed: true,
+      user: { select: studentSelect },
+    },
+  });
+
+  const byUser = new Map<string, { student: (typeof attempts)[number]["user"]; attempts: typeof attempts }>();
+  for (const a of attempts) {
+    const entry = byUser.get(a.user.id) ?? { student: a.user, attempts: [] };
+    entry.attempts.push(a);
+    byUser.set(a.user.id, entry);
+  }
+
+  const students = [...byUser.values()]
+    .map(({ student, attempts: list }) => {
+      const rows = list.map((a) => {
+        const score = toScore(a.score);
+        const maxScore = toScore(a.maxScore);
+        return {
+          id: a.id,
+          attemptNo: a.attemptNo,
+          status: a.status,
+          submittedAt: a.submittedAt,
+          score,
+          maxScore,
+          pct: a.status === AttemptStatus.IN_PROGRESS ? null : pctOf(score, maxScore),
+          passed: a.passed,
+        };
+      });
+      // Q2 — ครั้งที่ได้คะแนนสูงสุดคือคะแนนที่นับ (เฉพาะครั้งที่ตรวจเสร็จแล้ว)
+      const graded = rows.filter((r) => r.status === AttemptStatus.GRADED);
+      const best = graded.reduce<(typeof rows)[number] | null>(
+        (top, r) => (top === null || (r.pct ?? 0) > (top.pct ?? 0) ? r : top),
+        null,
+      );
+      return {
+        student,
+        attempts: rows,
+        bestPct: best?.pct ?? null,
+        passed: rows.some((r) => r.passed),
+        pending: rows.some((r) => r.status === AttemptStatus.SUBMITTED),
+      };
+    })
+    .sort((a, b) => a.student.name.localeCompare(b.student.name, "th"));
+
+  return {
+    quiz,
+    students,
+    summary: {
+      students: students.length,
+      passed: students.filter((s) => s.passed).length,
+      pending: attempts.filter((a) => a.status === AttemptStatus.SUBMITTED).length,
+    },
+  };
+}
+
+export type QuizResults = Awaited<ReturnType<typeof getQuizResults>>;
+
+/** คิวข้ออัตนัยรอตรวจทั้งคอร์ส — ส่งก่อนตรวจก่อน */
+export async function getGradingQueue(courseId: string) {
+  await assertCourseAccess(courseId, "teach");
+
+  await closeOverdueAttempts({ quiz: { courseId } });
+
+  const [course, attempts] = await Promise.all([
+    db.course.findUniqueOrThrow({ where: { id: courseId }, select: { id: true, title: true } }),
+    db.quizAttempt.findMany({
+      where: { status: AttemptStatus.SUBMITTED, quiz: { courseId } },
+      orderBy: { submittedAt: "asc" },
+      select: {
+        id: true,
+        attemptNo: true,
+        submittedAt: true,
+        quiz: { select: { id: true, title: true } },
+        user: { select: studentSelect },
+        _count: { select: { answers: { where: { score: null } } } },
+      },
+    }),
+  ]);
+
+  return {
+    course,
+    queue: attempts.map((a) => ({
+      id: a.id,
+      attemptNo: a.attemptNo,
+      submittedAt: a.submittedAt,
+      quiz: a.quiz,
+      student: a.user,
+      pendingCount: a._count.answers,
+    })),
+  };
+}
+
+/** คำตอบรายคนของ attempt หนึ่ง พร้อมเฉลย — ผู้สอนเห็นเฉลยเสมอไม่ขึ้นกับการตั้งค่า FR-07.6 */
+export async function getAttemptReview(courseId: string, quizId: string, attemptId: string) {
+  await assertCourseAccess(courseId, "teach");
+
+  const load = () =>
+    db.quizAttempt.findFirst({
+      where: { id: attemptId, quizId, quiz: { courseId } },
+      select: {
+        id: true,
+        attemptNo: true,
+        status: true,
+        startedAt: true,
+        expiresAt: true,
+        submittedAt: true,
+        score: true,
+        maxScore: true,
+        passed: true,
+        questionOrder: true,
+        user: { select: studentSelect },
+        answers: { select: { questionId: true, response: true, isCorrect: true, score: true, feedback: true } },
+        quiz: { select: { id: true, title: true, passingPct: true, course: { select: { id: true, title: true } } } },
+      },
+    });
+
+  let attempt = await load();
+  if (!attempt) notFound();
+  if (await closeIfOverdue(attempt)) attempt = (await load())!;
+
+  const slots = parseSlots(attempt.questionOrder);
+  const questions = await db.question.findMany({
+    where: { id: { in: slots.map((s) => s.q) } },
+    select: {
+      id: true,
+      type: true,
+      prompt: true,
+      explanation: true,
+      choices: { select: { id: true, text: true, isCorrect: true, matchKey: true } },
+    },
+  });
+
+  const inProgress = attempt.status === AttemptStatus.IN_PROGRESS;
+  const items = buildItems(slots, questions, attempt.answers, { inProgress, reveal: true });
+  const score = toScore(attempt.score);
+  const maxScore = toScore(attempt.maxScore);
+
+  return {
+    attempt: {
+      id: attempt.id,
+      attemptNo: attempt.attemptNo,
+      status: attempt.status,
+      startedAt: attempt.startedAt,
+      submittedAt: attempt.submittedAt,
+      score,
+      maxScore,
+      pct: pctOf(score, maxScore),
+      passed: attempt.passed,
+    },
+    student: attempt.user,
+    quiz: attempt.quiz,
+    items,
+    pendingCount: items.filter((i) => i.result?.pending).length,
+  };
+}
+
+export type AttemptReview = Awaited<ReturnType<typeof getAttemptReview>>;

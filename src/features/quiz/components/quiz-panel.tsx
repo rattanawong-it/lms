@@ -13,16 +13,8 @@ import { formatScore } from "@/lib/decimal";
 import { submitForm } from "@/lib/form";
 import { cn } from "@/lib/utils";
 import { startAttempt } from "@/features/quiz/actions";
-import { SHOW_ANSWERS_LABEL } from "@/features/quiz/lib/attempt";
+import { SHOW_ANSWERS_LABEL, attemptBadge } from "@/features/quiz/lib/attempt";
 import type { LessonQuiz } from "@/features/quiz/queries";
-
-function statusBadge(a: LessonQuiz["attempts"][number]) {
-  if (a.status === AttemptStatus.IN_PROGRESS) return { label: "กำลังทำ", tone: "bg-info-bg text-info-fg" };
-  if (a.passed === null) return { label: "รอตรวจอัตนัย", tone: "bg-warning-bg text-warning-fg" };
-  return a.passed
-    ? { label: "ผ่าน", tone: "bg-success-bg text-success-fg" }
-    : { label: "ไม่ผ่าน", tone: "bg-danger-bg text-danger-fg" };
-}
 
 /** M07 · FR-07.5 — การ์ดแบบทดสอบในหน้าเรียน: รายละเอียด ปุ่มเริ่ม/ทำต่อ และประวัติการสอบ */
 export function QuizPanel({ lessonId, data }: { lessonId: string; data: LessonQuiz }) {
@@ -107,7 +99,7 @@ export function QuizPanel({ lessonId, data }: { lessonId: string; data: LessonQu
           <h3 className="mb-2 text-[13px] font-semibold">ประวัติการสอบ</h3>
           <ul className="border-border divide-line divide-y rounded-lg border">
             {data.attempts.map((a) => {
-              const badge = statusBadge(a);
+              const badge = attemptBadge(a);
               return (
                 <li key={a.id} data-attempt className="flex flex-wrap items-center gap-2 px-3 py-2.5 text-[13px]">
                   <span className="w-16 shrink-0">ครั้งที่ {a.attemptNo}</span>

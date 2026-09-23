@@ -6,7 +6,7 @@ import { QuestionType } from "@/generated/prisma/enums";
  * กติกาที่เจ้าของระบบยืนยัน (phase-2-plan Q1):
  *   MULTIPLE — ต้องเลือกครบและไม่เกินจึงได้คะแนน (กันการติ๊กทุกข้อ)
  *   MATCHING — ได้ตามสัดส่วนคู่ที่ถูก
- *   ESSAY    — ไม่ตรวจอัตโนมัติ รอผู้สอนให้คะแนน (ขั้น 3)
+ *   ESSAY    — ไม่ตรวจอัตโนมัติ รอผู้สอนให้คะแนน (ขั้น 3) · เว้นว่างได้ 0 ทันที
  */
 
 /** รูปของคำตอบที่ผู้เรียนส่ง — เก็บใน `Answer.response` ตามรูปนี้ */
@@ -73,7 +73,8 @@ export function gradeAnswer(question: GradableQuestion, response: unknown): Grad
     }
 
     case QuestionType.ESSAY:
-      return { isCorrect: null, score: null };
+      // ไม่ได้เขียนอะไรเลย = 0 ทันที ไม่ต้องรอผู้สอน (ไม่งั้น attempt ค้าง "รอตรวจ" โดยไม่มีอะไรให้ตรวจ)
+      return isBlankResponse(response) ? wrong : { isCorrect: null, score: null };
   }
 }
 
@@ -108,4 +109,36 @@ export function totalAttempt(
   const pending = items.some((i) => i.pendingReview);
   const pct = maxScore > 0 ? round2((score / maxScore) * 100) : 0;
   return { score, maxScore, pending, pct, passed: pending ? null : pct >= passingPct };
+}
+
+/**
+ * คำนวณผลรวมของ attempt ใหม่จากคำตอบที่บันทึกไว้ — ใช้ตอนผู้สอนตรวจ/แก้คะแนนอัตนัย (FR-07.4)
+ * ข้อที่ไม่มีแถวคำตอบนับ 0 · อัตนัยที่มีคำตอบแต่ยังไม่มีคะแนนคือ "รอตรวจ"
+ */
+export function recomputeAttempt(
+  slots: { q: string; p: number }[],
+  types: ReadonlyMap<string, QuestionType>,
+  answers: ReadonlyMap<string, { score: number | null }>,
+  passingPct: number,
+): AttemptTotals {
+  return totalAttempt(
+    slots.map((slot) => {
+      const answer = answers.get(slot.q);
+      const score = answer?.score ?? null;
+      return {
+        points: slot.p,
+        score,
+        pendingReview: types.get(slot.q) === QuestionType.ESSAY && answer !== undefined && score === null,
+      };
+    }),
+    passingPct,
+  );
+}
+
+/** คะแนนอัตนัยที่ผู้สอนให้ได้: 0 ถึงคะแนนเต็มของข้อ ละเอียดไม่เกิน 2 ตำแหน่ง */
+export function essayScoreError(score: number, points: number): string | null {
+  if (!Number.isFinite(score) || score < 0) return "คะแนนต้องไม่ติดลบ";
+  if (score > points) return `ข้อนี้ได้เต็ม ${points} คะแนน`;
+  if (Math.abs(score * 100 - Math.round(score * 100)) > 1e-6) return "คะแนนละเอียดได้ไม่เกิน 2 ตำแหน่ง";
+  return null;
 }

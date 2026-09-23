@@ -106,3 +106,26 @@ export function responseSchemaFor(type: QuestionType) {
       return z.object({ text: z.string().max(ESSAY_MAX, `คำตอบยาวได้ไม่เกิน ${ESSAY_MAX.toLocaleString("th-TH")} ตัวอักษร`) });
   }
 }
+
+/* ─────────── ผู้สอนตรวจคำตอบ (FR-07.4) ─────────── */
+
+export const FEEDBACK_MAX = 2_000;
+
+/**
+ * คะแนน (เฉพาะข้ออัตนัย — ช่องว่าง = ยังไม่ให้คะแนน) + feedback รายข้อ
+ * ช่วงคะแนนขึ้นกับคะแนนเต็มของข้อใน snapshot จึงตรวจต่อใน actions ด้วย `essayScoreError()`
+ */
+export const reviewAnswerSchema = z.object({
+  score: z
+    .string()
+    .trim()
+    .nullish()
+    .transform((v) => (v ? Number(v) : null))
+    .refine((v) => v === null || Number.isFinite(v), "คะแนนต้องเป็นตัวเลข"),
+  feedback: z
+    .string()
+    .nullish()
+    .transform((v) => v?.trim() || null)
+    .refine((v) => v === null || v.length <= FEEDBACK_MAX, `ความเห็นยาวได้ไม่เกิน ${FEEDBACK_MAX.toLocaleString("th-TH")} ตัวอักษร`),
+});
+

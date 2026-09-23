@@ -5,12 +5,13 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { assertCourseAccess, requireUser } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
-import { toScore } from "@/lib/decimal";
+import { formatScore, toScore } from "@/lib/decimal";
+import { notify } from "@/lib/notify";
 import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
-import { AttemptStatus, LessonType } from "@/generated/prisma/enums";
+import { AttemptStatus, LessonType, NotificationType, QuestionType } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 import { getLessonAccess } from "@/features/enrollment/queries";
-import { quizSettingsSchema, responseSchemaFor } from "@/features/quiz/schemas";
+import { quizSettingsSchema, responseSchemaFor, reviewAnswerSchema } from "@/features/quiz/schemas";
 import {
   acceptsAnswers,
   attemptDeadline,
@@ -19,10 +20,11 @@ import {
   parseSlots,
   quizOpenState,
 } from "@/features/quiz/lib/attempt";
-import { closeIfOverdue, finalizeAttempt } from "@/features/quiz/lib/finalize";
+import { closeIfOverdue, finalizeAttempt, recordPass } from "@/features/quiz/lib/finalize";
+import { essayScoreError, recomputeAttempt } from "@/features/quiz/lib/grading";
 
 /**
- * M07 · FR-07.3 / FR-07.5 — ตั้งค่าแบบทดสอบ และการทำข้อสอบของผู้เรียน
+ * M07 · FR-07.3 / FR-07.4 / FR-07.5 — ตั้งค่าแบบทดสอบ การทำข้อสอบของผู้เรียน และการตรวจของผู้สอน
  */
 
 const idSchema = z.cuid();
@@ -373,5 +375,166 @@ export async function submitAttempt(formData: FormData): Promise<ActionResult> {
         : result.passed
           ? "ส่งคำตอบแล้ว — ผ่านแบบทดสอบ"
           : "ส่งคำตอบแล้ว — ยังไม่ผ่านเกณฑ์",
+  };
+}
+
+/* ─────────────────────────── ผู้สอนตรวจ (FR-07.4) ─────────────────────────── */
+
+/**
+ * ให้คะแนนข้ออัตนัย และ/หรือเขียน feedback รายข้อ (ข้อชนิดอื่นให้ได้แค่ feedback — คะแนนมาจากการตรวจอัตโนมัติ)
+ * แก้คะแนนหลังตรวจเสร็จแล้วได้ · คำนวณผลรวมใหม่ทุกครั้ง
+ *
+ * ตรวจสิทธิ์ตามคอร์สที่ attempt สังกัดจริง ไม่ใช่ค่าที่ฟอร์มส่งมา
+ * ล็อกแถว attempt ระหว่างคำนวณ — ผู้สอนสองคนตรวจคนละข้อพร้อมกันแล้วผลรวม/สถานะไม่ทับกัน
+ */
+export async function reviewAnswer(formData: FormData): Promise<ActionResult> {
+  const attemptId = idSchema.safeParse(formData.get("attemptId"));
+  const questionId = idSchema.safeParse(formData.get("questionId"));
+  if (!attemptId.success || !questionId.success) return { ok: false, message: "ไม่พบคำตอบ" };
+
+  const attempt = await db.quizAttempt.findUnique({
+    where: { id: attemptId.data },
+    select: {
+      id: true,
+      userId: true,
+      status: true,
+      expiresAt: true,
+      questionOrder: true,
+      quiz: { select: { id: true, title: true, courseId: true, lessonId: true, passingPct: true } },
+    },
+  });
+  if (!attempt) return { ok: false, message: "ไม่พบผลสอบ" };
+  const { user } = await assertCourseAccess(attempt.quiz.courseId, "teach");
+
+  if (attempt.status === AttemptStatus.IN_PROGRESS && !(await closeIfOverdue(attempt))) {
+    return { ok: false, message: "ผู้เรียนยังทำแบบทดสอบนี้ไม่เสร็จ" };
+  }
+
+  const slots = parseSlots(attempt.questionOrder);
+  const slot = slots.find((s) => s.q === questionId.data);
+  if (!slot) return { ok: false, message: "ไม่พบข้อนี้ในชุดข้อสอบของผู้เรียน" };
+
+  const questions = await db.question.findMany({
+    where: { id: { in: slots.map((s) => s.q) } },
+    select: { id: true, type: true },
+  });
+  const types = new Map(questions.map((q) => [q.id, q.type]));
+  const isEssay = types.get(slot.q) === QuestionType.ESSAY;
+
+  const parsed = reviewAnswerSchema.safeParse({ score: formData.get("score"), feedback: formData.get("feedback") });
+  if (!parsed.success) {
+    return { ok: false, message: "ข้อมูลไม่ถูกต้อง", fieldErrors: zodToFieldErrors(parsed.error) };
+  }
+  const { feedback } = parsed.data;
+  const score = isEssay ? parsed.data.score : null;
+  if (isEssay) {
+    const error = score === null ? "กรอกคะแนนของข้อนี้" : essayScoreError(score, slot.p);
+    if (error) return { ok: false, message: error, fieldErrors: { score: error } };
+  }
+
+  const outcome = await db.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "QuizAttempt" WHERE id = ${attempt.id} FOR UPDATE`;
+    const current = await tx.quizAttempt.findUniqueOrThrow({
+      where: { id: attempt.id },
+      select: {
+        status: true,
+        score: true,
+        passed: true,
+        answers: { select: { questionId: true, score: true, feedback: true } },
+      },
+    });
+    if (current.status === AttemptStatus.IN_PROGRESS) return null;
+
+    const before = current.answers.find((a) => a.questionId === slot.q) ?? null;
+    await tx.answer.upsert({
+      where: { attemptId_questionId: { attemptId: attempt.id, questionId: slot.q } },
+      // ข้อที่ผู้เรียนไม่ได้ตอบไม่มีแถวคำตอบ — สร้างเปล่า ๆ เพื่อเก็บคะแนน/ความเห็น
+      create: {
+        attemptId: attempt.id,
+        questionId: slot.q,
+        response: isEssay ? { text: "" } : {},
+        score: isEssay ? score : 0,
+        isCorrect: isEssay ? null : false,
+        feedback,
+      },
+      update: isEssay ? { score, feedback } : { feedback },
+    });
+
+    const answers = new Map(current.answers.map((a) => [a.questionId, { score: toScore(a.score) }]));
+    answers.set(slot.q, { score: isEssay ? score : (toScore(before?.score) ?? 0) });
+    const totals = recomputeAttempt(slots, types, answers, attempt.quiz.passingPct);
+
+    await tx.quizAttempt.update({
+      where: { id: attempt.id },
+      data: {
+        status: totals.pending ? AttemptStatus.SUBMITTED : AttemptStatus.GRADED,
+        score: totals.score,
+        maxScore: totals.maxScore,
+        passed: totals.passed,
+      },
+    });
+
+    return {
+      before: { score: toScore(before?.score), feedback: before?.feedback ?? null },
+      wasStatus: current.status,
+      wasScore: toScore(current.score),
+      wasPassed: current.passed,
+      totals,
+    };
+  });
+  if (!outcome) return { ok: false, message: "ผู้เรียนยังทำแบบทดสอบนี้ไม่เสร็จ" };
+
+  const { totals } = outcome;
+  await writeAudit({
+    actorId: user.id,
+    action: "quiz.review",
+    entity: "QuizAttempt",
+    entityId: attempt.id,
+    before: {
+      questionId: slot.q,
+      ...outcome.before,
+      attemptScore: outcome.wasScore,
+      passed: outcome.wasPassed,
+    },
+    after: {
+      questionId: slot.q,
+      score: isEssay ? score : outcome.before.score,
+      feedback,
+      attemptScore: totals.score,
+      passed: totals.passed,
+    },
+  });
+
+  const becameGraded = outcome.wasStatus === AttemptStatus.SUBMITTED && !totals.pending;
+  const regraded =
+    outcome.wasStatus === AttemptStatus.GRADED &&
+    (outcome.wasScore !== totals.score || outcome.wasPassed !== totals.passed);
+  if (becameGraded || regraded) {
+    await notify({
+      userIds: [attempt.userId],
+      type: NotificationType.GRADED,
+      title: becameGraded
+        ? `ผู้สอนตรวจแบบทดสอบ “${attempt.quiz.title}” แล้ว`
+        : `ผู้สอนแก้คะแนนแบบทดสอบ “${attempt.quiz.title}”`,
+      body: `ได้ ${formatScore(totals.score)}/${formatScore(totals.maxScore)} คะแนน · ${totals.passed ? "ผ่าน" : "ยังไม่ผ่านเกณฑ์"}`,
+      link: `/quiz/${attempt.id}`,
+    });
+  }
+  // ผ่านครั้งแรกเพราะคะแนนอัตนัย → บทแบบทดสอบนับว่าจบ · ผลที่ลดจากผ่านเป็นไม่ผ่านไม่ย้อนความคืบหน้า
+  if (totals.passed && outcome.wasPassed !== true) {
+    await recordPass(attempt.userId, attempt.quiz.courseId, attempt.quiz.lessonId);
+  }
+
+  revalidatePath(`/teach/courses/${attempt.quiz.courseId}/quizzes`, "layout");
+  revalidatePath(`/quiz/${attempt.id}`);
+  revalidatePath("/learn", "layout");
+
+  return {
+    ok: true,
+    message: becameGraded
+      ? "บันทึกแล้ว — ตรวจครบทุกข้อและแจ้งผลผู้เรียนแล้ว"
+      : totals.pending
+        ? "บันทึกแล้ว — ยังมีข้ออัตนัยรอตรวจ"
+        : "บันทึกแล้ว",
   };
 }

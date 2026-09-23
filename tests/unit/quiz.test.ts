@@ -1,15 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { QuestionType, ShowAnswers } from "@/generated/prisma/enums";
+import { AttemptStatus, QuestionType, ShowAnswers } from "@/generated/prisma/enums";
 import { fromBangkokInput, toBangkokInput } from "@/lib/dates";
 import {
+  essayScoreError,
   gradeAnswer,
   isBlankResponse,
+  recomputeAttempt,
   normalizeShortText,
   totalAttempt,
   type GradableQuestion,
 } from "@/features/quiz/lib/grading";
 import {
   acceptsAnswers,
+  attemptBadge,
   attemptDeadline,
   canRevealAnswers,
   DEADLINE_GRACE_MS,
@@ -19,7 +22,7 @@ import {
   quizOpenState,
   type DrawQuestion,
 } from "@/features/quiz/lib/attempt";
-import { quizSettingsSchema, responseSchemaFor } from "@/features/quiz/schemas";
+import { quizSettingsSchema, responseSchemaFor, reviewAnswerSchema } from "@/features/quiz/schemas";
 
 const c = (id: string, isCorrect = false, matchKey: string | null = null, text = id) => ({
   id,
@@ -73,6 +76,12 @@ describe("gradeAnswer (FR-07.4)", () => {
       isCorrect: null,
       score: null,
     });
+  });
+
+  it("อัตนัยที่เว้นว่างได้ 0 ทันที ไม่ค้างรอตรวจ", () => {
+    const essay = { type: QuestionType.ESSAY, points: 5, choices: [] };
+    expect(gradeAnswer(essay, undefined)).toEqual({ isCorrect: false, score: 0 });
+    expect(gradeAnswer(essay, { text: "   " })).toEqual({ isCorrect: false, score: 0 });
   });
 
   it("isBlankResponse", () => {
@@ -237,5 +246,71 @@ describe("responseSchemaFor", () => {
     expect(responseSchemaFor(QuestionType.SINGLE).safeParse({ choiceIds: ["a"] }).success).toBe(false);
     expect(responseSchemaFor(QuestionType.MATCHING).safeParse({ pairs: { a: "x" } }).success).toBe(true);
     expect(responseSchemaFor(QuestionType.SHORT_TEXT).safeParse({ text: "x".repeat(201) }).success).toBe(false);
+  });
+});
+
+describe("ผู้สอนตรวจอัตนัย (FR-07.4)", () => {
+  const slots = [
+    { q: "mc", p: 2 },
+    { q: "essay", p: 5 },
+    { q: "blank", p: 3 },
+  ];
+  const types = new Map([
+    ["mc", QuestionType.SINGLE],
+    ["essay", QuestionType.ESSAY],
+    ["blank", QuestionType.ESSAY],
+  ]);
+
+  it("ยังมีอัตนัยที่ไม่ได้ให้คะแนน → รอตรวจ ยังตัดสินผ่านไม่ได้", () => {
+    const answers = new Map([
+      ["mc", { score: 2 }],
+      ["essay", { score: null }],
+    ]);
+    expect(recomputeAttempt(slots, types, answers, 50)).toMatchObject({
+      score: 2,
+      maxScore: 10,
+      pending: true,
+      passed: null,
+    });
+  });
+
+  it("ให้คะแนนครบ → สรุปผ่าน/ไม่ผ่าน · ข้อที่ไม่ได้ตอบ (ไม่มีแถว) นับ 0 ไม่ค้าง", () => {
+    const pass = new Map([
+      ["mc", { score: 2 }],
+      ["essay", { score: 3.5 }],
+    ]);
+    expect(recomputeAttempt(slots, types, pass, 50)).toMatchObject({ score: 5.5, pending: false, passed: true, pct: 55 });
+    const fail = new Map([
+      ["mc", { score: 2 }],
+      ["essay", { score: 2.5 }],
+    ]);
+    expect(recomputeAttempt(slots, types, fail, 50)).toMatchObject({ score: 4.5, pending: false, passed: false });
+  });
+
+  it("ช่วงคะแนนอัตนัย", () => {
+    expect(essayScoreError(0, 5)).toBeNull();
+    expect(essayScoreError(5, 5)).toBeNull();
+    expect(essayScoreError(2.25, 5)).toBeNull();
+    expect(essayScoreError(-1, 5)).toBe("คะแนนต้องไม่ติดลบ");
+    expect(essayScoreError(5.5, 5)).toBe("ข้อนี้ได้เต็ม 5 คะแนน");
+    expect(essayScoreError(1.234, 5)).toBe("คะแนนละเอียดได้ไม่เกิน 2 ตำแหน่ง");
+    expect(essayScoreError(Number.NaN, 5)).toBe("คะแนนต้องไม่ติดลบ");
+  });
+
+  it("schema: คะแนนว่าง = null · ความเห็นตัดช่องว่าง · ข้อความผิดเป็นภาษาไทย", () => {
+    expect(reviewAnswerSchema.parse({ score: "", feedback: "  " })).toEqual({ score: null, feedback: null });
+    expect(reviewAnswerSchema.parse({ score: "4.5", feedback: " ดีมาก " })).toEqual({ score: 4.5, feedback: "ดีมาก" });
+    expect(reviewAnswerSchema.parse({})).toEqual({ score: null, feedback: null });
+    const bad = reviewAnswerSchema.safeParse({ score: "ห้า" });
+    expect(bad.success).toBe(false);
+    expect(bad.error?.issues[0]?.message).toBe("คะแนนต้องเป็นตัวเลข");
+    expect(reviewAnswerSchema.safeParse({ feedback: "ก".repeat(2001) }).success).toBe(false);
+  });
+
+  it("ป้ายสถานะ attempt", () => {
+    expect(attemptBadge({ status: AttemptStatus.IN_PROGRESS, passed: null }).label).toBe("กำลังทำ");
+    expect(attemptBadge({ status: AttemptStatus.SUBMITTED, passed: null }).label).toBe("รอตรวจอัตนัย");
+    expect(attemptBadge({ status: AttemptStatus.GRADED, passed: true }).label).toBe("ผ่าน");
+    expect(attemptBadge({ status: AttemptStatus.GRADED, passed: false }).label).toBe("ไม่ผ่าน");
   });
 });

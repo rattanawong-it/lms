@@ -1,4 +1,4 @@
-import { QuestionType, ShowAnswers } from "@/generated/prisma/enums";
+import { AttemptStatus, QuestionType, ShowAnswers } from "@/generated/prisma/enums";
 
 /**
  * M07 · FR-07.3 / FR-07.5 / FR-07.6 — สุ่มชุดข้อสอบ, เวลา และการเปิดเฉลย (pure function)
@@ -167,3 +167,15 @@ export const SHOW_ANSWERS_LABEL: Record<ShowAnswers, string> = {
   [ShowAnswers.AFTER_CLOSE]: "หลังปิดแบบทดสอบ",
   [ShowAnswers.NEVER]: "ไม่แสดง",
 };
+
+/* ─────────── ป้ายสถานะ (ผู้เรียนและผู้สอนใช้ร่วม) ─────────── */
+
+export function attemptBadge(a: { status: AttemptStatus; passed: boolean | null }) {
+  if (a.status === AttemptStatus.IN_PROGRESS) return { label: "กำลังทำ", tone: "bg-info-bg text-info-fg" };
+  if (a.status === AttemptStatus.SUBMITTED || a.passed === null) {
+    return { label: "รอตรวจอัตนัย", tone: "bg-warning-bg text-warning-fg" };
+  }
+  return a.passed
+    ? { label: "ผ่าน", tone: "bg-success-bg text-success-fg" }
+    : { label: "ไม่ผ่าน", tone: "bg-danger-bg text-danger-fg" };
+}

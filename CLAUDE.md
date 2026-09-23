@@ -134,6 +134,7 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 
 **แบบทดสอบ (M07)** — ไม่มี cron: attempt ที่เลยเวลาถูกปิดตอนที่ระบบแตะมัน (`closeIfOverdue()`) ทุกที่ที่อ่าน attempt ต้องเรียกก่อน
 · query ของหน้าทำข้อสอบห้าม select `isCorrect` / `matchKey` / `explanation` · การตรวจคะแนนเป็น pure function ใน `features/quiz/lib/`
+· ผู้สอนให้คะแนน/ความเห็นผ่าน `reviewAnswer()` เท่านั้น — ล็อกแถว attempt แล้วคำนวณผลรวมใหม่ด้วย `recomputeAttempt()` · ผลสอบทั้งฝั่งผู้เรียนและผู้สอนประกอบด้วย `buildItems()` ใน `queries.ts` ตัวเดียว
 
 **การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`

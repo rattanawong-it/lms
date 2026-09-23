@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ClipboardCheck, FileQuestion, Pencil, Plus, Settings } from "lucide-react";
+import { BarChart3, ClipboardCheck, FileQuestion, Inbox, Pencil, Plus, Settings } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "แบบทดสอบ" };
 /** M07 · FR-07.3 — แบบทดสอบของคอร์ส */
 export default async function CourseQuizzesPage(props: PageProps<"/teach/courses/[id]/quizzes">) {
   const { id } = await props.params;
-  const { course, quizzes } = await getCourseQuizzes(id);
+  const { course, quizzes, pendingTotal } = await getCourseQuizzes(id);
 
   return (
     <>
@@ -26,6 +26,11 @@ export default async function CourseQuizzesPage(props: PageProps<"/teach/courses
             <Button asChild variant="outline">
               <Link href={`/teach/courses/${id}`}>
                 <Settings className="size-4" /> ตั้งค่าคอร์ส
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/teach/courses/${id}/quizzes/review`}>
+                <Inbox className="size-4" /> ตรวจอัตนัย{pendingTotal > 0 ? ` (${pendingTotal})` : ""}
               </Link>
             </Button>
             <Button asChild variant="outline">
@@ -60,7 +65,12 @@ export default async function CourseQuizzesPage(props: PageProps<"/teach/courses
                       {q.lesson ? `บทเรียน: ${q.lesson.title}` : "ยังไม่ผูกกับบทเรียน — ผู้เรียนยังเข้าทำไม่ได้"}
                     </p>
                   </div>
-                  <Badge variant="secondary">ผู้สอบแล้ว {q.attemptCount} ครั้ง</Badge>
+                  <div className="flex flex-wrap gap-2">
+                    {q.pendingCount > 0 ? (
+                      <Badge className="bg-warning-bg text-warning-fg border-0">รอตรวจ {q.pendingCount}</Badge>
+                    ) : null}
+                    <Badge variant="secondary">ผู้สอบแล้ว {q.attemptCount} ครั้ง</Badge>
+                  </div>
                 </div>
                 <p className="text-fg-2 mt-2 text-[12.5px]">
                   ข้อตายตัว {q.questionCount} ข้อ
@@ -77,6 +87,11 @@ export default async function CourseQuizzesPage(props: PageProps<"/teach/courses
                   </p>
                 ) : null}
                 <div className="border-line mt-3 flex flex-wrap gap-2 border-t pt-3">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={`/teach/courses/${id}/quizzes/${q.id}/results`}>
+                      <BarChart3 className="size-3.5" /> ผลสอบ
+                    </Link>
+                  </Button>
                   <Button asChild variant="outline" size="sm">
                     <Link href={`/teach/courses/${id}/quizzes/${q.id}`}>
                       <Pencil className="size-3.5" /> ตั้งค่า

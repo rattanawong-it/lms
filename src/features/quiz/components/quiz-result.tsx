@@ -8,16 +8,14 @@ import { formatDateTime } from "@/lib/dates";
 import { formatScore } from "@/lib/decimal";
 import { cn } from "@/lib/utils";
 import { QUESTION_TYPE_LABEL } from "@/features/questions/schemas";
-import type { AttemptView } from "@/features/quiz/queries";
-
-type Item = AttemptView["items"][number];
+import type { AttemptItem as Item, AttemptView } from "@/features/quiz/queries";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
-/** คำตอบของผู้เรียน (และเฉลยเมื่อเปิดได้) ของข้อหนึ่ง */
-function Review({ item }: { item: Item }) {
+/** คำตอบของผู้เรียน (และเฉลยเมื่อเปิดได้) ของข้อหนึ่ง — ใช้ร่วมกับหน้าตรวจของผู้สอน */
+export function AnswerReview({ item, owner = "คุณ" }: { item: Item; owner?: string }) {
   const response = asRecord(item.response);
   const key = item.key;
 
@@ -89,7 +87,7 @@ function Review({ item }: { item: Item }) {
               <span className="size-4 shrink-0" aria-hidden />
             )}
             <span className="flex-1">{c.text}</span>
-            {mine ? <span className="text-muted-foreground text-[11.5px]">คำตอบของคุณ</span> : null}
+            {mine ? <span className="text-muted-foreground text-[11.5px]">คำตอบของ{owner}</span> : null}
           </li>
         );
       })}
@@ -97,9 +95,12 @@ function Review({ item }: { item: Item }) {
   );
 }
 
-function verdict(item: Item) {
+export function verdict(item: Item) {
   if (!item.result) return null;
   if (item.result.pending) return { label: "รอตรวจ", tone: "bg-warning-bg text-warning-fg" };
+  if (item.type === QuestionType.ESSAY && item.result.score !== null) {
+    return { label: "ตรวจแล้ว", tone: "bg-info-bg text-info-fg" };
+  }
   if (item.result.isCorrect === null) return null;
   if (item.result.isCorrect) return { label: "ถูก", tone: "bg-success-bg text-success-fg" };
   if ((item.result.score ?? 0) > 0) return { label: "ได้บางส่วน", tone: "bg-warning-bg text-warning-fg" };
@@ -179,7 +180,7 @@ export function QuizResult({ view, backHref }: { view: AttemptView; backHref: st
                   ) : null}
                 </div>
                 <RichText content={item.prompt} className="mt-2 mb-3 space-y-2" />
-                <Review item={item} />
+                <AnswerReview item={item} />
                 {item.result?.feedback ? (
                   <p className="bg-info-bg text-info-fg mt-3 flex gap-2 rounded-lg px-3 py-2 text-[13px]">
                     <MessageSquare className="mt-0.5 size-4 shrink-0" aria-hidden /> {item.result.feedback}
