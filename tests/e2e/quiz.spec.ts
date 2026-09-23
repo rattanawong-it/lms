@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import ExcelJS from "exceljs";
 import { STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M07 ขั้น 2 — แบบทดสอบ (FR-07.3 · FR-07.4 · FR-07.5 · FR-07.6)
@@ -20,7 +21,7 @@ const secretOf = (p: string) => `คำตอบลับ${p}${RUN_ID}`;
 test.describe.configure({ mode: "serial" });
 
 async function openCourse(page: Page, project: string) {
-  await page.goto("/teach");
+  await page.goto(teachSearch(courseTitle(project)));
   await page.getByRole("link", { name: courseTitle(project) }).first().click();
   await expect(page.getByRole("heading", { name: courseTitle(project), level: 1 })).toBeVisible({ timeout: 30_000 });
   return new URL(page.url()).pathname;

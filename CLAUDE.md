@@ -201,6 +201,9 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **`<RichText>` คืน `null` เมื่อไม่มีเนื้อหา แต่ `<RichText/>` เป็น element ที่ยัง truthy เสมอ**
   จะเช็คว่าบทเรียนมีเนื้อหาไหม ให้ถาม `parseRichTextDoc(content)` ไม่ใช่เช็คค่า JSX
 - **เพิ่ม route ใหม่แล้ว `pnpm typecheck` แดงเรื่อง `AppRoutes`** → รัน `npx next typegen` ก่อน (หรือ `pnpm dev`/`pnpm build` สักครั้ง)
+- **DB ทดสอบสะสมคอร์สทุกครั้งที่รัน e2e** (instructor คนเดียวเป็นเจ้าของทั้งหมด) — หน้า `/teach` ยาวขึ้นจนเทสต์หาลิงก์ไม่ทัน
+  เทสต์ที่เปิดคอร์สฝั่งผู้สอนให้ใช้ `teachSearch(ชื่อคอร์ส)` จาก `tests/e2e/helpers.ts` (กรองด้วย `/teach?q=`)
+  · ล้างได้ด้วย `pnpm db:reset` แล้ว `pnpm storage:init` (Prisma ขอคำยืนยันจากผู้ใช้ก่อนเสมอเมื่อ AI เป็นคนสั่ง)
 - **Playwright `--workers` เริ่มต้น (5) หนักเกินเครื่องพัฒนา** — `page.goto` timeout แบบสุ่มในเทสต์ที่ไม่เกี่ยวกับงานที่แก้
   รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
 - **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`

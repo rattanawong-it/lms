@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ANONYMOUS, STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M04 — Course Builder
@@ -15,7 +16,7 @@ const TITLE = `คอร์สทดสอบอัตโนมัติ ${RUN_I
 test.describe.configure({ mode: "serial" });
 
 async function gotoCourseSettings(page: Page) {
-  await page.goto("/teach");
+  await page.goto(teachSearch(TITLE));
   await page.getByRole("link", { name: TITLE }).click();
   await expect(page.getByRole("heading", { name: TITLE, level: 1 })).toBeVisible();
 }

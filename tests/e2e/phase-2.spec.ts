@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { ANONYMOUS, STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * ปิด Phase 2 — M07 + M08 + M09 + M10 ต่อกันทั้งเส้น (phase-2-plan ขั้น 6)
@@ -25,7 +26,7 @@ test.describe.configure({ mode: "serial" });
 const codes = new Map<string, string>();
 
 async function openCourse(page: Page, project: string) {
-  await page.goto("/teach");
+  await page.goto(teachSearch(courseTitle(project)));
   await page.getByRole("link", { name: courseTitle(project) }).first().click();
   await expect(page.getByRole("heading", { name: courseTitle(project), level: 1 })).toBeVisible({ timeout: 30_000 });
   return new URL(page.url()).pathname;

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M05 (ฝั่งผู้สอน) — อัปโหลดไฟล์ เขียนเนื้อหา และแนบไฟล์ประกอบ
@@ -23,7 +24,7 @@ const PNG = Buffer.from(
 const WORKSHEET = Buffer.from("ใบงานทดสอบอัตโนมัติ", "utf8");
 
 async function gotoSettings(page: Page) {
-  await page.goto("/teach");
+  await page.goto(teachSearch(TITLE));
   await page.getByRole("link", { name: TITLE }).click();
   await expect(page.getByRole("heading", { name: TITLE, level: 1 })).toBeVisible();
 }

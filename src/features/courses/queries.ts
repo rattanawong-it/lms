@@ -62,11 +62,14 @@ function toRow(
  * ผู้สอน       เห็นเฉพาะคอร์สที่ตนเป็นผู้สอน
  * ผู้ดูแลคณะ   เห็นคอร์สของคณะตน และคอร์สที่ตนสอนเอง
  * ผู้ดูแลระบบ  เห็นทั้งหมด
+ *
+ * `query` ค้นจากชื่อคอร์ส (ไม่สนตัวพิมพ์) — ผู้สอนที่มีคอร์สมากหาคอร์สได้เร็ว
  */
-export async function listTeachCourses(): Promise<TeachCourseRow[]> {
+export async function listTeachCourses(query = ""): Promise<TeachCourseRow[]> {
   const user = await requireCourseCreator();
+  const q = query.trim().slice(0, 100);
 
-  const where: Prisma.CourseWhereInput =
+  const scope: Prisma.CourseWhereInput =
     user.role === Role.SUPER_ADMIN
       ? {}
       : user.role === Role.DEPT_ADMIN && user.departmentId
@@ -77,6 +80,9 @@ export async function listTeachCourses(): Promise<TeachCourseRow[]> {
             ],
           }
         : { instructors: { some: { userId: user.id } } };
+  const where: Prisma.CourseWhereInput = q
+    ? { AND: [scope, { title: { contains: q, mode: "insensitive" } }] }
+    : scope;
 
   const rows = await db.course.findMany({
     where,

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M09 — สมุดคะแนน (FR-09.1–09.5)
@@ -19,7 +20,7 @@ const LESSON = "ส่งรายงานกลุ่ม";
 test.describe.configure({ mode: "serial" });
 
 async function openCourse(page: Page, project: string) {
-  await page.goto("/teach");
+  await page.goto(teachSearch(courseTitle(project)));
   await page.getByRole("link", { name: courseTitle(project) }).first().click();
   await expect(page.getByRole("heading", { name: courseTitle(project), level: 1 })).toBeVisible({ timeout: 30_000 });
   return new URL(page.url()).pathname;

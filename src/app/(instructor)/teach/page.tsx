@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, Plus } from "lucide-react";
+import { BookOpen, Plus, Search, SearchX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { listTeachCourses } from "@/features/courses/queries";
@@ -13,8 +14,10 @@ import type { CourseStatus } from "@/generated/prisma/enums";
 export const metadata: Metadata = { title: "ห้องผู้สอน" };
 
 /** M04 · FR-04.1 — รายการคอร์สที่ผู้ใช้ดูแลได้ */
-export default async function TeachPage() {
-  const courses = await listTeachCourses();
+export default async function TeachPage(props: PageProps<"/teach">) {
+  const search = await props.searchParams;
+  const q = typeof search.q === "string" ? search.q : "";
+  const courses = await listTeachCourses(q);
 
   return (
     <>
@@ -30,7 +33,26 @@ export default async function TeachPage() {
         }
       />
 
-      {courses.length === 0 ? (
+      <form role="search" className="mb-4 flex gap-2">
+        <Input
+          name="q"
+          defaultValue={q}
+          placeholder="ค้นหาจากชื่อคอร์ส"
+          aria-label="ค้นหาคอร์ส"
+          className="bg-card h-11 max-w-[420px]"
+        />
+        <Button type="submit" variant="outline" className="h-11">
+          <Search className="size-4" /> ค้นหา
+        </Button>
+      </form>
+
+      {courses.length === 0 && q ? (
+        <EmptyState
+          icon={<SearchX className="size-6" />}
+          title="ไม่พบคอร์สที่ตรงกับคำค้น"
+          description={`ไม่มีคอร์สชื่อที่มี “${q}” ในคอร์สที่คุณดูแลได้`}
+        />
+      ) : courses.length === 0 ? (
         <EmptyState
           icon={<BookOpen className="size-6" />}
           title="ยังไม่มีคอร์สของคุณ"

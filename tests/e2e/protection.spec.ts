@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M15 — การป้องกันการคัดลอกเนื้อหา
@@ -131,7 +132,7 @@ test.describe("ผู้สอนควบคุมการป้องกั�
   test.use({ storageState: STATE_FILE.instructor });
 
   test("มีสวิตช์การป้องกันในฟอร์มคอร์ส และเปิดอยู่เป็นค่าตั้งต้น (FR-15.9)", async ({ page }) => {
-    await page.goto("/teach");
+    await page.goto(teachSearch(COURSE_TITLE));
     await page.getByRole("link", { name: COURSE_TITLE }).first().click();
 
     const toggle = page.getByRole("checkbox", { name: /ป้องกันการคัดลอกเนื้อหา/ });

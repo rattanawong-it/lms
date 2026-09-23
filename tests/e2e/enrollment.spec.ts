@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page, type TestInfo } from "@playwright/test";
 import { STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M06 — ลงทะเบียน → คอร์สของฉัน → เรียน → บันทึกความคืบหน้า
@@ -44,7 +45,7 @@ async function submitDialog(dialog: Locator) {
 
 /** เปิดหน้าจัดการผู้เรียนของคอร์สจากฝั่งผู้สอน */
 async function openRoster(page: Page, title: string) {
-  await page.goto("/teach");
+  await page.goto(teachSearch(title));
   await page.getByRole("link", { name: title }).first().click();
   await page.getByRole("link", { name: "ผู้เรียน" }).click();
   await expect(page.getByRole("heading", { name: "ผู้เรียนในคอร์ส", level: 1 })).toBeVisible({

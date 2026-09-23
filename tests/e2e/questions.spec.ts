@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import ExcelJS from "exceljs";
 import { STATE_FILE } from "./constants";
+import { teachSearch } from "./helpers";
 
 /**
  * M07 ขั้น 1 — คลังข้อสอบ (FR-07.1 / FR-07.2 / FR-07.7)
@@ -19,7 +20,7 @@ let bankPath = "";
 
 async function openBank(page: Page, tag: string, archived = false) {
   if (!bankPath) {
-    await page.goto("/teach");
+    await page.goto(teachSearch(COURSE_TITLE));
     await page.getByRole("link", { name: COURSE_TITLE }).first().click();
     await expect(page.getByRole("heading", { name: COURSE_TITLE, level: 1 })).toBeVisible({ timeout: 30_000 });
     bankPath = `${new URL(page.url()).pathname}/questions`;
