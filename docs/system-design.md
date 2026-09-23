@@ -1326,11 +1326,12 @@ LMS/
 │  │  └─ shared/               data-table, empty-state, rich-text, file-uploader
 │  ├─ features/
 │  │  ├─ auth/ users/ departments/ catalog/ course-builder/ content/ enrollment/
-│  │  ├─ quiz/ assignment/ gradebook/ certificate/ announcements/ notifications/
+│  │  ├─ questions/ quiz/ assignment/ gradebook/ certificate/ announcements/ notifications/
 │  │  ├─ line/ qa/ review/ protection/ reports/ audit/ settings/
 │  │  │   └─ (แต่ละโฟลเดอร์) queries.ts · actions.ts · schemas.ts · components/ · lib/
 │  ├─ lib/                     auth.ts, auth-client.ts, db.ts, rbac.ts (server), roles.ts (client-safe), permissions.ts,
-│  │                          storage.ts, notify/, audit.ts, utils.ts, dates.ts, env.ts, mail.ts, action-result.ts
+│  │                          storage.ts, notify/, audit.ts, utils.ts, dates.ts, env.ts, mail.ts, action-result.ts,
+│  │                          csv.ts, xlsx.ts (server), decimal.ts
 │  └─ generated/prisma/        (gitignored)
 ├─ proxy.ts
 ├─ tests/

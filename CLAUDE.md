@@ -102,6 +102,8 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `notify/index.ts` | `notify()` — **จุดเดียวที่สร้างการแจ้งเตือน** (in-app ตอนนี้ · อีเมล/LINE เติมที่นี่ในเฟส 3) ไม่ throw |
 | `rate-limit.ts` | จำกัดความถี่แบบ fixed window ในหน่วยความจำ (ขอ signed URL, รายงานหน้าจอ) — **นับแยกต่อ process** |
 | `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |
+| `csv.ts` · `xlsx.ts` (server) | ตาราง `string[][]` ↔ CSV (RFC 4180 + BOM) / Excel — ตัวตรวจของฟีเจอร์รับตารางชุดเดียวกันทั้งสองแบบ |
+| `decimal.ts` | `toScore()` แปลง `Decimal` ของคะแนนเป็น number ก่อนส่งให้ client · `formatScore()` |
 | `mail.ts` · `env.ts` · `rich-text-doc.ts` · `utils.ts` | อีเมล · env ที่ผ่าน Zod · เอกสาร Tiptap แบบ sanitize แล้ว · `cn()` |
 
 ## 5. Conventions
@@ -178,6 +180,10 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **`<Progress>` ของ shadcn ไม่ส่ง `value` ต่อให้ Radix** → ไม่มี `aria-valuenow` · เทสต์ให้อ่านจาก `aria-label` ที่ใส่เปอร์เซ็นต์ไว้
 - **checkbox ใน Zod v4** — `z.union([...]).nullish().transform(...)` ไม่ใช่ใส่ `z.undefined()` ใน union
   (ไม่งั้น key ที่ไม่ถูกส่งมาจะไม่ผ่าน) และห้ามใช้ `z.coerce.boolean()` กับค่า `"false"` เพราะได้ `true`
+- **ไฟล์ `"use server"` export ได้เฉพาะ async function** — ค่าคงที่/ตัวแปรที่ export จากไฟล์ actions ทำให้ build ล้ม ให้วางไว้ใน `schemas.ts`
+- **`RichTextField` โหลด Tiptap แบบ lazy** — ตัว placeholder ต้องส่งค่าเดิมไปกับฟอร์มด้วย (แก้แล้วใน Phase 2 ขั้น 1)
+  ไม่งั้นกดบันทึกก่อน editor โหลดเสร็จจะล้างเนื้อหาทิ้ง
+- **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
 - **หน้าที่มีตารางกว้าง (`min-w-[…]` ใน `overflow-x-auto`) ทำให้ Chrome โหมดจำลองมือถือย่อทั้งหน้า**
   (layout viewport กลายเป็น ~688px ทั้งที่ตั้ง 375px) แล้วพิกัดคลิกของ Playwright กับ element ที่ `position: fixed`
   เช่นกล่องโต้ตอบจะไม่ตรงจนคลิกไปโดน overlay — ในเทสต์ให้ส่งฟอร์มด้วยปุ่ม Enter แทนการคลิก

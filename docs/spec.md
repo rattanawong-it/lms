@@ -89,7 +89,8 @@
 | **M06 Enrollment & Progress** | ✅ เสร็จ | Phase 1 ขั้น 5 | `src/features/enrollment/` · ต่อเข้ากับตัวเล่นวิดีโอแล้วในขั้น 6a |
 | **M15 Content Protection** | ✅ เสร็จ | Phase 1 ขั้น 6b | `<ProtectedViewer>` + ลายน้ำ + `ScreenEventLog` · CSP แบบ nonce อยู่ใน `proxy.ts` |
 | **M11 Announcement (in-app)** | ✅ เสร็จ (in-app) | Phase 1 ขั้น 7 | `features/announcements` + `features/notifications` · `lib/notify` เป็นจุดเดียวที่ยิงแจ้งเตือน · FR-11.3/11.4 (อีเมล, ตั้งค่าช่องทาง) อยู่ Phase 3 |
-| M07–M10, M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 2–3 | ตาม roadmap §6 |
+| **M07 Quiz / Exam** | 🔸 กำลังทำ | Phase 2 ขั้น 1–3 | ขั้น 1 คลังข้อสอบเสร็จ (FR-07.1/07.2/07.7) · `src/features/questions/` |
+| M08–M10, M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 2–3 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
@@ -241,7 +242,7 @@
 | FR-07.6 | กำหนดว่าจะแสดงเฉลยเมื่อใด (ทันที / หลังปิดสอบ / ไม่แสดง) |
 | FR-07.7 | นำเข้าข้อสอบจาก CSV/Excel |
 
-- [ ] FR-07.1 · [ ] FR-07.2 · [ ] FR-07.3 · [ ] FR-07.4 · [ ] FR-07.5 · [ ] FR-07.6 · [ ] FR-07.7
+- [x] FR-07.1 · [x] FR-07.2 · [ ] FR-07.3 · [ ] FR-07.4 · [ ] FR-07.5 · [ ] FR-07.6 · [x] FR-07.7
 - [ ] DoD ครบ 7 ข้อ
 
 ### M08 — Assignment (P0)
@@ -416,7 +417,7 @@
 |---|---|---|---|
 | **Phase 0 – Foundation** | M00 (เอกสารกำกับ), Scaffold, DB schema, M01, M02, Layout responsive | ระบบ login และโครง role พร้อมใช้ | ✅ เสร็จ |
 | **Phase 1 – MVP** | M03, M04, M05, M06, M15, M11 (in-app) | สร้างคอร์ส เรียน และป้องกันเนื้อหาได้ | ✅ เสร็จ 2026-09-23 |
-| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | 🔸 แผนอนุมัติแล้ว · เริ่มขั้น 0 ([`phase-2-plan.md`](./phase-2-plan.md)) |
+| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | 🔸 ขั้น 1/6 ([`phase-2-plan.md`](./phase-2-plan.md)) |
 | **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | ⬜ ยังไม่เริ่ม |
 | **Phase 4 – Commerce** | M18, DRM (ทางเลือก) | ขายคอร์ส | ⬜ ยังไม่เริ่ม |
 

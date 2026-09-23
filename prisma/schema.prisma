@@ -399,6 +399,7 @@ model Question {
   explanation Json?
   points      Decimal      @default(1) @db.Decimal(6, 2)
   tags        String[]
+  archivedAt  DateTime?    // S1 — เก็บเข้าคลังแทนการลบ (Answer.question เป็น cascade)
   choices     Choice[]
   quizLinks   QuizQuestion[]
   answers     Answer[]

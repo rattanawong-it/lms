@@ -240,3 +240,20 @@ export function parseRichTextField(value: FormDataEntryValue | null): RichTextDo
 export function mediaSrc(assetId: string): string {
   return `/api/media/${assetId}`;
 }
+
+/**
+ * ข้อความล้วน → เอกสาร Tiptap (ย่อหน้าละบรรทัด) — ใช้กับข้อมูลที่นำเข้าจาก CSV/Excel
+ * ผลลัพธ์ผ่าน `parseRichTextDoc()` อีกรอบ จึงได้เพดานความยาวชุดเดียวกับที่พิมพ์ใน editor
+ */
+export function plainTextToDoc(text: string): RichTextDoc | null {
+  const paragraphs = text
+    .replace(/\r\n?/g, "\n")
+    .split("\n")
+    .map((line) => line.trim());
+  return parseRichTextDoc({
+    type: "doc",
+    content: paragraphs.map((line) =>
+      line ? { type: "paragraph", content: [{ type: "text", text: line }] } : { type: "paragraph" },
+    ),
+  });
+}
