@@ -8,9 +8,12 @@ import {
   AssetStatus,
   CourseStatus,
   EnrollPolicy,
+  GradeSource,
   InstructorRole,
   LessonType,
+  QuestionType,
   Role,
+  ShowAnswers,
   VideoSource,
   Visibility,
 } from "../src/generated/prisma/enums";
@@ -488,12 +491,174 @@ async function main() {
     }
   }
 
+  // ── คอร์สตัวอย่างการประเมินผล (Phase 2 · phase-2-plan §3) ──
+  // แยกจาก intro-to-lms เพราะผูกแบบทดสอบแล้วบทนั้นนับว่าจบเมื่อสอบผ่าน — เทสต์เดิมที่ใช้คอร์สนั้นจะเปลี่ยนพฤติกรรม
+  const demo = await db.course.upsert({
+    where: { slug: "assessment-demo" },
+    update: {},
+    create: {
+      slug: "assessment-demo",
+      title: "ตัวอย่างการสอบ ส่งงาน และใบประกาศ",
+      summary: "คอร์สสาธิตแบบทดสอบครบ 6 ชนิด งานที่ต้องส่ง สมุดคะแนน และใบประกาศ",
+      level: "เบื้องต้น",
+      status: CourseStatus.PUBLISHED,
+      visibility: Visibility.INTERNAL,
+      enrollPolicy: EnrollPolicy.OPEN,
+      departmentId: sci.id,
+      categoryId: it.id,
+      publishedAt: new Date(),
+      certificateTemplate: {
+        heading: "ประกาศนียบัตร",
+        body: "ขอมอบประกาศนียบัตรฉบับนี้เพื่อแสดงว่า\n{ชื่อ}\nได้ผ่านการเรียนหลักสูตร\n{คอร์ส}\nให้ไว้ ณ วันที่ {วันที่}",
+        signerName: "ผู้สอนตัวอย่าง",
+        signerTitle: "ผู้สอนประจำหลักสูตร",
+        logoAssetId: null,
+        signatureAssetId: null,
+      },
+    },
+  });
+  await db.courseInstructor.upsert({
+    where: { courseId_userId: { courseId: demo.id, userId: instructor.id } },
+    update: { role: InstructorRole.OWNER },
+    create: { courseId: demo.id, userId: instructor.id, role: InstructorRole.OWNER },
+  });
+
+  if ((await db.section.count({ where: { courseId: demo.id } })) === 0) {
+    const text = (value: string) => ({
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text: value }] }],
+    });
+
+    const section = await db.section.create({
+      data: {
+        courseId: demo.id,
+        title: "บทที่ 1 ทดลองประเมินผล",
+        position: 1,
+        lessons: {
+          create: [
+            {
+              title: "อ่านก่อนเริ่ม",
+              type: LessonType.TEXT,
+              position: 1,
+              isPreview: true,
+              content: text("ทำแบบทดสอบให้ผ่าน 60% และส่งงาน 1 ชิ้น เมื่อผู้สอนตรวจงานแล้วจะได้ใบประกาศ"),
+            },
+            { title: "แบบทดสอบ 6 ชนิด", type: LessonType.QUIZ, position: 2 },
+            { title: "ส่งรายงานสั้น", type: LessonType.ASSIGNMENT, position: 3 },
+          ],
+        },
+      },
+      select: { lessons: { select: { id: true, type: true } } },
+    });
+    const quizLesson = section.lessons.find((l) => l.type === LessonType.QUIZ)!;
+    const workLesson = section.lessons.find((l) => l.type === LessonType.ASSIGNMENT)!;
+
+    const questions: Omit<Prisma.QuestionUncheckedCreateInput, "courseId">[] = [
+      {
+        type: QuestionType.SINGLE,
+        prompt: text("ข้อใดคือหน่วยประมวลผลกลางของคอมพิวเตอร์"),
+        choices: { create: [
+          { text: "CPU", isCorrect: true, position: 1 },
+          { text: "RAM", position: 2 },
+          { text: "SSD", position: 3 },
+        ] },
+      },
+      {
+        type: QuestionType.MULTIPLE,
+        prompt: text("ข้อใดเป็นอุปกรณ์รับข้อมูล (เลือกได้หลายข้อ)"),
+        choices: { create: [
+          { text: "คีย์บอร์ด", isCorrect: true, position: 1 },
+          { text: "เมาส์", isCorrect: true, position: 2 },
+          { text: "จอภาพ", position: 3 },
+        ] },
+      },
+      {
+        type: QuestionType.TRUE_FALSE,
+        prompt: text("HTTPS เข้ารหัสข้อมูลระหว่างเบราว์เซอร์กับเซิร์ฟเวอร์"),
+        choices: { create: [
+          { text: "ถูก", isCorrect: true, position: 1 },
+          { text: "ผิด", position: 2 },
+        ] },
+      },
+      {
+        type: QuestionType.MATCHING,
+        prompt: text("จับคู่นามสกุลไฟล์กับชนิดไฟล์"),
+        points: 2,
+        choices: { create: [
+          { text: ".pdf", matchKey: "เอกสาร", isCorrect: true, position: 1 },
+          { text: ".mp4", matchKey: "วิดีโอ", isCorrect: true, position: 2 },
+          { text: ".png", matchKey: "รูปภาพ", isCorrect: true, position: 3 },
+        ] },
+      },
+      {
+        type: QuestionType.SHORT_TEXT,
+        prompt: text("ภาษาที่ใช้จัดรูปแบบหน้าเว็บ (ตัวย่อ 3 ตัวอักษร)"),
+        choices: { create: [{ text: "CSS", isCorrect: true, position: 1 }] },
+      },
+      {
+        type: QuestionType.ESSAY,
+        prompt: text("อธิบายสั้น ๆ ว่าทำไมควรตั้งรหัสผ่านที่ไม่ซ้ำกันในแต่ละเว็บไซต์"),
+        points: 4,
+        explanation: text("ควรกล่าวถึงความเสี่ยงเมื่อเว็บไซต์หนึ่งถูกเจาะแล้วรหัสผ่านรั่ว"),
+      },
+    ];
+    const created = [];
+    for (const q of questions) {
+      created.push(
+        await db.question.create({
+          data: { ...q, courseId: demo.id, tags: ["ตัวอย่าง"] },
+          select: { id: true },
+        }),
+      );
+    }
+
+    const quiz = await db.quiz.create({
+      data: {
+        courseId: demo.id,
+        lessonId: quizLesson.id,
+        title: "แบบทดสอบ 6 ชนิด",
+        passingPct: 60,
+        showAnswers: ShowAnswers.IMMEDIATELY,
+        questions: { create: created.map((q, position) => ({ questionId: q.id, position })) },
+      },
+      select: { id: true },
+    });
+    const assignment = await db.assignment.create({
+      data: {
+        courseId: demo.id,
+        lessonId: workLesson.id,
+        title: "รายงานสั้น 1 หน้า",
+        instructions: text("สรุปสิ่งที่ได้เรียนจากบทนี้ไม่เกิน 1 หน้า ส่งเป็นข้อความหรือไฟล์ PDF"),
+        maxScore: 10,
+        allowedTypes: ["pdf", "docx"],
+        maxFileMb: 10,
+      },
+      select: { id: true, maxScore: true },
+    });
+
+    // สมุดคะแนน 50/50 — ครบ 100% จึงคำนวณเกรดได้ทันที
+    await db.gradeItem.createMany({
+      data: [
+        { courseId: demo.id, title: "แบบทดสอบ 6 ชนิด", source: GradeSource.QUIZ, quizId: quiz.id, weight: 50, maxScore: 100, position: 0 },
+        {
+          courseId: demo.id,
+          title: "รายงานสั้น 1 หน้า",
+          source: GradeSource.ASSIGNMENT,
+          assignmentId: assignment.id,
+          weight: 50,
+          maxScore: assignment.maxScore,
+          position: 1,
+        },
+      ],
+    });
+  }
+
   console.log("seed เสร็จแล้ว:");
   console.log(`  คณะ/หน่วยงาน ${departments.length} รายการ · หมวดหมู่ ${categories.length} รายการ`);
   console.log(`  Super Admin : ${admin.email}`);
   console.log(`  ผู้สอน      : ${instructor.email}`);
   console.log(`  ผู้เรียน     : ${student.email}`);
-  console.log(`  คอร์สตัวอย่าง: ${course.slug} และอีก ${moreCourses.length} คอร์ส`);
+  console.log(`  คอร์สตัวอย่าง: ${course.slug} และอีก ${moreCourses.length} คอร์ส · ${demo.slug} (แบบทดสอบ 6 ชนิด + งาน)`);
   console.log(`  รหัสผ่านเริ่มต้นทุกบัญชี: ${ADMIN_PASSWORD} (เปลี่ยนทันทีหลัง login ครั้งแรก)`);
 }
 
