@@ -5,21 +5,22 @@ import { db } from "@/lib/db";
 import { assertCourseAccess, requireUser } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
+import {
+  notifyCourseCompleted,
+  writeProgress,
+  type ProgressTarget,
+} from "@/features/enrollment/lib/progress-writer";
 import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
-import { parseCompletionRule } from "@/features/courses/schemas";
 import {
   CourseStatus,
   EnrollPolicy,
   EnrollmentSource,
   EnrollmentStatus,
+  LessonType,
   NotificationType,
 } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
-import {
-  calcProgressPct,
-  meetsCompletionRule,
-  reachedVideoCompletion,
-} from "@/features/enrollment/lib/progress";
+import { reachedVideoCompletion } from "@/features/enrollment/lib/progress";
 import { getLessonAccess, type LessonAccess } from "@/features/enrollment/queries";
 import {
   bulkEnrollSchema,
@@ -480,72 +481,15 @@ export async function removeEnrollment(formData: FormData): Promise<ActionResult
  */
 type LessonContext = LessonAccess;
 
-/**
- * FR-06.3 — เขียน LessonProgress แล้วคำนวณ progressPct ใหม่ใน transaction เดียวกัน
- * (system-design §3.3: % ต้องเปลี่ยนพร้อมกับ `completed` เสมอ ไม่ให้ค้างไม่ตรงกัน)
- */
-async function writeProgress(
-  ctx: LessonContext & { enrollmentId: string },
-  lessonId: string,
-  data: { completed?: boolean; lastPositionSec?: number },
-): Promise<{ progressPct: number; courseCompleted: boolean; justCompleted: boolean }> {
-  const rule = parseCompletionRule(ctx.completionRule);
-  const totalLessons = ctx.lessons.length;
-
-  return db.$transaction(async (tx) => {
-    await tx.lessonProgress.upsert({
-      where: { enrollmentId_lessonId: { enrollmentId: ctx.enrollmentId, lessonId } },
-      create: {
-        enrollmentId: ctx.enrollmentId,
-        lessonId,
-        completed: data.completed ?? false,
-        lastPositionSec: data.lastPositionSec ?? 0,
-        completedAt: data.completed ? new Date() : null,
-      },
-      update: {
-        ...(data.completed === undefined
-          ? {}
-          : { completed: data.completed, completedAt: data.completed ? new Date() : null }),
-        ...(data.lastPositionSec === undefined ? {} : { lastPositionSec: data.lastPositionSec }),
-      },
-    });
-
-    const completedCount = await tx.lessonProgress.count({
-      where: { enrollmentId: ctx.enrollmentId, completed: true },
-    });
-
-    const progressPct = calcProgressPct(completedCount, totalLessons);
-    const courseCompleted = meetsCompletionRule(progressPct, rule);
-
-    const current = await tx.enrollment.findUniqueOrThrow({
-      where: { id: ctx.enrollmentId },
-      select: { status: true, completedAt: true },
-    });
-
-    // ถอยกลับเป็น ACTIVE ถ้าผู้เรียนยกเลิกการจบบทจนหลุดเงื่อนไข — ไม่ให้ค้างสถานะ COMPLETED
-    const status = courseCompleted
-      ? EnrollmentStatus.COMPLETED
-      : current.status === EnrollmentStatus.COMPLETED
-        ? EnrollmentStatus.ACTIVE
-        : current.status;
-
-    await tx.enrollment.update({
-      where: { id: ctx.enrollmentId },
-      data: {
-        progressPct,
-        lastLessonId: lessonId,
-        status,
-        // คงวันที่เรียนจบครั้งแรกไว้ — การทบทวนบทเรียนภายหลังไม่ควรเลื่อนวันจบ
-        completedAt: courseCompleted ? (current.completedAt ?? new Date()) : null,
-      },
-    });
-
-    return {
-      progressPct,
-      courseCompleted,
-      justCompleted: courseCompleted && current.status !== EnrollmentStatus.COMPLETED,
-    };
-  });
+/** แปลงบริบทของบทเรียนเป็นเป้าหมายของตัวเขียนความคืบหน้า (`lib/progress-writer.ts`) */
+function targetOf(ctx: LessonContext & { enrollmentId: string }): ProgressTarget {
+  return {
+    enrollmentId: ctx.enrollmentId,
+    userId: ctx.userId,
+    courseId: ctx.courseId,
+    completionRule: ctx.completionRule,
+    totalLessons: ctx.lessons.length,
+  };
 }
 
 /**
@@ -576,7 +520,7 @@ export async function saveProgress(input: {
   const autoComplete =
     !alreadyCompleted && reachedVideoCompletion(parsed.data.positionSec, ctx.lesson.durationSec);
 
-  const result = await writeProgress({ ...ctx, enrollmentId: ctx.enrollmentId }, parsed.data.lessonId, {
+  const result = await writeProgress(targetOf({ ...ctx, enrollmentId: ctx.enrollmentId }), parsed.data.lessonId, {
     lastPositionSec: parsed.data.positionSec,
     ...(autoComplete ? { completed: true } : {}),
   });
@@ -616,8 +560,14 @@ export async function markLessonComplete(formData: FormData): Promise<ActionResu
     return { ok: false, message: "ต้องเรียนบทก่อนหน้าให้จบก่อน" };
   }
 
+  // บทแบบทดสอบนับว่าจบเมื่อสอบผ่านเท่านั้น (M07) — ติ๊กเองไม่ได้ ทั้งติ๊กจบและยกเลิก
+  if (ctx.lesson.type === LessonType.QUIZ) {
+    const quiz = await db.quiz.findUnique({ where: { lessonId: ctx.lesson.id }, select: { id: true } });
+    if (quiz) return { ok: false, message: "บทนี้จะนับว่าเรียนจบเมื่อสอบผ่านแบบทดสอบ" };
+  }
+
   const result = await writeProgress(
-    { ...ctx, enrollmentId: ctx.enrollmentId },
+    targetOf({ ...ctx, enrollmentId: ctx.enrollmentId }),
     parsed.data.lessonId,
     { completed: parsed.data.completed },
   );
@@ -630,14 +580,7 @@ export async function markLessonComplete(formData: FormData): Promise<ActionResu
     after: { courseId: ctx.courseId, progressPct: result.progressPct },
   });
 
-  if (result.justCompleted) {
-    await notify({
-      userIds: [user.id],
-      type: NotificationType.ENROLLED,
-      title: "ยินดีด้วย คุณเรียนจบคอร์สแล้ว",
-      link: `/my-courses`,
-    });
-  }
+  await notifyCourseCompleted(result, user.id);
 
   revalidateLearner(ctx.courseId, ctx.slug);
   revalidateRoster(ctx.courseId);

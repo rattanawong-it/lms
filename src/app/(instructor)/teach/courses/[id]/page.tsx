@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLink, FileQuestion, ListTree, Megaphone, Users } from "lucide-react";
+import { ClipboardCheck, ExternalLink, FileQuestion, ListTree, Megaphone, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseForm } from "@/features/courses/components/course-form";
@@ -30,6 +30,11 @@ export default async function CourseSettingsPage(props: PageProps<"/teach/course
             <Button asChild variant="outline">
               <Link href={`/courses/${course.slug}`}>
                 <ExternalLink className="size-4" /> ดูหน้าคอร์ส
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/teach/courses/${course.id}/quizzes`}>
+                <ClipboardCheck className="size-4" /> แบบทดสอบ
               </Link>
             </Button>
             <Button asChild variant="outline">

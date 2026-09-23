@@ -44,6 +44,6 @@ export const VIDEO_SOURCE_LABEL: Record<VideoSource, string> = {
 
 /** ชนิดบทเรียนที่ยังแก้ไขเนื้อหาไม่ได้ในเฟสนี้ — รอโมดูลของตัวเอง */
 export const LESSON_TYPE_PHASE: Partial<Record<LessonType, string>> = {
-  QUIZ: "ผูกกับแบบทดสอบได้ใน M07 (เฟส 2)",
+  QUIZ: "สร้างแบบทดสอบแล้วผูกกับบทนี้ที่หน้า “แบบทดสอบ” ของคอร์ส",
   ASSIGNMENT: "ผูกกับงานที่ต้องส่งได้ใน M08 (เฟส 2)",
 };

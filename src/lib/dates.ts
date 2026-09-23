@@ -65,3 +65,19 @@ export function formatDuration(seconds: number | null | undefined): string | nul
   if (minutes < 60) return `${minutes} นาที`;
   return `${Math.floor(minutes / 60)} ชม. ${minutes % 60} นาที`;
 }
+
+/**
+ * ค่าของ `<input type="datetime-local">` เป็นเวลาท้องถิ่นไม่มีโซน — ระบบตีความเป็นเวลาไทยเสมอ
+ * (ไม่ใช้โซนของเบราว์เซอร์/เซิร์ฟเวอร์ ซึ่งอาจไม่ใช่ Asia/Bangkok ตอน deploy)
+ * "2026-09-30T13:00" ↔ 2026-09-30T06:00:00.000Z
+ */
+export function fromBangkokInput(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return null;
+  const date = new Date(`${value}:00+07:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function toBangkokInput(value: Date | null | undefined): string {
+  if (!value) return "";
+  return new Date(value.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 16);
+}

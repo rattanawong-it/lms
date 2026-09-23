@@ -142,8 +142,9 @@ export async function assertCourseAccess(
         where: { userId_courseId: { userId: user.id, courseId: course.id } },
         select: { id: true, status: true, expiresAt: true },
       });
+      // เรียนจบแล้วยังกลับมาทบทวนได้ (ปุ่ม "ทบทวนบทเรียน" ในหน้าคอร์ส) จนกว่าจะหมดอายุ
       const active =
-        enrolled?.status === "ACTIVE" &&
+        (enrolled?.status === "ACTIVE" || enrolled?.status === "COMPLETED") &&
         (enrolled.expiresAt === null || enrolled.expiresAt > new Date());
       if (!active) forbidden();
       break;

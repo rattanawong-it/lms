@@ -128,6 +128,13 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 ใน transaction เดียวกันเสมอ · **ไม่มีงานเปลี่ยน `status` เป็น `EXPIRED` อัตโนมัติ** ทุกที่ที่ตัดสินสิทธิ์ต้องเทียบ
 `expiresAt` กับเวลาปัจจุบันเอง (`isExpired()` ใน `features/enrollment/queries.ts` และใน `assertCourseAccess`)
 
+**ความคืบหน้าเขียนผ่าน `writeProgress()` ใน `features/enrollment/lib/progress-writer.ts` เท่านั้น**
+(ปุ่มเรียนจบ, วิดีโอ, สอบผ่าน) · รับเป้าหมายเป็น enrollment ตรง ๆ ผู้เรียกต้องตรวจสิทธิ์มาก่อน
+สิทธิ์ระดับ `learn` นับทั้ง `ACTIVE` และ `COMPLETED` (ทบทวนหลังเรียนจบได้) ที่ยังไม่หมดอายุ
+
+**แบบทดสอบ (M07)** — ไม่มี cron: attempt ที่เลยเวลาถูกปิดตอนที่ระบบแตะมัน (`closeIfOverdue()`) ทุกที่ที่อ่าน attempt ต้องเรียกก่อน
+· query ของหน้าทำข้อสอบห้าม select `isCorrect` / `matchKey` / `explanation` · การตรวจคะแนนเป็น pure function ใน `features/quiz/lib/`
+
 **การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
@@ -184,6 +191,9 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **`RichTextField` โหลด Tiptap แบบ lazy** — ตัว placeholder ต้องส่งค่าเดิมไปกับฟอร์มด้วย (แก้แล้วใน Phase 2 ขั้น 1)
   ไม่งั้นกดบันทึกก่อน editor โหลดเสร็จจะล้างเนื้อหาทิ้ง
 - **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
+- **`loading.tsx` ทำให้ `forbidden()`/`notFound()` ที่เรียกในหน้าตอบสถานะ 200** (stream ออกไปก่อนแล้ว — UI 403 ยังแสดงถูก)
+  หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้
+- **React Compiler ห้ามเรียก `Date.now()` / อ่าน ref ระหว่าง render** — เอาไปไว้ใน effect หรือเริ่มจากค่าที่ server ส่งมา
 - **หน้าที่มีตารางกว้าง (`min-w-[…]` ใน `overflow-x-auto`) ทำให้ Chrome โหมดจำลองมือถือย่อทั้งหน้า**
   (layout viewport กลายเป็น ~688px ทั้งที่ตั้ง 375px) แล้วพิกัดคลิกของ Playwright กับ element ที่ `position: fixed`
   เช่นกล่องโต้ตอบจะไม่ตรงจนคลิกไปโดน overlay — ในเทสต์ให้ส่งฟอร์มด้วยปุ่ม Enter แทนการคลิก

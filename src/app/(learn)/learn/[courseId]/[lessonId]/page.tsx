@@ -24,6 +24,8 @@ import { VideoPlayer } from "@/features/lesson-media/components/video-player";
 import { toEmbedUrl } from "@/features/lesson-media/lib/embed";
 import { LessonType, VideoSource } from "@/generated/prisma/enums";
 import { getProtectionState } from "@/features/protection/queries";
+import { QuizPanel } from "@/features/quiz/components/quiz-panel";
+import { getLessonQuiz, type LessonQuiz } from "@/features/quiz/queries";
 import { requireUser } from "@/lib/rbac";
 import { parseRichTextDoc } from "@/lib/rich-text-doc";
 
@@ -88,6 +90,8 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
   // FR-15.9 — ต้องเปิดทั้งระดับระบบและระดับคอร์สจึงจะป้องกันจริง
   const viewer = await requireUser();
   const protection = await getProtectionState(viewer, outline.course.protectionEnabled);
+  // M07 — บทแบบทดสอบ: การ์ดแบบทดสอบแทนเนื้อหา และนับว่าจบเมื่อสอบผ่านเท่านั้น
+  const lessonQuiz = lesson.type === LessonType.QUIZ ? await getLessonQuiz(lesson.id) : null;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -132,6 +136,7 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
               lesson={lesson}
               canSaveProgress={!outline.isPreviewingAsStaff}
               protectionActive={protection.active}
+              quiz={lessonQuiz}
             />
           </ProtectedViewer>
         </div>
@@ -182,12 +187,16 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
             ) : null}
           </div>
 
-          <LessonCompleteButton
-            lessonId={lessonId}
-            completed={entry.completed}
-            disabled={outline.isPreviewingAsStaff}
-            disabledReason="ผู้สอนดูได้แต่ระบบไม่บันทึกความคืบหน้า"
-          />
+          {lessonQuiz ? (
+            <p className="text-muted-foreground text-[12.5px]">บทนี้นับว่าเรียนจบเมื่อสอบผ่านแบบทดสอบ</p>
+          ) : (
+            <LessonCompleteButton
+              lessonId={lessonId}
+              completed={entry.completed}
+              disabled={outline.isPreviewingAsStaff}
+              disabledReason="ผู้สอนดูได้แต่ระบบไม่บันทึกความคืบหน้า"
+            />
+          )}
         </div>
       </article>
     </div>
@@ -209,10 +218,12 @@ function LessonBody({
   lesson,
   canSaveProgress,
   protectionActive,
+  quiz,
 }: {
   lesson: Lesson;
   canSaveProgress: boolean;
   protectionActive: boolean;
+  quiz: LessonQuiz | null;
 }) {
   switch (lesson.type) {
     case LessonType.TEXT: {
@@ -263,8 +274,12 @@ function LessonBody({
         />
       );
 
+    case LessonType.QUIZ:
+      if (!quiz) return <EmptyBody message="ผู้สอนยังไม่ได้ผูกแบบทดสอบกับบทนี้" />;
+      return <QuizPanel lessonId={lesson.id} data={quiz} />;
+
     default:
-      // QUIZ และ ASSIGNMENT เป็นงานของ M07/M08 ในเฟสถัดไป
-      return <EmptyBody message="บทเรียนชนิดนี้จะเปิดใช้งานในเฟสถัดไป" />;
+      // ASSIGNMENT เป็นงานของ M08 (Phase 2 ขั้น 4)
+      return <EmptyBody message="บทเรียนชนิดนี้จะเปิดใช้งานในขั้นถัดไป" />;
   }
 }
