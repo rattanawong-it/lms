@@ -16,7 +16,7 @@ import {
   findOwnPendingAsset,
   isFailure,
   jsonError,
-  requireUploader,
+  requireSignedIn,
 } from "@/features/uploads/service";
 
 /** ลบไฟล์ที่ไม่ผ่านการตรวจออกจาก storage และทำเครื่องหมาย Asset ว่า FAILED */
@@ -36,7 +36,8 @@ async function rejectAsset(assetId: string, key: string, message: string) {
  * `abort`    : ยกเลิก multipart และลบ Asset ทิ้ง ไม่ให้เหลือ part ค้างกินพื้นที่
  */
 export async function POST(request: Request) {
-  const actor = await requireUploader();
+  // สิทธิ์ถูกตัดสินแล้วตอน presign — ตรงนี้ต้องเป็นเจ้าของไฟล์ที่ค้างอยู่เท่านั้น (findOwnPendingAsset)
+  const actor = await requireSignedIn();
   if (isFailure(actor)) return actor.response;
 
   const parsed = completeInputSchema.safeParse(await request.json().catch(() => null));

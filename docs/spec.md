@@ -90,7 +90,8 @@
 | **M15 Content Protection** | ✅ เสร็จ | Phase 1 ขั้น 6b | `<ProtectedViewer>` + ลายน้ำ + `ScreenEventLog` · CSP แบบ nonce อยู่ใน `proxy.ts` |
 | **M11 Announcement (in-app)** | ✅ เสร็จ (in-app) | Phase 1 ขั้น 7 | `features/announcements` + `features/notifications` · `lib/notify` เป็นจุดเดียวที่ยิงแจ้งเตือน · FR-11.3/11.4 (อีเมล, ตั้งค่าช่องทาง) อยู่ Phase 3 |
 | **M07 Quiz / Exam** | ✅ เสร็จ (รอจุดตรวจที่ 1) | Phase 2 ขั้น 1–3 | คลังข้อสอบ · แบบทดสอบ/ทำข้อสอบ · ตรวจอัตนัย + ผลสอบของผู้สอน · `features/questions`, `features/quiz` |
-| M08–M10, M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 2–3 | ตาม roadmap §6 |
+| **M08 Assignment** | ✅ เสร็จ | Phase 2 ขั้น 4 | `features/assignments` · ผู้เรียนอัปโหลดได้เฉพาะในบริบทของงาน · `/api/submission-file/[assetId]` |
+| M09–M10, M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 2–3 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
@@ -254,8 +255,8 @@
 | FR-08.4 | ผู้สอนตรวจงาน: ดูไฟล์, ให้คะแนน, เขียน feedback, ส่งกลับให้แก้ |
 | FR-08.5 | รายการงานที่รอตรวจของผู้สอน และรายการงานที่ใกล้ครบกำหนดของผู้เรียน |
 
-- [ ] FR-08.1 · [ ] FR-08.2 · [ ] FR-08.3 · [ ] FR-08.4 · [ ] FR-08.5
-- [ ] DoD ครบ 7 ข้อ
+- [x] FR-08.1 · [x] FR-08.2 · [x] FR-08.3 · [x] FR-08.4 · [x] FR-08.5
+- [x] DoD ครบ 7 ข้อ
 
 ### M09 — Gradebook (P1)
 | ID | Requirement |
@@ -417,7 +418,7 @@
 |---|---|---|---|
 | **Phase 0 – Foundation** | M00 (เอกสารกำกับ), Scaffold, DB schema, M01, M02, Layout responsive | ระบบ login และโครง role พร้อมใช้ | ✅ เสร็จ |
 | **Phase 1 – MVP** | M03, M04, M05, M06, M15, M11 (in-app) | สร้างคอร์ส เรียน และป้องกันเนื้อหาได้ | ✅ เสร็จ 2026-09-23 |
-| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | 🔸 ขั้น 3/6 — จุดตรวจที่ 1 ([`phase-2-plan.md`](./phase-2-plan.md)) |
+| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | 🔸 ขั้น 4/6 ([`phase-2-plan.md`](./phase-2-plan.md)) |
 | **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | ⬜ ยังไม่เริ่ม |
 | **Phase 4 – Commerce** | M18, DRM (ทางเลือก) | ขายคอร์ส | ⬜ ยังไม่เริ่ม |
 

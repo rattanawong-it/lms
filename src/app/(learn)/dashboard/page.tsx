@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpen,
   Building2,
+  CalendarClock,
   MailWarning,
   Megaphone,
   Pin,
@@ -17,10 +18,11 @@ import { StatCard } from "@/components/shared/stat-card";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/enums";
-import { formatDate } from "@/lib/dates";
+import { formatDate, formatDateTime } from "@/lib/dates";
 import { announcementSource } from "@/features/announcements/components/announcement-card";
 import { announcementLink } from "@/features/announcements/lib/audience";
 import { getMyAnnouncements } from "@/features/announcements/queries";
+import { getMyDueAssignments } from "@/features/assignments/queries";
 
 export const metadata: Metadata = { title: "หน้าหลัก" };
 
@@ -34,6 +36,8 @@ export default async function DashboardPage() {
     : [0, 0];
   // M11 · FR-11.1 — ประกาศล่าสุด 3 รายการ (ปักหมุดขึ้นก่อน)
   const announcements = await getMyAnnouncements(3);
+  // M08 · FR-08.5 — งานที่ยังต้องส่ง (ส่งกลับให้แก้ขึ้นก่อน แล้วตามกำหนดส่ง)
+  const dueAssignments = await getMyDueAssignments();
 
   return (
     <>
@@ -82,6 +86,39 @@ export default async function DashboardPage() {
             icon={<ShieldCheck className="size-[18px]" />}
           />
         </div>
+      ) : null}
+
+      {dueAssignments.length > 0 ? (
+        <section
+          aria-labelledby="dashboard-assignments"
+          className="bg-card border-border mb-5 rounded-xl border p-4 sm:p-5"
+        >
+          <h2 id="dashboard-assignments" className="flex items-center gap-2 text-[15px] font-semibold">
+            <CalendarClock className="text-primary size-[18px]" aria-hidden /> งานที่ต้องส่ง
+          </h2>
+          <ul className="divide-line mt-1 divide-y">
+            {dueAssignments.map((a) => (
+              <li key={a.id} data-due-assignment>
+                <Link
+                  href={a.href as never}
+                  className="hover:bg-muted/60 -mx-2 flex items-start gap-2 rounded-lg px-2 py-2.5"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px] font-medium">{a.title}</span>
+                    <span className="text-muted-foreground block truncate text-[12px]">
+                      {a.course.title} · {a.dueAt ? `กำหนดส่ง ${formatDateTime(a.dueAt)}` : "ไม่มีกำหนดส่ง"}
+                    </span>
+                  </span>
+                  {a.returned ? (
+                    <span className="bg-info-bg text-info-fg shrink-0 rounded-md px-2 py-0.5 text-[11.5px]">ส่งกลับให้แก้</span>
+                  ) : a.overdue ? (
+                    <span className="bg-danger-bg text-danger-fg shrink-0 rounded-md px-2 py-0.5 text-[11.5px]">เลยกำหนด</span>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : null}
 
       <section

@@ -20,6 +20,10 @@ export type UploadOptions = {
   /** 0–100 — เรียกถี่ ผู้เรียกควรอัปเดต state ตรง ๆ ได้เลย */
   onProgress?: (percent: number) => void;
   signal?: AbortSignal;
+  /** M08 — ไฟล์ส่งงานของงานนี้ (server ตรวจสิทธิ์ตามงาน ไม่ใช่ตามบทบาท) */
+  assignmentId?: string;
+  /** ใช้แทน `file.type` ที่เบราว์เซอร์เดา — ไฟล์ส่งงานตัดสิน MIME จากนามสกุลที่ผู้สอนอนุญาต */
+  mime?: string;
 };
 
 /** ข้อผิดพลาดที่มีข้อความภาษาไทยพร้อมแสดงต่อผู้ใช้ */
@@ -131,18 +135,20 @@ export async function uploadFile(
   kind: AssetKind,
   options: UploadOptions = {},
 ): Promise<UploadedAsset> {
-  const { onProgress, signal } = options;
+  const { onProgress, signal, assignmentId } = options;
+  const mime = options.mime ?? file.type;
 
   // ตรวจด้วยกติกาชุดเดียวกับฝั่ง server ก่อน เพื่อบอกผู้ใช้ทันทีโดยไม่ต้องรอไป-กลับ
-  const check = checkUpload(kind, file.type, file.size);
+  const check = checkUpload(kind, mime, file.size);
   if (!check.ok) throw new UploadError(check.message);
   if (signal?.aborted) throw new UploadCancelled();
 
   const presign = await postJson<PresignResponse>("/api/upload/presign", {
     kind,
-    mime: file.type,
+    mime,
     size: file.size,
     originalName: file.name,
+    assignmentId,
   });
 
   const assetId = presign.assetId;
@@ -156,7 +162,7 @@ export async function uploadFile(
   try {
     if (presign.mode === "single") {
       await putWithProgress(presign.url, file, {
-        contentType: file.type,
+        contentType: mime,
         signal,
         onLoaded: (bytes) => onProgress?.(Math.round((bytes / file.size) * 100)),
       });

@@ -565,6 +565,11 @@ export async function markLessonComplete(formData: FormData): Promise<ActionResu
     const quiz = await db.quiz.findUnique({ where: { lessonId: ctx.lesson.id }, select: { id: true } });
     if (quiz) return { ok: false, message: "บทนี้จะนับว่าเรียนจบเมื่อสอบผ่านแบบทดสอบ" };
   }
+  // บทงานที่ต้องส่งนับว่าจบเมื่อส่งงาน (M08)
+  if (ctx.lesson.type === LessonType.ASSIGNMENT) {
+    const assignment = await db.assignment.findUnique({ where: { lessonId: ctx.lesson.id }, select: { id: true } });
+    if (assignment) return { ok: false, message: "บทนี้จะนับว่าเรียนจบเมื่อส่งงาน" };
+  }
 
   const result = await writeProgress(
     targetOf({ ...ctx, enrollmentId: ctx.enrollmentId }),

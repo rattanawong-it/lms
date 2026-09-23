@@ -15,14 +15,21 @@ export function jsonError(message: string, status: number): ApiFailure {
   return { response: NextResponse.json({ ok: false, message }, { status }) };
 }
 
-/**
- * ผู้มีสิทธิ์อัปโหลดในเฟสนี้คือผู้สอนขึ้นไป
- * (ผู้เรียนจะได้สิทธิ์อัปโหลดไฟล์ส่งงานใน M08 เฟส 2 — ต้องขยายเงื่อนไขตรงนี้ตอนนั้น)
- */
-export async function requireUploader(): Promise<SessionUser | ApiFailure> {
+/** ผู้ใช้ที่ล็อกอินและไม่ถูกระงับ — ยังไม่ได้บอกว่าอัปโหลดอะไรได้ */
+export async function requireSignedIn(): Promise<SessionUser | ApiFailure> {
   const user = await getSessionUser();
   if (!user) return jsonError("ต้องเข้าสู่ระบบก่อน", 401);
   if (user.banned) return jsonError("บัญชีนี้ถูกระงับการใช้งาน", 403);
+  return user;
+}
+
+/**
+ * อัปโหลดทั่วไป (สื่อบทเรียน ภาพปก ไฟล์ประกอบ) — ผู้สอนขึ้นไป
+ * ผู้เรียนอัปโหลดได้เฉพาะไฟล์ส่งงานผ่าน `authorizeSubmissionUpload()` ของ M08
+ */
+export async function requireUploader(): Promise<SessionUser | ApiFailure> {
+  const user = await requireSignedIn();
+  if (isFailure(user)) return user;
   if (!isAtLeast(user, Role.INSTRUCTOR)) return jsonError("ไม่มีสิทธิ์อัปโหลดไฟล์", 403);
   return user;
 }

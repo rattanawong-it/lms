@@ -7,6 +7,8 @@ export const presignInputSchema = z.object({
   mime: z.string().min(1, "ต้องระบุชนิดไฟล์"),
   size: z.int().positive("ขนาดไฟล์ต้องมากกว่า 0"),
   originalName: z.string().min(1, "ต้องระบุชื่อไฟล์").max(255, "ชื่อไฟล์ยาวเกินไป"),
+  /** M08 — ไฟล์ส่งงานของผู้เรียน (ไม่มี = อัปโหลดทั่วไปของผู้สอน) */
+  assignmentId: z.cuid("รหัสงานไม่ถูกต้อง").optional(),
 });
 export type PresignInput = z.infer<typeof presignInputSchema>;
 

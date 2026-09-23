@@ -7,7 +7,8 @@ import { fromBangkokInput } from "@/lib/dates";
 export const MAX_QUIZ_QUESTIONS = 200;
 export const MAX_POOL_RULES = 10;
 
-const checkbox = z
+/** checkbox ของฟอร์ม (ไม่ส่งมา = false) — ใช้ร่วมกับ M08 */
+export const checkbox = z
   .union([z.literal("on"), z.literal("true"), z.literal("false")])
   .nullish()
   .transform((v) => v === "on" || v === "true");
@@ -20,8 +21,8 @@ const optionalInt = (min: number, max: number, message: string) =>
     .transform((v) => (v === null || v === undefined || v === "" ? null : Number(v)))
     .refine((v) => v === null || (Number.isInteger(v) && v >= min && v <= max), message);
 
-/** `<input type="datetime-local">` ตีความเป็นเวลาไทย · ว่าง = ไม่กำหนด */
-const bangkokDateTime = z
+/** `<input type="datetime-local">` ตีความเป็นเวลาไทย · ว่าง = ไม่กำหนด (ใช้ร่วมกับ M08) */
+export const bangkokDateTime = z
   .string()
   .nullish()
   .transform((v, ctx) => {

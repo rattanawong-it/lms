@@ -74,6 +74,7 @@ src/
     (learn)/learn/[courseId]/[lessonId]              หน้าเรียน (สารบัญ + สื่อ + ProtectedViewer)
   app/api/{auth,health,media,upload}                 route handler
   app/api/{lesson-media,lesson-file,events/screen}   เสิร์ฟ PDF · ไฟล์ประกอบ · รับรายงานหน้าจอ
+  app/api/submission-file                            เสิร์ฟไฟล์งานที่ผู้เรียนส่ง (เจ้าของ/ผู้สอนของคอร์ส)
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
@@ -136,6 +137,9 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 · query ของหน้าทำข้อสอบห้าม select `isCorrect` / `matchKey` / `explanation` · การตรวจคะแนนเป็น pure function ใน `features/quiz/lib/`
 · ผู้สอนให้คะแนน/ความเห็นผ่าน `reviewAnswer()` เท่านั้น — ล็อกแถว attempt แล้วคำนวณผลรวมใหม่ด้วย `recomputeAttempt()` · ผลสอบทั้งฝั่งผู้เรียนและผู้สอนประกอบด้วย `buildItems()` ใน `queries.ts` ตัวเดียว
 
+**งานที่ต้องส่ง (M08)** — กติกาส่ง/ส่งซ้ำ/ส่งช้าอยู่ใน `submitState()` (`features/assignments/lib/rules.ts`) ใช้ทั้งหน้าจอ ด่านอัปโหลด และ action
+· เมื่อมีการส่งหลายครั้ง นับ/ตรวจเฉพาะ**ครั้งล่าสุดของแต่ละคน** (`latestPerStudent()`) — ครั้งก่อนเป็นประวัติ
+
 **การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
@@ -146,6 +150,8 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 
 **ไฟล์อัปโหลด** — client ขอ presign → อัปโหลดตรงไป storage → `POST /api/upload/complete`
 ฝั่ง server ตรวจ `checkUpload()` (ชนิด+ขนาด) และ magic bytes เสมอ · ไฟล์ > 20 MB ใช้ multipart (ชิ้นละ 10 MB)
+อัปโหลดทั่วไปเฉพาะผู้สอนขึ้นไป · ผู้เรียนอัปโหลดได้เฉพาะไฟล์ส่งงาน (presign ส่ง `assignmentId` → `authorizeSubmissionUpload()`)
+และ MIME ของไฟล์ส่งงานมาจากนามสกุล (`submissionMime()`) ไม่ใช่ `file.type` ที่เบราว์เซอร์เดา
 
 **ไฟล์บทเรียนของผู้เรียน** — ทุกเส้นทางต้องผ่าน `getLessonAccess()` (ตรวจ enrollment + กติกาเรียนตามลำดับ) ก่อนเสมอ
 | ชนิด | เส้นทาง | เหตุผล |

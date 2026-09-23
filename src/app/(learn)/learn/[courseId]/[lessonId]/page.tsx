@@ -25,6 +25,8 @@ import { toEmbedUrl } from "@/features/lesson-media/lib/embed";
 import { LessonType, VideoSource } from "@/generated/prisma/enums";
 import { getProtectionState } from "@/features/protection/queries";
 import { QuizPanel } from "@/features/quiz/components/quiz-panel";
+import { AssignmentPanel } from "@/features/assignments/components/assignment-panel";
+import { getLessonAssignment, type LessonAssignment } from "@/features/assignments/queries";
 import { getLessonQuiz, type LessonQuiz } from "@/features/quiz/queries";
 import { requireUser } from "@/lib/rbac";
 import { parseRichTextDoc } from "@/lib/rich-text-doc";
@@ -92,6 +94,9 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
   const protection = await getProtectionState(viewer, outline.course.protectionEnabled);
   // M07 — บทแบบทดสอบ: การ์ดแบบทดสอบแทนเนื้อหา และนับว่าจบเมื่อสอบผ่านเท่านั้น
   const lessonQuiz = lesson.type === LessonType.QUIZ ? await getLessonQuiz(lesson.id) : null;
+  // M08 — บทงานที่ต้องส่ง: คำสั่งงานอยู่ใน ProtectedViewer ส่วนฟอร์มส่งงานอยู่นอก (ต้องวาง/คัดลอกข้อความได้)
+  const lessonAssignment =
+    lesson.type === LessonType.ASSIGNMENT ? await getLessonAssignment(lesson.id) : null;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -137,9 +142,20 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
               canSaveProgress={!outline.isPreviewingAsStaff}
               protectionActive={protection.active}
               quiz={lessonQuiz}
+              assignment={lessonAssignment}
             />
           </ProtectedViewer>
         </div>
+
+        {lessonAssignment ? (
+          <div className="mt-5">
+            <AssignmentPanel
+              // เริ่มฟอร์มใหม่เมื่อมีการส่ง/ตรวจ/ส่งกลับ — ไฟล์ตั้งต้นของการส่งใหม่มาจากครั้งล่าสุด
+              key={`${lessonAssignment.submissions[0]?.id ?? "none"}:${lessonAssignment.submissions[0]?.status ?? ""}`}
+              data={lessonAssignment}
+            />
+          </div>
+        ) : null}
 
         {lesson.attachments.length > 0 ? (
           <section aria-labelledby="lesson-files" className="mt-6">
@@ -189,6 +205,8 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
 
           {lessonQuiz ? (
             <p className="text-muted-foreground text-[12.5px]">บทนี้นับว่าเรียนจบเมื่อสอบผ่านแบบทดสอบ</p>
+          ) : lessonAssignment ? (
+            <p className="text-muted-foreground text-[12.5px]">บทนี้นับว่าเรียนจบเมื่อส่งงาน</p>
           ) : (
             <LessonCompleteButton
               lessonId={lessonId}
@@ -219,11 +237,13 @@ function LessonBody({
   canSaveProgress,
   protectionActive,
   quiz,
+  assignment,
 }: {
   lesson: Lesson;
   canSaveProgress: boolean;
   protectionActive: boolean;
   quiz: LessonQuiz | null;
+  assignment: LessonAssignment | null;
 }) {
   switch (lesson.type) {
     case LessonType.TEXT: {
@@ -278,8 +298,8 @@ function LessonBody({
       if (!quiz) return <EmptyBody message="ผู้สอนยังไม่ได้ผูกแบบทดสอบกับบทนี้" />;
       return <QuizPanel lessonId={lesson.id} data={quiz} />;
 
-    default:
-      // ASSIGNMENT เป็นงานของ M08 (Phase 2 ขั้น 4)
-      return <EmptyBody message="บทเรียนชนิดนี้จะเปิดใช้งานในขั้นถัดไป" />;
+    case LessonType.ASSIGNMENT:
+      if (!assignment) return <EmptyBody message="ผู้สอนยังไม่ได้ผูกงานกับบทนี้" />;
+      return <RichText content={assignment.assignment.instructions} className="space-y-2" />;
   }
 }

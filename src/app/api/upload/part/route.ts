@@ -5,7 +5,7 @@ import {
   findOwnPendingAsset,
   isFailure,
   jsonError,
-  requireUploader,
+  requireSignedIn,
 } from "@/features/uploads/service";
 
 /**
@@ -13,7 +13,8 @@ import {
  * (ไฟล์ 2 GB บนเน็ตช้าอาจใช้เวลานานกว่าอายุของ URL ชุดแรก)
  */
 export async function POST(request: Request) {
-  const actor = await requireUploader();
+  // สิทธิ์ถูกตัดสินแล้วตอน presign — ตรงนี้ต้องเป็นเจ้าของไฟล์ที่ค้างอยู่เท่านั้น (findOwnPendingAsset)
+  const actor = await requireSignedIn();
   if (isFailure(actor)) return actor.response;
 
   const parsed = signPartInputSchema.safeParse(await request.json().catch(() => null));

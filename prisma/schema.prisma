@@ -512,6 +512,7 @@ model Submission {
   feedback     String?
   gradedById   String?
   gradedAt     DateTime?
+  returnedAt   DateTime?        // FR-08.4 ส่งกลับให้แก้ — เปิดให้ส่งใหม่แม้เลยกำหนด
   submittedAt  DateTime         @default(now())
   @@unique([assignmentId, userId, attemptNo])
   @@index([assignmentId, status])
