@@ -93,7 +93,8 @@
 | **M08 Assignment** | ✅ เสร็จ | Phase 2 ขั้น 4 | `features/assignments` · ผู้เรียนอัปโหลดได้เฉพาะในบริบทของงาน · `/api/submission-file/[assetId]` |
 | **M09 Gradebook** | ✅ เสร็จ | Phase 2 ขั้น 5 | `features/gradebook` · Q6 ได้เกณฑ์จริงแล้ว → Score Curve (FR-09.6–09.9) เสร็จ 2026-09-24 · `features/score-curve` · `/admin/score-curve` |
 | **M10 Certificate** | ✅ เสร็จ (รอจุดตรวจที่ 2) | Phase 2 ขั้น 6 | `features/certificates` · PDF ด้วย `@react-pdf/renderer` + Anuphan · `/verify/[code]` สาธารณะ |
-| M12–M14, M16–M18 | ⬜ ยังไม่เริ่ม | เฟส 3 | ตาม roadmap §6 |
+| M12–M14, M16, M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
+| M18 | ⬜ ยังไม่เริ่ม | Phase 4 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
@@ -373,8 +374,8 @@
 |---|---|
 | FR-17.1 | บันทึก AuditLog: ใคร ทำอะไร กับข้อมูลใด ค่าก่อน/หลังการแก้ไข เวลา และ IP |
 | FR-17.2 | หน้าค้นหา audit log (Super Admin) |
-| FR-17.3 | ตั้งค่าระบบ: ชื่อระบบ, โลโก้, SMTP/ผู้ให้บริการอีเมล, LINE channel, ค่าเริ่มต้นของการป้องกันเนื้อหา |
-| FR-17.4 | PDPA: ผู้ใช้ขอ export ข้อมูลตนเอง และขอลบบัญชีได้ |
+| FR-17.3 | ตั้งค่าระบบ: ชื่อระบบ, โลโก้, ค่าเริ่มต้นของการป้องกันเนื้อหา · **ค่า secret ของอีเมล/LINE อยู่ใน env** หน้าเว็บแสดงสถานะการเชื่อมต่อ + ปุ่มส่งทดสอบ (CHANGELOG #31) |
+| FR-17.4 | PDPA: ผู้ใช้ขอ export ข้อมูลตนเอง และขอลบบัญชีได้ · **การลบบัญชีต้องให้ Super Admin อนุมัติก่อน** แล้ว anonymize (CHANGELOG #31) |
 
 - [ ] FR-17.1 · [ ] FR-17.2 · [ ] FR-17.3 · [ ] FR-17.4
 - [ ] DoD ครบ 7 ข้อ
@@ -425,8 +426,8 @@
 |---|---|---|---|
 | **Phase 0 – Foundation** | M00 (เอกสารกำกับ), Scaffold, DB schema, M01, M02, Layout responsive | ระบบ login และโครง role พร้อมใช้ | ✅ เสร็จ |
 | **Phase 1 – MVP** | M03, M04, M05, M06, M15, M11 (in-app) | สร้างคอร์ส เรียน และป้องกันเนื้อหาได้ | ✅ เสร็จ 2026-09-23 |
-| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | ✅ ครบ 6 ขั้น 2026-09-23 — รอจุดตรวจที่ 1–2 ([`phase-2-plan.md`](./phase-2-plan.md)) |
-| **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | ⬜ ยังไม่เริ่ม |
+| **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | ✅ เสร็จ 2026-09-24 (7 ขั้น + จุดตรวจ 1–2) ([`phase-2-plan.md`](./phase-2-plan.md)) |
+| **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | 🔸 อนุมัติแผน 2026-09-24 ([`phase-3-plan.md`](./phase-3-plan.md)) |
 | **Phase 4 – Commerce** | M18, DRM (ทางเลือก) | ขายคอร์ส | ⬜ ยังไม่เริ่ม |
 
 ---
