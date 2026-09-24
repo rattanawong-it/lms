@@ -1216,6 +1216,8 @@ flowchart LR
   pref --> line[LINE adapter<br/>push API]
 ```
 - `src/lib/notify/index.ts` เป็นจุดเดียวที่เรียกใช้ และเลือก adapter ตามการตั้งค่าของผู้ใช้
+  (Phase 3 ขั้น 1: `prefs.ts` = รูปแบบ `notifyPrefs` + ค่าเริ่มต้น · `channels/email.ts` = อีเมล · ส่งหลัง response ด้วย `after()`
+  · การตั้งค่าที่ `/settings/notifications` — ในแอปเปิดเสมอ · อีเมลเริ่มต้นเปิดเฉพาะ ENROLLED/GRADED/DUE_SOON/CERTIFICATE)
   (Phase 1 มีแค่ in-app: ตัด id ซ้ำ, INSERT ชุดละ 1,000 แถว, ไม่ throw ให้งานหลักล้ม)
 - **ประกาศ (FR-11.1)** สร้างแถว `Notification` ชนิด `ANNOUNCEMENT` ให้ผู้รับทุกคนตอนเผยแพร่ ลิงก์ไปที่ `/announcements#a-<id>`
   | ระดับ | ผู้ประกาศ | ผู้รับ |

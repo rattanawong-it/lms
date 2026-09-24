@@ -2,6 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { db } from "@/lib/db";
 import { getSessionUser, requireUser } from "@/lib/rbac";
+import { parseNotifyPrefs } from "@/lib/notify/prefs";
+import { channelStatus } from "@/features/notifications/lib/channels";
 
 /** M11 · FR-11.2 — การแจ้งเตือนในแอปของผู้ใช้ที่ล็อกอินอยู่ (อ่านได้เฉพาะของตัวเอง) */
 
@@ -58,3 +60,13 @@ export async function getNotifications(filter: NotificationFilter, page: number)
 }
 
 export type NotificationItem = Awaited<ReturnType<typeof getNotifications>>["items"][number];
+
+/** FR-11.4 — การตั้งค่าช่องทางแจ้งเตือนของตัวเอง (ค่าที่ไม่เคยตั้งเติมด้วยค่าเริ่มต้น) */
+export async function getMyNotifyPrefs() {
+  const user = await requireUser();
+  const [row, channels] = await Promise.all([
+    db.user.findUniqueOrThrow({ where: { id: user.id }, select: { notifyPrefs: true, email: true } }),
+    channelStatus(user.id),
+  ]);
+  return { prefs: parseNotifyPrefs(row.notifyPrefs), email: row.email, channels };
+}

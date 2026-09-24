@@ -26,6 +26,10 @@ const serverEnvSchema = z.object({
   SMTP_URL: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("KRIRK LMS <no-reply@krirk.ac.th>"),
+
+  // LINE Messaging API (M12) — ไม่บังคับ · ไม่กำหนด = ปิดช่องทาง LINE ทั้งระบบ
+  LINE_CHANNEL_SECRET: z.string().optional(),
+  LINE_CHANNEL_ACCESS_TOKEN: z.string().optional(),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;
@@ -45,3 +49,6 @@ export const env = loadEnv();
 
 /** Google OAuth พร้อมใช้งานหรือไม่ (FR-01.2) */
 export const hasGoogleOAuth = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+
+/** ช่องทาง LINE พร้อมใช้งานหรือไม่ (M12) */
+export const hasLine = Boolean(env.LINE_CHANNEL_SECRET && env.LINE_CHANNEL_ACCESS_TOKEN);

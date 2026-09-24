@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { ANONYMOUS, STATE_FILE } from "./constants";
-import { teachSearch } from "./helpers";
+import { ACCOUNTS, ANONYMOUS, STATE_FILE } from "./constants";
+import { findMail, teachSearch } from "./helpers";
 
 /**
  * ปิด Phase 2 — M07 + M08 + M09 + M10 ต่อกันทั้งเส้น (phase-2-plan ขั้น 6)
@@ -21,6 +21,8 @@ const WORK_LESSON = "ส่งงาน";
 const SIGNER = "ผศ.ดร.ผู้ลงนาม ทดสอบ";
 
 test.describe.configure({ mode: "serial" });
+// ทุกเทสต์ในไฟล์เปิดหลายหน้าต่อกัน (สร้างคอร์ส · สอบ + ส่งงาน · ตรวจ) — งบ 30 วินาทีตั้งต้นไม่พอบนเครื่องพัฒนา
+test.slow();
 
 /** รหัสใบประกาศของแต่ละ project — ใช้ต่อข้ามเทสต์ใน describe แบบ serial */
 const codes = new Map<string, string>();
@@ -66,8 +68,6 @@ test.describe("ผู้สอนเตรียมคอร์ส", () => {
   });
 
   test("แบบทดสอบ + งาน + น้ำหนัก 50/50 + คะแนนขั้นต่ำ 60 + แม่แบบใบประกาศ", async ({ page }, info) => {
-    // เปิด 8 หน้าต่อกันในเทสต์เดียว — เกินงบ 30 วินาทีตั้งต้นเมื่อเครื่องพัฒนาหน่วยความจำตึง
-    test.slow();
     const p = info.project.name;
     const coursePath = await openCourse(page, p);
 
@@ -208,6 +208,12 @@ test.describe("เส้นทางปิดเฟส", () => {
     await expect(
       page.locator("[data-notification]").filter({ hasText: `ยินดีด้วย คุณเรียนจบคอร์ส “${courseTitle(p)}” แล้ว` }),
     ).toHaveCount(1);
+    // FR-11.3 — ได้ใบประกาศเปิดอีเมลเป็นค่าเริ่มต้น (อ่านจาก Mailpit)
+    await expect
+      .poll(async () => (await findMail(ACCOUNTS.student.email, `ได้รับใบประกาศ “${courseTitle(p)}”`)).length, {
+        timeout: 20_000,
+      })
+      .toBe(1);
 
     await page.goto("/certificates");
     const card = page.locator("[data-certificate]").filter({ hasText: courseTitle(p) });

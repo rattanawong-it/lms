@@ -15,6 +15,8 @@ import {
 /** `lib/notify` เขียนลง DB — แทนที่ด้วยตัวปลอมที่จดว่าถูกเรียกด้วยอะไร */
 const createMany = vi.fn();
 vi.mock("@/lib/db", () => ({ db: { notification: { createMany } } }));
+// ช่องทางภายนอก (อีเมล) ทดสอบแยกที่ notify.test.ts
+vi.mock("@/lib/notify/channels/email", () => ({ sendEmailNotifications: vi.fn(async () => 0) }));
 
 const { chunk, notify, NOTIFY_CHUNK_SIZE } = await import("@/lib/notify");
 

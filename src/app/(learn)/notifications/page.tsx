@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings2 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
 import { formatRelative } from "@/lib/dates";
@@ -47,9 +47,16 @@ export default async function NotificationsPage(props: PageProps<"/notifications
             : "อ่านครบทุกรายการแล้ว"
         }
         actions={
-          <Button asChild variant="outline">
-            <Link href="/announcements">ดูประกาศทั้งหมด</Link>
-          </Button>
+          <>
+            <Button asChild variant="ghost">
+              <Link href="/settings/notifications">
+                <Settings2 className="size-4" /> ตั้งค่าช่องทาง
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/announcements">ดูประกาศทั้งหมด</Link>
+            </Button>
+          </>
         }
       />
 

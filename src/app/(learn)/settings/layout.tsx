@@ -6,7 +6,7 @@ export default function SettingsLayout({ children }: LayoutProps<"/settings">) {
     <>
       <PageHeader
         title="ตั้งค่าบัญชี"
-        description="M01 · จัดการข้อมูลส่วนตัวและความปลอดภัยของบัญชี"
+        description="จัดการข้อมูลส่วนตัว ความปลอดภัยของบัญชี และการแจ้งเตือน"
       />
       <SettingsTabs />
       {children}

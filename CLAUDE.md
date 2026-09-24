@@ -58,7 +58,8 @@ pnpm db:studio
 — **บังคับด้วย pre-commit hook** ใน `.githooks/pre-commit` (ติดตั้งเองตอน `pnpm install` ผ่านสคริปต์ `prepare`
 → `git config core.hooksPath .githooks`) · ไม่ผ่าน = commit ไม่เกิด · ห้ามข้ามด้วย `--no-verify`
 · e2e ไม่อยู่ใน hook — **ก่อน commit ปิดขั้นงานให้รัน `pnpm test:e2e --workers=2` ทั้งชุดเอง**
-บริการท้องถิ่น: Postgres `5432` · MinIO `9000` (คอนโซล `9001`) · Mailpit `8025` (อ่านอีเมลยืนยัน/รีเซ็ตรหัสผ่าน)
+บริการท้องถิ่น (พอร์ตฝั่งเครื่องตาม `docker-compose.yml`): Postgres `5436` · MinIO `9000` (คอนโซล `9001`) · Mailpit SMTP `1026` / เว็บ+API `8026` (อ่านอีเมลยืนยัน/รีเซ็ตรหัสผ่าน/แจ้งเตือน)
+— พอร์ต `8025` บนเครื่องนี้เป็นของ container อื่น ไม่ใช่ของโปรเจกต์
 
 ## 4. สถาปัตยกรรมย่อ
 
@@ -105,7 +106,9 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `file-type.ts` | ตรวจ magic bytes ว่า MIME ที่ client แจ้งตรงกับเนื้อไฟล์จริง |
 | `object-key.ts` | ตั้ง object key ที่ปลอดภัย |
 | `audit.ts` | `writeAudit()` — บันทึก AuditLog |
-| `notify/index.ts` | `notify()` — **จุดเดียวที่สร้างการแจ้งเตือน** (in-app ตอนนี้ · อีเมล/LINE เติมที่นี่ในเฟส 3) ไม่ throw |
+| `notify/index.ts` | `notify()` — **จุดเดียวที่สร้างการแจ้งเตือน** · ในแอปเขียนทันที · ช่องทางภายนอกส่งหลัง response ด้วย `after()` (นอก request รันต่อทันที) · ไม่ throw |
+| `notify/prefs.ts` (client ใช้ได้) | `User.notifyPrefs` → `parseNotifyPrefs()` เติมค่าเริ่มต้น (อีเมลเปิด: ENROLLED/GRADED/DUE_SOON/CERTIFICATE) · `pickRecipients()` · `notifyPrefsFromForm()` |
+| `notify/channels/email.ts` | อีเมลแจ้งเตือน — เฉพาะผู้ที่เปิดไว้ ไม่ถูกระงับ ยืนยันอีเมลแล้ว · **escape ทุกข้อความก่อนเข้า HTML** · ลิงก์ต้องเป็น path ในแอปเท่านั้น |
 | `rate-limit.ts` | จำกัดความถี่แบบ fixed window ในหน่วยความจำ (ขอ signed URL, รายงานหน้าจอ) — **นับแยกต่อ process** |
 | `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |
 | `csv.ts` · `xlsx.ts` (server) | ตาราง `string[][]` ↔ CSV (RFC 4180 + BOM) / Excel — ตัวตรวจของฟีเจอร์รับตารางชุดเดียวกันทั้งสองแบบ |
@@ -156,7 +159,8 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 · **ทุกข้อความที่เข้า PDF ต้องผ่าน `pdfText()`/`pdfWords()`** และมาจาก `buildCertificateModel()` เท่านั้น (บั๊ก `ำ` ของ react-pdf)
 · ใบที่ออกแล้วไม่เพิกถอนอัตโนมัติ — เพิกถอนได้โดยผู้ดูแลที่ `/admin/certificates`
 
-**การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง
+**การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง · ห้ามเรียก `sendMail()` เพื่อแจ้งเตือนเอง
+(ช่องทางตามการตั้งค่า FR-11.4 ที่ `/settings/notifications` จัดการใน `notify()` แล้ว) · ชนิดใหม่ต้องเพิ่มใน `NOTIFY_TYPE_LABEL` ของ `prefs.ts`
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
 และการแก้/ลบ/ปักหมุดตรวจกับระดับที่บันทึกใน DB ไม่ใช่ค่าจากฟอร์ม

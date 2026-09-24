@@ -88,7 +88,7 @@
 | **M05 Content Delivery** | ✅ เสร็จ | Phase 1 ขั้น 4 + 6a | ฝั่งผู้สอน (อัปโหลด, Tiptap) และฝั่งผู้เรียน (player, pdf.js, เรียนสด, ไฟล์ประกอบ) ครบแล้ว |
 | **M06 Enrollment & Progress** | ✅ เสร็จ | Phase 1 ขั้น 5 | `src/features/enrollment/` · ต่อเข้ากับตัวเล่นวิดีโอแล้วในขั้น 6a |
 | **M15 Content Protection** | ✅ เสร็จ | Phase 1 ขั้น 6b | `<ProtectedViewer>` + ลายน้ำ + `ScreenEventLog` · CSP แบบ nonce อยู่ใน `proxy.ts` |
-| **M11 Announcement (in-app)** | ✅ เสร็จ (in-app) | Phase 1 ขั้น 7 | `features/announcements` + `features/notifications` · `lib/notify` เป็นจุดเดียวที่ยิงแจ้งเตือน · FR-11.3/11.4 (อีเมล, ตั้งค่าช่องทาง) อยู่ Phase 3 |
+| **M11 Announcement & Notification** | ✅ เสร็จ | Phase 1 ขั้น 7 + Phase 3 ขั้น 1 | `features/announcements` + `features/notifications` · `lib/notify` เป็นจุดเดียวที่ยิงแจ้งเตือน · อีเมล (FR-11.3) + ตั้งค่าช่องทาง `/settings/notifications` (FR-11.4) |
 | **M07 Quiz / Exam** | ✅ เสร็จ (รอจุดตรวจที่ 1) | Phase 2 ขั้น 1–3 | คลังข้อสอบ · แบบทดสอบ/ทำข้อสอบ · ตรวจอัตนัย + ผลสอบของผู้สอน · `features/questions`, `features/quiz` |
 | **M08 Assignment** | ✅ เสร็จ | Phase 2 ขั้น 4 | `features/assignments` · ผู้เรียนอัปโหลดได้เฉพาะในบริบทของงาน · `/api/submission-file/[assetId]` |
 | **M09 Gradebook** | ✅ เสร็จ | Phase 2 ขั้น 5 | `features/gradebook` · Q6 ได้เกณฑ์จริงแล้ว → Score Curve (FR-09.6–09.9) เสร็จ 2026-09-24 · `features/score-curve` · `/admin/score-curve` |
@@ -298,7 +298,7 @@
 | FR-11.3 | แจ้งเตือนทางอีเมลสำหรับเหตุการณ์สำคัญ (ลงทะเบียนสำเร็จ, ได้รับคะแนน, ใกล้กำหนดส่ง, ได้ใบประกาศ) |
 | FR-11.4 | ผู้ใช้ตั้งค่าได้ว่าจะรับการแจ้งเตือนประเภทใดผ่านช่องทางใด |
 
-- [x] FR-11.1 · [x] FR-11.2 · [ ] FR-11.3 (Phase 3) · [ ] FR-11.4 (Phase 3)
+- [x] FR-11.1 · [x] FR-11.2 · [x] FR-11.3 · [x] FR-11.4 (Phase 3 ขั้น 1 — LINE ในหน้าตั้งค่าเปิดใช้เมื่อผูกบัญชีได้ใน M12)
 - [x] DoD ครบ 7 ข้อ สำหรับส่วน in-app · Phase 1 ขั้น 7
 
 ### M12 — LINE Notification (P1)
