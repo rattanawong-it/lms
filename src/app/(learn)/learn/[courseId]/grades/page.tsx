@@ -4,6 +4,7 @@ import { BookOpenCheck, ChevronLeft } from "lucide-react";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { formatScore } from "@/lib/decimal";
+import { GradingMode } from "@/generated/prisma/enums";
 import { SOURCE_LABEL } from "@/features/gradebook/schemas";
 import { getMyGrades } from "@/features/gradebook/queries";
 
@@ -49,7 +50,9 @@ export default async function MyGradesPage(props: PageProps<"/learn/[courseId]/g
               </p>
             </div>
             <div className="text-right">
-              <p className="text-muted-foreground text-[12.5px]">เกรด</p>
+              <p className="text-muted-foreground text-[12.5px]">
+                {data.course.mode === GradingMode.PASS_FAIL ? "ผล (ผ่าน/ไม่ผ่าน)" : "เกรด"}
+              </p>
               <p data-my-grade className="text-[28px] font-bold">
                 {data.grade ?? "–"}
               </p>

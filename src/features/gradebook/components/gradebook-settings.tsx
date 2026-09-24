@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Loader2, Plus, Trash2, X } from "lucide-react";
+import { AlertTriangle, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,14 +18,16 @@ import { Field } from "@/components/shared/field";
 import { formatScore } from "@/lib/decimal";
 import { submitForm } from "@/lib/form";
 import { cn } from "@/lib/utils";
-import { GradeSource } from "@/generated/prisma/enums";
+import { GradeSource, GradingMode } from "@/generated/prisma/enums";
 import {
   addManualItem,
   deleteManualItem,
-  saveGradeScale,
+  saveCourseCurve,
   saveWeights,
 } from "@/features/gradebook/actions";
-import { DEFAULT_GRADE_SCALE, weightSum } from "@/features/gradebook/lib/calc";
+import { weightSum } from "@/features/gradebook/lib/calc";
+import { ScoreCurveForm } from "@/features/score-curve/components/score-curve-form";
+import { CURVE_SOURCE_LABEL, GRADING_MODE_LABEL } from "@/features/score-curve/schemas";
 import type { GradebookSettings } from "@/features/gradebook/queries";
 import { SOURCE_LABEL } from "@/features/gradebook/schemas";
 
@@ -232,107 +233,56 @@ function AddItemForm({ courseId }: { courseId: string }) {
   );
 }
 
-type Band = { key: number; grade: string; min: string };
-let bandSeed = 0;
-
-/** FR-09.2 — เกณฑ์ตัดเกรดของคอร์ส (เรียงจากสูงไปต่ำ · แถวสุดท้ายเริ่มที่ 0) */
-function ScaleForm({ data }: { data: GradebookSettings }) {
-  const { pending, run } = useAction();
-  const [bands, setBands] = React.useState<Band[]>(() =>
-    data.course.scale.map((b) => ({ key: (bandSeed += 1), grade: b.grade, min: String(b.min) })),
-  );
-
-  function submit(formData: FormData) {
-    formData.set("bands", JSON.stringify(bands.map((b) => ({ grade: b.grade, min: b.min }))));
-    run(saveGradeScale, formData);
-  }
-
-  function reset() {
-    const formData = new FormData();
-    formData.set("courseId", data.course.id);
-    formData.set("reset", "true");
-    run(saveGradeScale, formData, (result) => {
-      if (result.ok) setBands(DEFAULT_GRADE_SCALE.map((b) => ({ key: (bandSeed += 1), grade: b.grade, min: String(b.min) })));
-    });
-  }
+/** FR-09.6/09.8 — โหมดตัดผล + เกณฑ์ของคอร์ส (ค่าเริ่มมาจาก server: ของคอร์ส หรือของคณะ/ทั้งระบบ) */
+function CourseCurveForm({ data }: { data: GradebookSettings }) {
+  const [mode, setMode] = React.useState<GradingMode>(data.course.mode);
+  const custom = data.course.curveSource === "course";
 
   return (
-    <form onSubmit={submitForm(submit)} aria-labelledby="scale-title" className="bg-card border-border space-y-4 rounded-xl border p-4 sm:p-5">
-      <input type="hidden" name="courseId" value={data.course.id} />
-      <div className="flex flex-wrap items-center gap-2">
-        <h2 id="scale-title" className="text-[15px] font-semibold">
-          เกณฑ์ตัดเกรด
-        </h2>
-        <Badge variant="secondary">{data.course.customScale ? "เกณฑ์ของคอร์สนี้" : "ค่าตั้งต้นของระบบ"}</Badge>
-      </div>
-      <p className="text-muted-foreground text-[12.5px]">
-        ได้เกรดของแถวแรกที่คะแนนรวม (ปัด 2 ตำแหน่ง) ถึงขั้นต่ำ · เรียงจากสูงไปต่ำ แถวสุดท้ายต้องเริ่มที่ 0
-      </p>
-
-      <ol className="space-y-2">
-        {bands.map((band, index) => (
-          <li key={band.key} className="flex items-center gap-2">
-            <Input
-              value={band.grade}
-              onChange={(e) => {
-                const grade = e.currentTarget.value;
-                setBands((list) => list.map((b) => (b.key === band.key ? { ...b, grade } : b)));
-              }}
-              maxLength={5}
-              aria-label={`ชื่อเกรดแถวที่ ${index + 1}`}
-              className="bg-card h-11 w-[80px]"
-            />
-            <span className="text-muted-foreground text-[13px]">ตั้งแต่</span>
-            <Input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              max={100}
-              step={0.01}
-              value={band.min}
-              onChange={(e) => {
-                const min = e.currentTarget.value;
-                setBands((list) => list.map((b) => (b.key === band.key ? { ...b, min } : b)));
-              }}
-              aria-label={`คะแนนขั้นต่ำของเกรดแถวที่ ${index + 1}`}
-              className="bg-card h-11 w-[96px] text-right tabular-nums"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="size-11"
-              aria-label={`ลบเกรดแถวที่ ${index + 1}`}
-              disabled={bands.length <= 2}
-              onClick={() => setBands((list) => list.filter((b) => b.key !== band.key))}
+    <ScoreCurveForm
+      title="โหมดตัดผลและเกณฑ์คะแนน"
+      badge={CURVE_SOURCE_LABEL[data.course.curveSource]}
+      description={
+        custom
+          ? "คอร์สนี้ตั้งเกณฑ์เอง ·"
+          : `ตอนนี้ใช้${CURVE_SOURCE_LABEL[data.course.inheritedSource]} — แก้แล้วบันทึกเพื่อตั้งเกณฑ์เฉพาะคอร์สนี้ ·`
+      }
+      curve={data.course.curve}
+      hidden={{ courseId: data.course.id, gradingMode: mode }}
+      save={saveCourseCurve}
+      reset={custom ? { label: `กลับไปใช้${CURVE_SOURCE_LABEL[data.course.inheritedSource]}`, action: resetCourseCurve } : undefined}
+    >
+      <fieldset className="space-y-2">
+        <legend className="text-[14px] font-semibold">โหมดตัดผลของคอร์ส</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {Object.values(GradingMode).map((value) => (
+            <label
+              key={value}
+              className={cn(
+                "border-border flex min-h-11 cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2 text-[13.5px]",
+                mode === value && "border-primary bg-primary/5",
+              )}
             >
-              <X className="size-4" />
-            </Button>
-          </li>
-        ))}
-      </ol>
-
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          disabled={bands.length >= 15}
-          onClick={() => setBands((list) => [...list, { key: (bandSeed += 1), grade: "", min: "0" }])}
-        >
-          <Plus className="size-4" /> เพิ่มระดับ
-        </Button>
-        {data.course.customScale ? (
-          <Button type="button" variant="ghost" disabled={pending} onClick={reset}>
-            ใช้ค่าตั้งต้น
-          </Button>
-        ) : null}
-        <Button type="submit" disabled={pending} className="ml-auto">
-          {pending ? <Loader2 className="size-4 animate-spin" /> : null}
-          บันทึกเกณฑ์
-        </Button>
-      </div>
-    </form>
+              <input
+                type="radio"
+                checked={mode === value}
+                onChange={() => setMode(value)}
+                className="accent-primary size-4"
+              />
+              {GRADING_MODE_LABEL[value]}
+            </label>
+          ))}
+        </div>
+        <p className="text-muted-foreground text-[12px]">สมุดคะแนน หน้าคะแนนของผู้เรียน และไฟล์ส่งออกแสดงผลตามโหมดนี้ · เงื่อนไขจบคอร์สไม่เปลี่ยน</p>
+      </fieldset>
+    </ScoreCurveForm>
   );
+}
+
+/** เลิกตั้งทับ — ส่ง reset=true ไปกับ action เดียวกัน */
+async function resetCourseCurve(formData: FormData) {
+  formData.set("reset", "true");
+  return saveCourseCurve(formData);
 }
 
 export function GradebookSettingsPanel({ data }: { data: GradebookSettings }) {
@@ -342,7 +292,7 @@ export function GradebookSettingsPanel({ data }: { data: GradebookSettings }) {
         <WeightsForm key={data.items.map((i) => `${i.id}:${i.weight}`).join("|")} data={data} />
         <AddItemForm courseId={data.course.id} />
       </div>
-      <ScaleForm key={data.course.scale.map((b) => `${b.grade}:${b.min}`).join("|")} data={data} />
+      <CourseCurveForm key={`${data.course.mode}:${data.course.curveSource}:${JSON.stringify(data.course.curve)}`} data={data} />
     </div>
   );
 }

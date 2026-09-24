@@ -10,6 +10,7 @@ import { formatScore } from "@/lib/decimal";
 import { cn } from "@/lib/utils";
 import { exportGradebook, resetGrade, setGrade } from "@/features/gradebook/actions";
 import type { Gradebook } from "@/features/gradebook/queries";
+import { GradingMode } from "@/generated/prisma/enums";
 import { SOURCE_LABEL } from "@/features/gradebook/schemas";
 
 type Item = Gradebook["items"][number];
@@ -138,7 +139,7 @@ export function GradebookGrid({ data }: { data: Gradebook }) {
                 </th>
               ))}
               <th scope="col" className="px-3 py-2.5 text-left font-semibold">
-                รวม / เกรด
+                {data.course.mode === GradingMode.PASS_FAIL ? "รวม / ผล" : "รวม / เกรด"}
               </th>
             </tr>
           </thead>

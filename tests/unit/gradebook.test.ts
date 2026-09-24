@@ -1,13 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  bandsError,
-  DEFAULT_GRADE_SCALE,
-  gradeFor,
-  parseGradeScale,
-  weightedTotal,
-  weightSum,
-} from "@/features/gradebook/lib/calc";
-import { cellScoreSchema, gradeScaleSchema, manualItemSchema, weightsSchema } from "@/features/gradebook/schemas";
+import { weightedTotal, weightSum } from "@/features/gradebook/lib/calc";
+import { cellScoreSchema, manualItemSchema, weightsSchema } from "@/features/gradebook/schemas";
 import { meetsCompletionRule } from "@/features/enrollment/lib/progress";
 
 const scores = (entries: Record<string, number | null>) => new Map(Object.entries(entries));
@@ -57,53 +50,13 @@ describe("คะแนนรวมถ่วงน้ำหนัก (FR-09.2)", 
     expect(weightedTotal(halves, scores({ a: 2, b: 2 }))).toBe(66.67);
   });
 
-  it("กรณีขอบ 79.995 → ปัดเป็น 80.00 แล้วได้ A (ตัวเลขที่เห็น = ตัวเลขที่ใช้ตัดเกรด)", () => {
-    const total = weightedTotal([{ id: "a", maxScore: 200, weight: 100 }], scores({ a: 159.99 }));
-    expect(total).toBe(80);
-    expect(gradeFor(total, DEFAULT_GRADE_SCALE)).toBe("A");
-    const below = weightedTotal([{ id: "a", maxScore: 200, weight: 100 }], scores({ a: 159.98 }));
-    expect(below).toBe(79.99);
-    expect(gradeFor(below, DEFAULT_GRADE_SCALE)).toBe("B+");
-  });
-});
-
-describe("เกณฑ์ตัดเกรด", () => {
-  it("ค่าตั้งต้น (Q6) ครอบคลุมทุกช่วง", () => {
-    expect(bandsError(DEFAULT_GRADE_SCALE)).toBeNull();
-    expect(gradeFor(100, DEFAULT_GRADE_SCALE)).toBe("A");
-    expect(gradeFor(75, DEFAULT_GRADE_SCALE)).toBe("B+");
-    expect(gradeFor(74.99, DEFAULT_GRADE_SCALE)).toBe("B");
-    expect(gradeFor(50, DEFAULT_GRADE_SCALE)).toBe("D");
-    expect(gradeFor(0, DEFAULT_GRADE_SCALE)).toBe("F");
-    expect(gradeFor(null, DEFAULT_GRADE_SCALE)).toBeNull();
-  });
-
-  it("อ่านจาก DB: ค่าเสีย/ว่าง → ค่าตั้งต้น", () => {
-    expect(parseGradeScale(null)).toEqual(DEFAULT_GRADE_SCALE);
-    expect(parseGradeScale([{ grade: "ผ่าน", min: 50 }])).toEqual(DEFAULT_GRADE_SCALE);
-    expect(parseGradeScale([{ grade: "S", min: 60 }, { grade: "U", min: 0 }])).toEqual([
-      { grade: "S", min: 60 },
-      { grade: "U", min: 0 },
-    ]);
-  });
-
-  it("ตรวจโครงเกณฑ์", () => {
-    expect(bandsError([{ grade: "A", min: 50 }, { grade: "a", min: 0 }])).toBe("ชื่อเกรดซ้ำกัน");
-    expect(bandsError([{ grade: "A", min: 50 }, { grade: "B", min: 60 }, { grade: "F", min: 0 }])).toBe(
-      "คะแนนขั้นต่ำต้องเรียงจากมากไปน้อยและไม่ซ้ำกัน",
-    );
-    expect(bandsError([{ grade: "A", min: 50 }, { grade: "F", min: 10 }])).toBe("เกรดสุดท้ายต้องเริ่มที่ 0 เพื่อให้ทุกคะแนนมีเกรด");
+  it("กรณีขอบ 79.995 → ปัดเป็น 80.00 (ตัวเลขที่แสดง = ตัวเลขที่นำไปตัดผล — ตัดผลดู score-curve.test.ts)", () => {
+    expect(weightedTotal([{ id: "a", maxScore: 200, weight: 100 }], scores({ a: 159.99 }))).toBe(80);
+    expect(weightedTotal([{ id: "a", maxScore: 200, weight: 100 }], scores({ a: 159.98 }))).toBe(79.99);
   });
 });
 
 describe("schema สมุดคะแนน (ข้อความไทย)", () => {
-  it("เกณฑ์ตัดเกรด", () => {
-    expect(gradeScaleSchema.safeParse([{ grade: "S", min: "60" }, { grade: "U", min: "0" }]).success).toBe(true);
-    expect(gradeScaleSchema.safeParse([{ grade: "", min: 0 }]).error?.issues.map((i) => i.message)).toContain(
-      "กรุณาใส่ชื่อเกรด",
-    );
-  });
-
   it("น้ำหนัก 0–100 ทศนิยมไม่เกิน 2 ตำแหน่ง", () => {
     const id = "ckv0000000000000000000000";
     expect(weightsSchema.parse([{ id, weight: "12.5" }])).toEqual([{ id, weight: 12.5 }]);

@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 2 (Assessment: M07–M10) — **ครบ 6 ขั้น** (2026-09-23) บน branch `phase-2` · รอจุดตรวจที่ 1–2 และเกณฑ์ตัดเกรดจริง (Q6) |
+| สถานะปัจจุบัน | Phase 2 (Assessment: M07–M10) — **ครบ 7 ขั้น** บน branch `phase-2` · จุดตรวจ 1–2 ทดสอบบน Chrome แล้ว · ขั้น 7 Score Curve (Q6) เสร็จ 2026-09-24 |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -147,8 +147,10 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 
 **สมุดคะแนน (M09)** — คะแนนต้นทาง (ส่งข้อสอบ/ตรวจอัตนัย/ส่งงาน/ตรวจงาน) เปลี่ยนเมื่อไรต้องเรียก `afterScoreChange()`
 จาก `features/gradebook/lib/sync.ts` · ห้ามเขียน `Grade` ตรง ๆ นอก `sync.ts` และ `gradebook/actions.ts`
-· คะแนนรวม/เกรดคำนวณด้วย `weightedTotal()`/`gradeFor()` ใน `lib/calc.ts` เท่านั้น (เศษส่วนตรงตัว ปัดครั้งเดียว)
-· เกณฑ์ตัดเกรดตั้งต้นอยู่ที่ `DEFAULT_GRADE_SCALE` จุดเดียว
+· คะแนนรวมคำนวณด้วย `weightedTotal()` ใน `lib/calc.ts` เท่านั้น (เศษส่วนตรงตัว ปัดครั้งเดียว)
+· **Score Curve (FR-09.6–09.9)** — ตัดผลด้วย `bandFor()` ใน `lib/curve.ts` (ตัดทศนิยมทิ้งก่อนเทียบ: 79.50 → 79) · ตรวจเกณฑ์ด้วย `checkCurve()` ตัวเดียวทั้งหน้าจอและ server
+· **ค่าเกณฑ์อยู่ใน DB เท่านั้น** (`ScoreCurve` ทั้งระบบ/รายคณะ + `Course.gradeScale` ที่ผู้สอนตั้งทับ) — หาด้วย `resolveCourseCurve()` ใน `features/score-curve/queries.ts`
+  (คอร์ส → คณะ → คณะแม่ → ทั้งระบบ) · ห้ามใส่ค่าเกณฑ์ในโค้ดฝั่งหน้าเว็บ · โหมดเกรด/S-U อยู่ที่ `Course.gradingMode`
 
 **ใบประกาศ (M10)** — ออกที่ `notifyCourseCompleted()` จุดเดียว (ทุกทางที่ทำให้จบคอร์สต้องเรียกฟังก์ชันนี้)
 · **ทุกข้อความที่เข้า PDF ต้องผ่าน `pdfText()`/`pdfWords()`** และมาจาก `buildCertificateModel()` เท่านั้น (บั๊ก `ำ` ของ react-pdf)

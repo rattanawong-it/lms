@@ -2,9 +2,11 @@ import "server-only";
 import { db } from "@/lib/db";
 import { assertCourseAccess } from "@/lib/rbac";
 import { toScore } from "@/lib/decimal";
-import { EnrollmentStatus, GradeSource } from "@/generated/prisma/enums";
+import { EnrollmentStatus, GradeSource, GradingMode } from "@/generated/prisma/enums";
 import { parseCompletionRule } from "@/features/courses/schemas";
-import { gradeFor, parseGradeScale, weightSum, weightedTotal } from "@/features/gradebook/lib/calc";
+import { weightSum, weightedTotal } from "@/features/gradebook/lib/calc";
+import { bandFor } from "@/features/gradebook/lib/curve";
+import { resolveCourseCurve } from "@/features/score-curve/queries";
 import { syncCourseGrades } from "@/features/gradebook/lib/sync";
 
 /**
@@ -33,15 +35,27 @@ export type GradebookItem = ReturnType<typeof toItems>[number];
 async function loadCourse(courseId: string) {
   const course = await db.course.findUniqueOrThrow({
     where: { id: courseId },
-    select: { id: true, title: true, gradeScale: true, completionRule: true },
+    select: { id: true, title: true, gradeScale: true, departmentId: true, gradingMode: true, completionRule: true },
   });
+  const resolved = await resolveCourseCurve(course);
   return {
     id: course.id,
     title: course.title,
-    scale: parseGradeScale(course.gradeScale),
-    customScale: course.gradeScale !== null,
+    /** FR-09.8 — เกรด A–F หรือ S/U */
+    mode: course.gradingMode,
+    curve: resolved.curve,
+    curveSource: resolved.source,
+    /** เกณฑ์ชั้นบน (คณะ/ระบบ) — ค่าที่จะกลับไปใช้เมื่อผู้สอนเลิกตั้งทับ */
+    inheritedSource: resolved.inherited.source,
     minScore: parseCompletionRule(course.completionRule).minScore,
   };
+}
+
+type LoadedCourse = Awaited<ReturnType<typeof loadCourse>>;
+
+/** FR-09.8/09.9 — ผลของคะแนนรวมตามโหมดของคอร์ส (ตัดทศนิยมทิ้งก่อนเทียบช่วง) */
+function resultOf(total: number | null, course: LoadedCourse): string | null {
+  return bandFor(total, course.mode === GradingMode.PASS_FAIL ? course.curve.passFail : course.curve.grades);
 }
 
 /** FR-09.3 — ตารางผู้เรียน × รายการ */
@@ -76,7 +90,7 @@ export async function getGradebook(courseId: string) {
         }),
       );
       const total = weightedTotal(list, new Map(list.map((i) => [i.id, cells[i.id]!.score])));
-      return { student, cells, total, grade: gradeFor(total, course.scale) };
+      return { student, cells, total, grade: resultOf(total, course) };
     });
 
   return { course, items: list, rows, weightTotal: weightSum(list.map((i) => i.weight)) };
@@ -131,7 +145,7 @@ export async function getMyGrades(courseId: string) {
     enrolled: true as const,
     items: list,
     total,
-    grade: gradeFor(total, course.scale),
+    grade: resultOf(total, course),
     weightTotal: weightSum(list.map((i) => i.weight)),
   };
 }

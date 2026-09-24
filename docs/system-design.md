@@ -266,6 +266,12 @@ enum GradeSource {
   ASSIGNMENT
   MANUAL
 }
+
+// S6 (2026-09-24 · CHANGELOG #29) FR-09.8 โหมดตัดผลของคอร์ส
+enum GradingMode {
+  LETTER     // A–F
+  PASS_FAIL  // S/U
+}
 enum AnnouncementScope {
   GLOBAL
   DEPARTMENT
@@ -394,6 +400,7 @@ model Department {
   users     User[]
   courses   Course[]
   announcements Announcement[]
+  scoreCurve ScoreCurve?   // S5 เกณฑ์ของคณะ
   createdAt DateTime     @default(now())
 }
 
@@ -426,7 +433,8 @@ model Course {
   gradingScheme      Json?        // [{grade:"A",min:80},...]
   certificateEnabled Boolean      @default(false)
   certificateTemplate Json?
-  gradeScale         Json?        // S2 — [{grade:"A",min:80},…] ว่าง = เกณฑ์ตั้งต้น
+  gradeScale         Json?        // S2 — เกณฑ์ที่ผู้สอนตั้งทับ · S6: รูปแบบ ScoreCurveData (อ่านรูปแบบเก่า [{grade,min}] ได้) · ว่าง = ใช้เกณฑ์ของคณะ/ระบบ
+  gradingMode        GradingMode  @default(LETTER) // S6 FR-09.8
   departmentId       String?
   department         Department?  @relation(fields: [departmentId], references: [id])
   categoryId         String?
@@ -724,6 +732,18 @@ model Grade {
   @@unique([gradeItemId, userId])
 }
 
+// S5 (2026-09-24 · CHANGELOG #29) FR-09.6/09.7 Score Curve ระดับระบบและคณะ
+// แถวที่ departmentId = null คือเกณฑ์ทั้งระบบ (มีได้แถวเดียว — ตรวจใน action + partial unique index ใน migration)
+model ScoreCurve {
+  id           String      @id @default(cuid())
+  departmentId String?     @unique
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  grades       Json        // [{label:"A",min:80,max:100},…] เรียงจากสูงไปต่ำ
+  passFail     Json        // [{label:"S",min:50,max:100},{label:"U",min:0,max:49}]
+  updatedById  String?
+  updatedAt    DateTime    @updatedAt
+}
+
 model Certificate {
   id        String    @id @default(cuid())
   code      String    @unique // เช่น LMS-2026-8F3K2Q
@@ -891,6 +911,11 @@ model Coupon {
 - **Soft delete:** คอร์สใช้ `status = ARCHIVED` แทนการลบ ส่วนผู้ใช้ใช้ `banned` สำหรับระงับ และการลบบัญชีตาม PDPA ใช้วิธี anonymize
 - **Snapshot:** `QuizAttempt.questionOrder` เก็บลำดับข้อที่สุ่มได้ เพื่อให้ผลสอบคงเดิมแม้ผู้สอนจะแก้คลังข้อสอบภายหลัง
 - **Progress:** คำนวณ `Enrollment.progressPct` ใหม่ทุกครั้งที่ `LessonProgress.completed` เปลี่ยน (ภายใน transaction)
+- **Score Curve (S5/S6):** เกณฑ์ที่ใช้กับคอร์สหาตามลำดับ `Course.gradeScale` → `ScoreCurve` ของคณะเจ้าของคอร์ส (ไล่ขึ้น `parentId`) → `ScoreCurve` ทั้งระบบ
+  · ค่าตั้งต้นลง DB ผ่าน seed/migration — หน้าเว็บอ่านจาก server เสมอ ไม่มีค่าเกณฑ์ใน client
+  · ตัดผลจาก `floor(คะแนนรวมที่ปัด 2 ตำแหน่ง)` แล้วหาแถวที่ `min ≤ ค่า ≤ max` (79.50 → 79 → B+) · ตัวเลขที่แสดงยังเป็น 79.50
+  · ตรวจก่อนบันทึก: 0–100, ทศนิยม ≤ 2, min ≤ max, ไม่ซ้อนทับ, จำนวนเต็ม 0–100 ทุกค่าตกในช่วงเดียว, ชื่อไม่ซ้ำ
+  · เปลี่ยนเกณฑ์ไม่ทำให้ใบประกาศที่ออกแล้วถูกเพิกถอน (ตาม #26) · คะแนนรวม/เกรดคำนวณตอนแสดง จึงเปลี่ยนตามเกณฑ์ใหม่ทันที
 - **Timezone:** เก็บเป็น UTC ทั้งหมด และแสดงผลเป็น `Asia/Bangkok` ด้วยปีแบบ พ.ศ.
 
 ---
@@ -909,6 +934,7 @@ model Coupon {
 | อนุมัติเผยแพร่คอร์ส | ✅ | ✅ ในคณะ | — | — | — |
 | ลงทะเบียนผู้เรียนแบบกลุ่ม | ✅ | ✅ | ✅ คอร์สตน | — | — |
 | ตรวจงาน / แก้คะแนน | ✅ | ✅ ในคณะ | ✅ คอร์สตน | — | — |
+| Score Curve | ✅ ทั้งระบบ + ทุกคณะ | ✅ คณะตน | ✅ ตั้งทับคอร์สตน | — | — |
 | เรียน / ทำแบบทดสอบ / ส่งงาน | — | — | — | ✅ ที่ลงทะเบียนแล้ว | — |
 | ดูบทเรียน preview / catalog | ✅ | ✅ | ✅ | ✅ | ✅ (เฉพาะ PUBLIC) |
 | ประกาศ | ✅ GLOBAL | ✅ DEPARTMENT | ✅ COURSE | — | — |
@@ -945,7 +971,7 @@ flowchart LR
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
 | `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
-| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,announcements,reports,screen-events,audit,settings}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
+| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,announcements,reports,screen-events,audit,settings,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
 | API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live}`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
@@ -1326,7 +1352,7 @@ LMS/
 │  │  └─ shared/               data-table, empty-state, rich-text, file-uploader
 │  ├─ features/
 │  │  ├─ auth/ users/ departments/ catalog/ course-builder/ content/ enrollment/
-│  │  ├─ questions/ quiz/ assignments/ gradebook/ certificates/ announcements/ notifications/
+│  │  ├─ questions/ quiz/ assignments/ gradebook/ score-curve/ certificates/ announcements/ notifications/
 │  │  ├─ line/ qa/ review/ protection/ reports/ audit/ settings/
 │  │  │   └─ (แต่ละโฟลเดอร์) queries.ts · actions.ts · schemas.ts · components/ · lib/
 │  ├─ lib/                     auth.ts, auth-client.ts, db.ts, rbac.ts (server), roles.ts (client-safe), permissions.ts,

@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { GradeSource } from "@/generated/prisma/enums";
-import { bandsError } from "@/features/gradebook/lib/calc";
 
 /** M09 · FR-09.1–09.3 — สมุดคะแนน (ใช้ร่วม client/server · ข้อความ error ภาษาไทย) */
 
@@ -37,23 +36,6 @@ export const weightsSchema = z
     }),
   )
   .max(200);
-
-export const gradeScaleSchema = z
-  .array(
-    z.object({
-      grade: z.string().trim().min(1, "กรุณาใส่ชื่อเกรด").max(5, "ชื่อเกรดยาวได้ไม่เกิน 5 ตัวอักษร"),
-      min: z.coerce
-        .number("คะแนนขั้นต่ำต้องเป็นตัวเลข")
-        .min(0, "คะแนนขั้นต่ำต้องไม่ติดลบ")
-        .max(100, "คะแนนขั้นต่ำไม่เกิน 100")
-        .refine(twoDecimals, "คะแนนละเอียดได้ไม่เกิน 2 ตำแหน่ง"),
-    }),
-  )
-  .max(15, "เกณฑ์มีได้ไม่เกิน 15 ระดับ")
-  .superRefine((bands, ctx) => {
-    const error = bandsError(bands);
-    if (error) ctx.addIssue({ code: "custom", message: error });
-  });
 
 /** คะแนนหนึ่งช่องในตาราง — ว่าง = ลบคะแนน */
 export const cellScoreSchema = z

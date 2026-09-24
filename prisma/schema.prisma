@@ -98,6 +98,11 @@ enum GradeSource {
   ASSIGNMENT
   MANUAL
 }
+/// FR-09.8 โหมดตัดผลของคอร์ส (CHANGELOG #29)
+enum GradingMode {
+  LETTER
+  PASS_FAIL
+}
 enum AnnouncementScope {
   GLOBAL
   DEPARTMENT
@@ -226,6 +231,7 @@ model Department {
   users     User[]
   courses   Course[]
   announcements Announcement[]
+  scoreCurve ScoreCurve?
   createdAt DateTime     @default(now())
 }
 
@@ -255,7 +261,8 @@ model Course {
   price              Decimal?     @db.Decimal(10, 2) // เฟส 2
   protectionEnabled  Boolean      @default(true)
   completionRule     Json         @default("{\"minProgress\":100}") // {minProgress, requireQuizPass, minScore}
-  gradeScale         Json?        // FR-09.2 เกณฑ์ตัดเกรด [{grade:"A",min:80},…] · null = ค่าตั้งต้นของระบบ
+  gradeScale         Json?        // FR-09.6 เกณฑ์ที่ผู้สอนตั้งทับ {grades,passFail} (อ่านรูปแบบเก่า [{grade,min}] ได้) · null = ใช้เกณฑ์ของคณะ/ระบบ
+  gradingMode        GradingMode  @default(LETTER) // FR-09.8
   gradingScheme      Json?        // [{grade:"A",min:80},...]
   certificateEnabled Boolean      @default(false)
   certificateTemplate Json?
@@ -554,6 +561,17 @@ model Grade {
   overridden  Boolean   @default(false) // ผู้สอนแก้ทับ — ผลสอบ/งานครั้งใหม่ไม่เขียนทับ
   updatedAt   DateTime  @updatedAt
   @@unique([gradeItemId, userId])
+}
+
+/// FR-09.6/09.7 Score Curve ระดับระบบ (departmentId = null มีได้แถวเดียว — partial unique index ใน migration) และรายคณะ
+model ScoreCurve {
+  id           String      @id @default(cuid())
+  departmentId String?     @unique
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  grades       Json        // [{label:"A",min:80,max:100},…] เรียงจากสูงไปต่ำ
+  passFail     Json        // [{label:"S",min:50,max:100},{label:"U",min:0,max:49}]
+  updatedById  String?
+  updatedAt    DateTime    @updatedAt
 }
 
 model Certificate {

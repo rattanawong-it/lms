@@ -9,12 +9,12 @@ import { toScore } from "@/lib/decimal";
 import { toCsv } from "@/lib/csv";
 import { toXlsx } from "@/lib/xlsx";
 import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
-import { EnrollmentStatus, GradeSource } from "@/generated/prisma/enums";
+import { EnrollmentStatus, GradeSource, GradingMode } from "@/generated/prisma/enums";
 import { Prisma } from "@/generated/prisma/client";
 import { recomputeCompletion, syncCourseGrades } from "@/features/gradebook/lib/sync";
+import { gradingModeSchema, scoreCurveSchema } from "@/features/score-curve/schemas";
 import {
   cellScoreSchema,
-  gradeScaleSchema,
   manualItemSchema,
   MAX_MANUAL_ITEMS,
   weightsSchema,
@@ -257,33 +257,46 @@ export async function saveWeights(formData: FormData): Promise<ActionResult> {
   };
 }
 
-/** FR-09.2 — เกณฑ์ตัดเกรดของคอร์ส · `reset` = กลับไปใช้ค่าตั้งต้นของระบบ */
-export async function saveGradeScale(formData: FormData): Promise<ActionResult> {
+/**
+ * FR-09.6/09.8 — โหมดตัดผล + Score Curve ที่ผู้สอนตั้งทับให้คอร์สนี้
+ * `reset` = เลิกตั้งทับ กลับไปใช้เกณฑ์ของคณะ/ทั้งระบบ (โหมดตัดผลยังเป็นค่าที่ส่งมา)
+ */
+export async function saveCourseCurve(formData: FormData): Promise<ActionResult> {
   const courseId = idSchema.safeParse(formData.get("courseId"));
   if (!courseId.success) return { ok: false, message: "ไม่พบคอร์ส" };
   const { user } = await assertCourseAccess(courseId.data, "teach");
 
-  const reset = formData.get("reset") === "true";
-  const parsed = reset ? null : gradeScaleSchema.safeParse(readJson(formData.get("bands")));
-  if (parsed && !parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "เกณฑ์ไม่ถูกต้อง" };
+  const mode = gradingModeSchema.safeParse(formData.get("gradingMode"));
+  if (!mode.success) return { ok: false, message: mode.error.issues[0]?.message ?? "กรุณาเลือกโหมดตัดผล" };
 
-  const before = await db.course.findUniqueOrThrow({ where: { id: courseId.data }, select: { gradeScale: true } });
-  const bands = parsed?.data.map((b) => ({ grade: b.grade, min: b.min })) ?? null;
+  const reset = formData.get("reset") === "true";
+  const parsed = reset ? null : scoreCurveSchema.safeParse(readJson(formData.get("curve")));
+  if (parsed && !parsed.success) {
+    const issue = parsed.error.issues[0];
+    const section = issue?.path[0] === "passFail" ? "ผ่าน/ไม่ผ่าน" : "เกรด";
+    return { ok: false, message: issue ? `${section}: ${issue.message}` : "เกณฑ์ไม่ถูกต้อง" };
+  }
+
+  const before = await db.course.findUniqueOrThrow({
+    where: { id: courseId.data },
+    select: { gradeScale: true, gradingMode: true },
+  });
+  const curve = parsed?.data ?? null;
   await db.course.update({
     where: { id: courseId.data },
-    data: { gradeScale: bands ?? Prisma.DbNull },
+    data: { gradeScale: curve ?? Prisma.DbNull, gradingMode: mode.data },
   });
   await writeAudit({
     actorId: user.id,
-    action: "gradebook.scale",
+    action: reset ? "gradebook.curve.reset" : "gradebook.curve",
     entity: "Course",
     entityId: courseId.data,
-    before: { gradeScale: before.gradeScale ?? null },
-    after: { gradeScale: bands },
+    before: { gradeScale: before.gradeScale ?? null, gradingMode: before.gradingMode },
+    after: { gradeScale: curve, gradingMode: mode.data },
   });
 
   revalidateGradebook(courseId.data);
-  return { ok: true, message: reset ? "กลับไปใช้เกณฑ์ตั้งต้นแล้ว" : "บันทึกเกณฑ์ตัดเกรดแล้ว" };
+  return { ok: true, message: reset ? "กลับไปใช้เกณฑ์ของคณะ/ทั้งระบบแล้ว" : "บันทึกเกณฑ์และโหมดตัดผลแล้ว" };
 }
 
 /* ─────────────────────────── ส่งออก (FR-09.5) ─────────────────────────── */
@@ -300,7 +313,7 @@ export async function exportGradebook(
     "อีเมล",
     ...items.map((i) => `${i.title} (เต็ม ${i.maxScore} · ${i.weight}%)`),
     "คะแนนรวม (100)",
-    "เกรด",
+    course.mode === GradingMode.PASS_FAIL ? "ผล (S/U)" : "เกรด",
   ];
   const table = [
     header,

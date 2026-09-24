@@ -215,4 +215,48 @@ test.describe("สมุดคะแนน", () => {
     expect(response?.status()).toBe(403);
     await student.close();
   });
+
+  test("คอร์สเลือกโหมด S/U + ตั้งเกณฑ์ของคอร์ส (FR-09.6/09.8) → กลับไปใช้เกณฑ์กลางและโหมดเกรด", async ({ browser }, info) => {
+    const p = info.project.name;
+    const context = await browser.newContext({ storageState: STATE_FILE.instructor });
+    const page = await context.newPage();
+    const coursePath = await openGradebook(page, p);
+    await page.goto(`${coursePath}/gradebook/settings`);
+    const form = page.locator("[data-score-curve]");
+    await expect(form.getByText("เกณฑ์ทั้งระบบ", { exact: true })).toBeVisible({ timeout: 30_000 });
+
+    // 84 คะแนน: เกณฑ์กลาง S = 50–100 → ตั้งของคอร์สให้ S เริ่ม 85 → 84 ได้ U
+    await form.getByText("ผ่าน/ไม่ผ่าน (S/U)", { exact: true }).click();
+    await form.getByLabel("Min ของ S").fill("85");
+    await form.getByLabel("Max ของ U").fill("84");
+    await form.getByRole("button", { name: "บันทึกเกณฑ์" }).click();
+    await expect(page.getByText("บันทึกเกณฑ์และโหมดตัดผลแล้ว").first()).toBeVisible({ timeout: 15_000 });
+    await expect(form.getByText("เกณฑ์ของคอร์สนี้", { exact: true })).toBeVisible();
+
+    await page.goto(`${coursePath}/gradebook`);
+    await expect(total(page)).toHaveText(/^84\s*U$/, { timeout: 30_000 });
+
+    const student = await browser.newContext({ storageState: STATE_FILE.student });
+    const mine = await student.newPage();
+    await mine.goto(`/learn/${coursePath.split("/").pop()}/grades`);
+    await expect(mine.locator("[data-my-grade]")).toHaveText("U", { timeout: 30_000 });
+    await expect(mine.getByText("ผล (ผ่าน/ไม่ผ่าน)")).toBeVisible();
+    await student.close();
+
+    // เลิกตั้งทับ (โหมดยัง S/U) → เกณฑ์กลาง 84 ได้ S · แล้วกลับเป็นโหมดเกรด → 84 · A
+    await page.goto(`${coursePath}/gradebook/settings`);
+    await form.getByRole("button", { name: "กลับไปใช้เกณฑ์ทั้งระบบ" }).click();
+    await expect(page.getByText("กลับไปใช้เกณฑ์ของคณะ/ทั้งระบบแล้ว").first()).toBeVisible({ timeout: 15_000 });
+    await expect(form.getByLabel("Min ของ S")).toHaveValue("50");
+    await form.getByText("เกรด (A–F)", { exact: true }).click();
+    await form.getByRole("button", { name: "บันทึกเกณฑ์" }).click();
+    await expect(page.getByText("บันทึกเกณฑ์และโหมดตัดผลแล้ว").first()).toBeVisible({ timeout: 15_000 });
+    // บันทึกค่าเท่าเกณฑ์กลางก็ยังนับเป็นเกณฑ์ของคอร์ส — เลิกตั้งทับอีกครั้งให้คอร์สกลับไปตามเกณฑ์กลาง
+    await form.getByRole("button", { name: "กลับไปใช้เกณฑ์ทั้งระบบ" }).click();
+    await expect(page.getByText("กลับไปใช้เกณฑ์ของคณะ/ทั้งระบบแล้ว").first()).toBeVisible({ timeout: 15_000 });
+
+    await page.goto(`${coursePath}/gradebook`);
+    await expect(total(page)).toHaveText(/^84\s*A$/, { timeout: 30_000 });
+    await context.close();
+  });
 });
