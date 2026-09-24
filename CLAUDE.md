@@ -78,6 +78,7 @@ src/
     (learn)/learn/[courseId]/[lessonId]              หน้าเรียน (สารบัญ + สื่อ + ProtectedViewer)
   app/api/{auth,health,media,upload}                 route handler
   app/api/{lesson-media,lesson-file,events/screen}   เสิร์ฟ PDF · ไฟล์ประกอบ · รับรายงานหน้าจอ
+  app/api/line/webhook                               LINE (M12) — ตัวตนพิสูจน์ด้วย X-Line-Signature เท่านั้น ไม่มี session
   app/api/submission-file                            เสิร์ฟไฟล์งานที่ผู้เรียนส่ง (เจ้าของ/ผู้สอนของคอร์ส)
   app/api/certificate/[code] · (public)/verify/[code] ดาวน์โหลดใบประกาศ · หน้าตรวจสอบสาธารณะ (M10)
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
@@ -108,6 +109,7 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `audit.ts` | `writeAudit()` — บันทึก AuditLog |
 | `notify/index.ts` | `notify()` — **จุดเดียวที่สร้างการแจ้งเตือน** · ในแอปเขียนทันที · ช่องทางภายนอกส่งหลัง response ด้วย `after()` (นอก request รันต่อทันที) · ไม่ throw |
 | `notify/prefs.ts` (client ใช้ได้) | `User.notifyPrefs` → `parseNotifyPrefs()` เติมค่าเริ่มต้น (อีเมลเปิด: ENROLLED/GRADED/DUE_SOON/CERTIFICATE) · `pickRecipients()` · `notifyPrefsFromForm()` |
+| `notify/channels/line.ts` · `line/{client,signature}.ts` | push LINE ให้ผู้ที่ผูกบัญชีและเปิดไว้ · เรียก Messaging API ด้วย `fetch` (ไม่ throw) · ตรวจลายเซ็น webhook แบบ timing-safe |
 | `notify/channels/email.ts` | อีเมลแจ้งเตือน — เฉพาะผู้ที่เปิดไว้ ไม่ถูกระงับ ยืนยันอีเมลแล้ว · **escape ทุกข้อความก่อนเข้า HTML** · ลิงก์ต้องเป็น path ในแอปเท่านั้น |
 | `rate-limit.ts` | จำกัดความถี่แบบ fixed window ในหน่วยความจำ (ขอ signed URL, รายงานหน้าจอ) — **นับแยกต่อ process** |
 | `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |

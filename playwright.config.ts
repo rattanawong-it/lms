@@ -1,6 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 import { STUDENT_STATE } from "./tests/e2e/constants";
 
+// ใช้ค่าเดียวกับ dev server (เช่น LINE_CHANNEL_SECRET สำหรับเซ็น webhook ใน line.spec) · ไม่มีไฟล์ (CI) ก็ข้าม
+try {
+  process.loadEnvFile(".env");
+} catch {}
+
 const BASE_URL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
 /**

@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { db } from "@/lib/db";
 import { chunk } from "@/lib/notify/chunk";
 import { sendEmailNotifications } from "@/lib/notify/channels/email";
+import { sendLineNotifications } from "@/lib/notify/channels/line";
 import type { NotifyInput } from "@/lib/notify/types";
 
 /**
@@ -10,7 +11,7 @@ import type { NotifyInput } from "@/lib/notify/types";
  *
  * 1. ในแอป (ตาราง `Notification`) — เปิดเสมอ เขียนทันทีก่อนคืนค่า
  * 2. ช่องทางภายนอกตาม `User.notifyPrefs` (FR-11.3/11.4) — ส่งหลัง response ด้วย `after()`
- *    ไม่ให้ผู้ใช้รออีเมล · LINE เติมที่ `deliverExternal()` ในขั้นถัดไป (M12)
+ *    ไม่ให้ผู้ใช้รออีเมล/LINE · อีเมลกับ LINE ส่งพร้อมกันและล้มแยกกัน
  * ฟีเจอร์ต้นทางเรียก `notify()` แบบเดิมโดยไม่ต้องรู้ว่ามีช่องทางอะไรบ้าง
  */
 export { chunk };
@@ -20,10 +21,12 @@ export type { NotifyInput };
 export const NOTIFY_CHUNK_SIZE = 1_000;
 
 async function deliverExternal(input: NotifyInput, userIds: readonly string[]): Promise<void> {
-  try {
-    await sendEmailNotifications(input, userIds);
-  } catch (error) {
-    console.error("[notify] ส่งช่องทางภายนอกไม่สำเร็จ", error);
+  const results = await Promise.allSettled([
+    sendEmailNotifications(input, userIds),
+    sendLineNotifications(input, userIds),
+  ]);
+  for (const r of results) {
+    if (r.status === "rejected") console.error("[notify] ส่งช่องทางภายนอกไม่สำเร็จ", r.reason);
   }
 }
 

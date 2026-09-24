@@ -1116,7 +1116,7 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
   actor U as ผู้ใช้
-  participant W as Web /settings/notifications
+  participant W as Web /settings/line
   participant DB as PostgreSQL
   participant LINE as LINE Platform
   participant WH as /api/line/webhook
@@ -1134,6 +1134,10 @@ sequenceDiagram
   C->>DB: บันทึก Notification (กันส่งซ้ำ)
   LINE->>WH: unfollow event → ลบ LineLink
 ```
+**ที่ทำจริง (Phase 3 ขั้น 2):** รหัสเก็บใน `Verification` (`identifier = "line-link:<รหัส>"`, `value = userId`) ใช้ครั้งเดียว
+· ลองรหัสได้ 5 ครั้ง/15 นาทีต่อบัญชี LINE (กันเดารหัสของคนอื่น) · บัญชี LINE ที่เคยผูกกับผู้ใช้อื่นย้ายมาผู้ใช้ใหม่
+· webhook ตอบ 404 เมื่อไม่ได้ตั้ง env LINE และ 200 ทุกครั้งที่ลายเซ็นถูก (ตอบ error แล้ว LINE ส่งซ้ำ)
+· push ส่งผ่าน `notify()` → `lib/notify/channels/line.ts` (multicast ชุดละ ≤ 500) · เรียก API ด้วย `fetch` ใน `lib/line/client.ts`
 
 ### 5.8 อัปโหลดวิดีโอขนาดใหญ่ (ผู้สอน)
 ```mermaid
@@ -1315,9 +1319,11 @@ EMAIL_PROVIDER=smtp            # smtp | resend
 SMTP_URL=smtp://localhost:1025
 RESEND_API_KEY=
 EMAIL_FROM="LMS <no-reply@example.com>"
-# LINE
+# LINE (ไม่บังคับ — ไม่ตั้ง = ปิดช่องทาง LINE ทั้งระบบ)
 LINE_CHANNEL_ACCESS_TOKEN=
 LINE_CHANNEL_SECRET=
+LINE_OA_BASIC_ID=              # เช่น @krirklms — ลิงก์/QR เพิ่มเพื่อน
+LINE_API_URL=https://api.line.me   # e2e ชี้ไปพอร์ตที่ไม่มีบริการ เพื่อไม่ยิง LINE จริง
 # Jobs
 CRON_SECRET=
 

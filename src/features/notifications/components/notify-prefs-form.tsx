@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,17 @@ export function NotifyPrefsForm({
         <span className="text-foreground font-medium break-all">{email}</span>) หรือ LINE ด้วยหรือไม่
       </p>
       {LINE_NOTE[line] ? (
-        <p className="bg-muted text-muted-foreground rounded-lg px-3 py-2 text-[12.5px]">{LINE_NOTE[line]}</p>
+        <p className="bg-muted text-muted-foreground rounded-lg px-3 py-2 text-[12.5px]">
+          {LINE_NOTE[line]}
+          {line === "unlinked" ? (
+            <>
+              {" "}·{" "}
+              <Link href="/settings/line" className="text-primary underline underline-offset-2">
+                เชื่อมต่อ LINE
+              </Link>
+            </>
+          ) : null}
+        </p>
       ) : null}
 
       <ul className="border-border bg-card divide-border divide-y rounded-xl border">

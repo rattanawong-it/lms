@@ -19,6 +19,8 @@ const LESSON = "แบบทดสอบบทที่ 1";
 const secretOf = (p: string) => `คำตอบลับ${p}${RUN_ID}`;
 
 test.describe.configure({ mode: "serial" });
+// เทสต์เตรียมคอร์ส/ตรวจงานเปิดหลายหน้าต่อกัน — งบ 30 วินาทีตั้งต้นไม่พอบนเครื่องพัฒนา (CLAUDE.md §6)
+test.slow();
 
 async function openCourse(page: Page, project: string) {
   await page.goto(teachSearch(courseTitle(project)));

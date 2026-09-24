@@ -30,6 +30,10 @@ const serverEnvSchema = z.object({
   // LINE Messaging API (M12) — ไม่บังคับ · ไม่กำหนด = ปิดช่องทาง LINE ทั้งระบบ
   LINE_CHANNEL_SECRET: z.string().optional(),
   LINE_CHANNEL_ACCESS_TOKEN: z.string().optional(),
+  // Basic ID ของ Official Account เช่น "@krirklms" — ใช้ทำลิงก์/QR เพิ่มเพื่อน
+  LINE_OA_BASIC_ID: z.string().optional(),
+  // ปลายทาง Messaging API — เปลี่ยนเฉพาะตอนทดสอบ (ชี้ไปที่ที่ไม่มีอยู่จริงเพื่อไม่ยิง LINE จริง)
+  LINE_API_URL: z.url().default("https://api.line.me"),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

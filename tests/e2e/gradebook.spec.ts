@@ -18,6 +18,8 @@ const MANUAL = "เข้าเรียน";
 const LESSON = "ส่งรายงานกลุ่ม";
 
 test.describe.configure({ mode: "serial" });
+// เทสต์เตรียมคอร์ส/ตรวจงานเปิดหลายหน้าต่อกัน — งบ 30 วินาทีตั้งต้นไม่พอบนเครื่องพัฒนา (CLAUDE.md §6)
+test.slow();
 
 async function openCourse(page: Page, project: string) {
   await page.goto(teachSearch(courseTitle(project)));

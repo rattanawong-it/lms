@@ -68,7 +68,7 @@
   · e2e ตรวจการส่งจริงที่ `phase-2.spec` (ได้ใบประกาศ → อีเมลใน Mailpit) และตรวจหน้าตั้งค่าที่ `notification-settings.spec`
 - พบระหว่างทำ: Mailpit ของโปรเจกต์อยู่พอร์ต `8026` (`8025` ในเครื่องนี้เป็น container อื่น) — แก้ `CLAUDE.md` §3 แล้ว
 
-### ขั้น 2 — M12 LINE: ผูกบัญชี + push (FR-12.1, 12.2, 12.4)
+### ขั้น 2 — M12 LINE: ผูกบัญชี + push (FR-12.1, 12.2, 12.4) — ✅ เสร็จ 2026-09-24 (webhook จำลอง)
 - หน้า `/settings/line` — ปุ่ม "เชื่อมต่อ LINE" สร้างรหัส 6 หลัก (เก็บใน `Verification` หมดอายุ 10 นาที, rate limit) + QR/ลิงก์เพิ่มเพื่อน OA
 - `/api/line/webhook` — ตรวจ `X-Line-Signature` (HMAC-SHA256 ด้วย channel secret, เทียบแบบ timing-safe) ก่อนอ่าน body
   | event | ทำอะไร |
@@ -81,6 +81,19 @@
 - ทำงานได้โดยไม่มี env LINE — หน้า `/settings/line` แจ้ง "ระบบยังไม่เปิดใช้ LINE" และ adapter ข้ามเงียบ ๆ
 - **Test:** unit ตรวจลายเซ็น (ถูก/ผิด/ไม่มี header) + ตัวจัดการ event · e2e ยิง webhook ที่เซ็นด้วย secret ทดสอบ → ผูกสำเร็จ → unfollow → หลุด
   · **สถาบันยังไม่มี LINE Official Account (Q2)** — ขั้นนี้ทำและทดสอบด้วย webhook จำลองเท่านั้น · ทดสอบกับ LINE จริงเมื่อได้ channel (ไม่ขวางการปิดเฟส)
+
+**สิ่งที่ทำจริง**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `src/lib/line/{signature,client}.ts` | ตรวจ/เซ็นลายเซ็น (HMAC-SHA256, timing-safe) · reply + multicast ด้วย `fetch` ไม่ throw |
+| `src/features/line/` | รหัสผูกบัญชี (ใช้ครั้งเดียว · ขอใหม่ = รหัสเดิมตาย) · ผูก/ยกเลิก + AuditLog `line.link`/`line.unlink` · ตัวจัดการ event · หน้า `/settings/line` (QR + ลิงก์เพิ่มเพื่อนเมื่อตั้ง `LINE_OA_BASIC_ID`) |
+| `src/app/api/line/webhook/route.ts` | 404 เมื่อไม่ได้เปิด LINE · 401 ลายเซ็นผิด · 200 ทุกครั้งที่ลายเซ็นถูก |
+| `src/lib/notify/channels/line.ts` | ช่องทาง LINE ของ `notify()` (ส่งพร้อมอีเมล ล้มแยกกัน) |
+
+- **เพิ่มจากแผน:** จำกัดการลองรหัส 5 ครั้ง/15 นาทีต่อบัญชี LINE — กันผู้โจมตีเดารหัสเพื่อผูก LINE ของตัวเองเข้ากับบัญชีคนอื่น
+- env ใหม่ `LINE_OA_BASIC_ID`, `LINE_API_URL` · Playwright โหลด `.env` เพื่อเซ็น webhook ด้วย secret เดียวกับ dev server (CHANGELOG #32)
+- e2e `line.spec` ใช้บัญชีผู้สอน (บัญชีผู้เรียนถูก `notification-settings.spec` ตรวจสถานะ LINE อยู่) · ข้ามทั้งไฟล์เมื่อไม่ได้เปิด LINE ใน `.env`
 
 ### ขั้น 3 — Cron แจ้งล่วงหน้า + เก็บกวาด (FR-12.3, NFR-05) — ✋ *จุดตรวจที่ 1*
 - `/api/cron/reminders` (ทุกชั่วโมง) — งานที่ `dueAt` อยู่ในอีก ≤ 24 ชม. แจ้งผู้เรียนที่ยังไม่ส่ง (`DUE_SOON`)

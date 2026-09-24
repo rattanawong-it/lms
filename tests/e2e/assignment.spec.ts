@@ -20,6 +20,8 @@ const RETURN_NOTE = "ขาดบทสรุปท้ายรายงาน �
 const PDF = { name: "รายงาน.pdf", mimeType: "application/pdf", buffer: Buffer.from("%PDF-1.4\n% e2e\n%%EOF\n") };
 
 test.describe.configure({ mode: "serial" });
+// เทสต์เตรียมคอร์ส/ตรวจงานเปิดหลายหน้าต่อกัน — งบ 30 วินาทีตั้งต้นไม่พอบนเครื่องพัฒนา (CLAUDE.md §6)
+test.slow();
 
 async function openCourse(page: Page, project: string) {
   await page.goto(teachSearch(courseTitle(project)));
