@@ -190,6 +190,8 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **`server-only` หลุดเข้า browser bundle** → build ล้มทั้งระบบ · เช็คว่าไฟล์ที่ client import ไม่ลากเอา `db`/`next/headers` ไปด้วย
 - **Playwright ติด rate limit ของตัวเอง** → โควตา login 5 ครั้ง/15 นาที (FR-01.7) ใช้ร่วมกันทั้งชุดเทสต์
   ระหว่างพัฒนาใช้ `pnpm test:e2e --no-deps` เพื่อใช้ session ที่เก็บไว้ใน `tests/e2e/.auth`
+  · setup ล็อกอิน 4 บัญชี (student/instructor/admin/deptAdmin) + เทสต์ล็อกอินจริง 1 = **เต็มโควตาพอดี** เพิ่มบัญชีทดสอบอีกไม่ได้
+  · เทสต์ที่เปิดหลายหน้าต่อกันใส่ `test.slow()` — งบ 30 วินาทีตั้งต้นไม่พอเมื่อเครื่องหน่วยความจำตึง
 - **MinIO ต้องใช้ path-style** (`S3_FORCE_PATH_STYLE=true`) ส่วน R2 ไม่ต้อง — ต่างกันแค่ env
 - **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
 - **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว

@@ -66,6 +66,8 @@ test.describe("ผู้สอนเตรียมคอร์ส", () => {
   });
 
   test("แบบทดสอบ + งาน + น้ำหนัก 50/50 + คะแนนขั้นต่ำ 60 + แม่แบบใบประกาศ", async ({ page }, info) => {
+    // เปิด 8 หน้าต่อกันในเทสต์เดียว — เกินงบ 30 วินาทีตั้งต้นเมื่อเครื่องพัฒนาหน่วยความจำตึง
+    test.slow();
     const p = info.project.name;
     const coursePath = await openCourse(page, p);
 
@@ -202,6 +204,10 @@ test.describe("เส้นทางปิดเฟส", () => {
     await expect(
       page.locator("[data-notification]").filter({ hasText: `ได้รับใบประกาศ “${courseTitle(p)}”` }),
     ).toHaveCount(1, { timeout: 30_000 });
+    // แจ้งเตือนเรียนจบต้องระบุชื่อคอร์ส (งานค้างจาก Phase 2 · phase-3-plan ขั้น 0)
+    await expect(
+      page.locator("[data-notification]").filter({ hasText: `ยินดีด้วย คุณเรียนจบคอร์ส “${courseTitle(p)}” แล้ว` }),
+    ).toHaveCount(1);
 
     await page.goto("/certificates");
     const card = page.locator("[data-certificate]").filter({ hasText: courseTitle(p) });

@@ -168,10 +168,11 @@ export async function progressTargetFor(userId: string, courseId: string): Promi
 export async function notifyCourseCompleted(result: ProgressResult, userId: string): Promise<void> {
   if (!result.justCompleted) return;
   await issueCertificate(userId, result.courseId);
+  const course = await db.course.findUnique({ where: { id: result.courseId }, select: { title: true } });
   await notify({
     userIds: [userId],
     type: NotificationType.ENROLLED,
-    title: "ยินดีด้วย คุณเรียนจบคอร์สแล้ว",
+    title: course ? `ยินดีด้วย คุณเรียนจบคอร์ส “${course.title}” แล้ว` : "ยินดีด้วย คุณเรียนจบคอร์สแล้ว",
     link: "/my-courses",
   });
 }

@@ -66,6 +66,40 @@ test.describe("ผู้ดูแลระบบ", () => {
   });
 });
 
+test.describe("ผู้ดูแลคณะ (FR-09.7)", () => {
+  test.use({ storageState: STATE_FILE.deptAdmin });
+
+  test("เห็นเฉพาะคณะของตัวเอง · เปิดเกณฑ์ทั้งระบบไม่ได้", async ({ page }) => {
+    await page.goto("/admin/score-curve");
+    await expect(page.getByRole("heading", { name: "เกณฑ์ของคณะวิทยาศาสตร์และเทคโนโลยี" })).toBeVisible({
+      timeout: 30_000,
+    });
+    // มีขอบเขตเดียว จึงไม่มีตัวเลือกขอบเขต
+    await expect(page.getByLabel("ขอบเขต")).toHaveCount(0);
+
+    // forbidden() เรียกในหน้า (ไม่ใช่ layout) และหน้านี้มี loading.tsx — สถานะเป็น 200 จึงตรวจจากหน้า 403 แทน (CLAUDE.md §6)
+    await page.goto("/admin/score-curve?scope=system");
+    await expect(page.getByRole("heading", { name: "ไม่มีสิทธิ์เข้าถึงหน้านี้" })).toBeVisible();
+  });
+
+  test("ตั้งเกณฑ์ของคณะเองแล้วกลับไปใช้เกณฑ์ชั้นบนได้", async ({ page }, testInfo) => {
+    // เขียนแถว ScoreCurve ของคณะจริง — รันโปรเจกต์เดียวไม่ให้ desktop/mobile แย่งสถานะกัน
+    test.skip(testInfo.project.name !== "desktop", "เขียนข้อมูลร่วม รันครั้งเดียวพอ");
+
+    await page.goto("/admin/score-curve");
+    const form = page.locator("[data-score-curve]");
+    // บันทึกค่าเดิมที่รับมาจากชั้นบน — เกรดของคอร์สในคณะไม่เปลี่ยน
+    await page.getByRole("button", { name: "บันทึกเกณฑ์" }).click();
+    await expect(page.getByText("บันทึกเกณฑ์คะแนนแล้ว").first()).toBeVisible({ timeout: 15_000 });
+    await page.reload();
+    await expect(form.getByText("คณะตั้งเกณฑ์เอง")).toBeVisible();
+    await expect(page.getByText(/แก้ล่าสุด .* โดย ผู้ดูแลคณะวิทยาศาสตร์/)).toBeVisible();
+
+    await page.getByRole("button", { name: "กลับไปใช้เกณฑ์ชั้นบน" }).click();
+    await expect(form.getByText(/^ใช้.*อยู่$/)).toBeVisible({ timeout: 15_000 });
+  });
+});
+
 test("ผู้เรียนและผู้สอนเข้าหน้าเกณฑ์กลางไม่ได้", async ({ browser }) => {
   for (const account of ["student", "instructor"] as const) {
     const context = await browser.newContext({ storageState: STATE_FILE[account] });

@@ -8,6 +8,7 @@ export const ACCOUNTS = {
   student: { email: "student@krirk.ac.th", password: PASSWORD, home: /\/dashboard/ },
   instructor: { email: "instructor@krirk.ac.th", password: PASSWORD, home: /\/dashboard/ },
   admin: { email: "admin@krirk.ac.th", password: PASSWORD, home: /\/dashboard/ },
+  deptAdmin: { email: "dept-admin@krirk.ac.th", password: PASSWORD, home: /\/dashboard/ },
 } as const;
 
 export type AccountName = keyof typeof ACCOUNTS;
@@ -16,6 +17,7 @@ export const STATE_FILE: Record<AccountName, string> = {
   student: "tests/e2e/.auth/student.json",
   instructor: "tests/e2e/.auth/instructor.json",
   admin: "tests/e2e/.auth/admin.json",
+  deptAdmin: "tests/e2e/.auth/dept-admin.json",
 };
 
 /** ผู้เรียนเป็น session ตั้งต้นของทุก project */

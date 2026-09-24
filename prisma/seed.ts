@@ -235,6 +235,16 @@ async function main() {
     externalId: "EMP-0001",
   });
 
+  // ผู้ดูแลคณะวิทยาศาสตร์ฯ — ทดสอบสิทธิ์ระดับคณะ (Score Curve รายคณะ, ประกาศระดับคณะ, แดชบอร์ดคณะ)
+  await upsertUser({
+    email: "dept-admin@krirk.ac.th",
+    name: "ผู้ดูแลคณะวิทยาศาสตร์",
+    role: Role.DEPT_ADMIN,
+    password: ADMIN_PASSWORD,
+    departmentId: sci.id,
+    externalId: "EMP-0002",
+  });
+
   const student = await upsertUser({
     email: "student@krirk.ac.th",
     name: "นักศึกษาตัวอย่าง",
@@ -656,6 +666,7 @@ async function main() {
   console.log("seed เสร็จแล้ว:");
   console.log(`  คณะ/หน่วยงาน ${departments.length} รายการ · หมวดหมู่ ${categories.length} รายการ`);
   console.log(`  Super Admin : ${admin.email}`);
+  console.log(`  ผู้ดูแลคณะ   : dept-admin@krirk.ac.th`);
   console.log(`  ผู้สอน      : ${instructor.email}`);
   console.log(`  ผู้เรียน     : ${student.email}`);
   console.log(`  คอร์สตัวอย่าง: ${course.slug} และอีก ${moreCourses.length} คอร์ส · ${demo.slug} (แบบทดสอบ 6 ชนิด + งาน)`);
