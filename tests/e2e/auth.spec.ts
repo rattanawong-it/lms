@@ -37,6 +37,8 @@ test.describe("ผู้เรียนที่ล็อกอินแล้�
   test("เข้าหน้าผู้ดูแลไม่ได้ (deny by default)", async ({ page }) => {
     const response = await page.goto("/admin");
     expect(response?.status()).toBe(403);
+    // หน้า 403 ต้องเป็นภาษาไทย (app/forbidden.tsx) ไม่ใช่หน้าตั้งต้นของ Next
+    await expect(page.getByRole("heading", { name: "ไม่มีสิทธิ์เข้าถึงหน้านี้" })).toBeVisible();
   });
 
   test("เข้าห้องผู้สอนไม่ได้", async ({ page }) => {

@@ -1,0 +1,32 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ShieldX } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export const metadata: Metadata = { title: "ไม่มีสิทธิ์เข้าถึง" };
+
+/** หน้า 403 ของทั้งระบบ — แสดงเมื่อเรียก forbidden() (ไม่มีไฟล์นี้ Next จะใช้หน้าภาษาอังกฤษ) */
+export default function Forbidden() {
+  return (
+    <main className="flex flex-1 items-center justify-center px-4 py-20">
+      <div className="max-w-[420px] text-center">
+        <span className="bg-muted text-muted-foreground mx-auto mb-5 flex size-14 items-center justify-center rounded-2xl">
+          <ShieldX className="size-7" />
+        </span>
+        <h1 className="text-[24px] font-bold tracking-[-0.018em]">ไม่มีสิทธิ์เข้าถึงหน้านี้</h1>
+        <p className="text-muted-foreground mt-2 text-[13.5px] leading-relaxed">
+          บัญชีของคุณไม่มีสิทธิ์ใช้งานส่วนนี้ หากคิดว่าเป็นความผิดพลาด
+          โปรดติดต่อผู้ดูแลระบบของคณะ
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Button asChild>
+            <Link href="/dashboard">ไปหน้าหลัก</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/courses">ไปที่คลังคอร์ส</Link>
+          </Button>
+        </div>
+      </div>
+    </main>
+  );
+}
