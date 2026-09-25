@@ -5,7 +5,7 @@ import type { PricingFixture } from "./support/pricing-fixture";
 
 /**
  * M18 · FR-18.1 ส่วนแรก — ตั้งราคาและแสดงราคา (phase-4-plan ขั้น 1)
- * เครื่องทดสอบยังไม่ตั้ง PAYMENT_PROVIDER → คอร์สที่มีราคาแสดง "ยังซื้อไม่ได้" และลงทะเบียนฟรีไม่ได้
+ * เครื่องทดสอบใช้ผู้ให้บริการจำลอง (PAYMENT_PROVIDER=mock) → คอร์สที่มีราคามีปุ่มซื้อแทนปุ่มลงทะเบียนฟรี
  * คอร์สตัวอย่าง `excel-for-work` (990 บาท) มาจาก seed · คอร์สของผู้สอนเตรียมตรงใน DB แยกต่อ project
  */
 const RUN_ID = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
@@ -27,7 +27,7 @@ test("เตรียมคอร์ส", async ({}, info) => {
 test.describe("ผู้เยี่ยมชม", () => {
   test.use({ storageState: ANONYMOUS });
 
-  test("คลังคอร์สแสดงราคา/ฟรี · หน้าคอร์สที่มีราคาไม่มีปุ่มลงทะเบียน", async ({ page }) => {
+  test("คลังคอร์สแสดงราคา/ฟรี · หน้าคอร์สที่มีราคาไม่มีปุ่มลงทะเบียน", async ({ page }, info) => {
     await page.goto(`/courses?q=${encodeURIComponent("Excel สำหรับการทำงาน")}`);
     const card = page.getByRole("article").filter({ hasText: "Excel สำหรับการทำงาน" });
     await expect(card.locator("[data-price]")).toHaveText("฿990", { timeout: 30_000 });
@@ -37,18 +37,22 @@ test.describe("ผู้เยี่ยมชม", () => {
 
     await page.goto("/courses/excel-for-work");
     await expect(page.locator("[data-course-price]")).toHaveText("฿990");
-    await expect(page.getByRole("button", { name: "ยังซื้อไม่ได้" })).toBeDisabled();
-    await expect(page.getByText("ยังไม่เปิดขายออนไลน์")).toBeVisible();
+    await expect(page.getByRole("link", { name: "เข้าสู่ระบบเพื่อซื้อคอร์ส" })).toHaveAttribute("href", /\/login\?next=/);
     await expect(page.getByRole("link", { name: "เข้าสู่ระบบเพื่อลงทะเบียน" })).toHaveCount(0);
+
+    // มีราคาแต่รับผ่านการอนุมัติ → ซื้อเองไม่ได้
+    await page.goto(`/courses/${fixtures.get(info.project.name)!.approval.slug}`);
+    await expect(page.getByRole("button", { name: "ยังซื้อไม่ได้" })).toBeDisabled();
+    await expect(page.getByText("รับผู้เรียนผ่านผู้สอน/ผู้ดูแล")).toBeVisible();
   });
 });
 
 test.describe("ผู้เรียน", () => {
   test.use({ storageState: STATE_FILE.student });
 
-  test("คอร์สที่มีราคาไม่มีปุ่มลงทะเบียนฟรี", async ({ page }) => {
+  test("คอร์สที่มีราคาไม่มีปุ่มลงทะเบียนฟรี มีแต่ปุ่มซื้อ", async ({ page }) => {
     await page.goto("/courses/excel-for-work");
-    await expect(page.locator("[data-purchase=not-for-sale]")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("link", { name: /ซื้อคอร์ส ฿990/ })).toHaveAttribute("href", /^\/checkout\//, { timeout: 30_000 });
     await expect(page.getByRole("button", { name: "ลงทะเบียนเรียน" })).toHaveCount(0);
   });
 });

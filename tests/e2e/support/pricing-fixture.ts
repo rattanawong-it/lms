@@ -7,25 +7,25 @@ config({ quiet: true });
 
 /**
  * ข้อมูลตั้งต้นของ `pricing.spec.ts` — รันด้วย tsx แยก process (ดู `runFixture()` ใน helpers.ts)
- * คอร์สสาธารณะของ instructor 3 สถานะ: ร่าง (ผู้สอนตั้งราคาเองได้) · รออนุมัติ 1,290 บาท · เผยแพร่ 990 บาท (ล็อกราคา)
+ * คอร์สสาธารณะของ instructor: ร่าง (ผู้สอนตั้งราคาเองได้) · รออนุมัติ 1,290 บาท · เผยแพร่ 990 บาท (ล็อกราคา) · เผยแพร่แบบขออนุมัติ 500 บาท (ซื้อไม่ได้)
  */
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
 type SetupArgs = { tag: string; instructorEmail: string };
-export type PricingFixture = { draft: Course; pending: Course; published: Course };
+export type PricingFixture = { draft: Course; pending: Course; published: Course; approval: Course };
 type Course = { id: string; slug: string; title: string };
 
 const actions = {
   async setup(a: SetupArgs): Promise<PricingFixture> {
     const instructor = await db.user.findUniqueOrThrow({ where: { email: a.instructorEmail } });
-    const make = async (kind: string, status: CourseStatus, price: string | null): Promise<Course> => {
+    const make = async (kind: string, status: CourseStatus, price: string | null, enrollPolicy: EnrollPolicy = EnrollPolicy.OPEN): Promise<Course> => {
       const c = await db.course.create({
         data: {
           title: `คอร์สราคา ${kind} ${a.tag}`,
           slug: `e2e-price-${kind}-${a.tag}`,
           status,
           visibility: Visibility.PUBLIC,
-          enrollPolicy: EnrollPolicy.OPEN,
+          enrollPolicy,
           price,
           publishedAt: status === CourseStatus.PUBLISHED ? new Date() : null,
           departmentId: instructor.departmentId,
@@ -38,11 +38,13 @@ const actions = {
       draft: await make("draft", CourseStatus.DRAFT, null),
       pending: await make("pending", CourseStatus.PENDING_REVIEW, "1290.00"),
       published: await make("published", CourseStatus.PUBLISHED, "990.00"),
+      // มีราคาแต่รับผ่านการอนุมัติ → ซื้อเองไม่ได้
+      approval: await make("approval", CourseStatus.PUBLISHED, "500.00", EnrollPolicy.APPROVAL),
     };
   },
 
   async cleanup(f: PricingFixture) {
-    await db.course.deleteMany({ where: { id: { in: [f.draft.id, f.pending.id, f.published.id] } } });
+    await db.course.deleteMany({ where: { id: { in: [f.draft.id, f.pending.id, f.published.id, f.approval.id] } } });
     return { ok: true };
   },
 };

@@ -8,7 +8,7 @@ config({ quiet: true });
  * ต้องเปิด dev server ไว้ และตั้ง CRON_SECRET ใน .env
  * ตอน deploy ให้ scheduler (Vercel Cron / crontab) เรียก URL เดียวกันพร้อม header เดียวกัน
  */
-const JOBS = ["reminders", "live", "cleanup"];
+const JOBS = ["reminders", "live", "cleanup", "orders"];
 const job = process.argv[2];
 const secret = process.env.CRON_SECRET;
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";

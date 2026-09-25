@@ -58,7 +58,7 @@
 · **ปรับจากแผน:** คอร์สที่มีราคาแต่รับสมัครแบบขออนุมัติ/เชิญเท่านั้นไม่เปิดให้ซื้อ (ให้ผู้ดูแลเพิ่มผู้เรียนเอง) · e2e ข้อ "ยิง action ตรง" ตรวจด้วย unit ของ `isPaidCourse()` + การไม่มีปุ่ม (Playwright เรียก Server Action ตรงไม่ได้)
 · unit `pricing.test.ts` · e2e `pricing.spec.ts` (support/pricing-fixture)
 
-### ขั้น 2 — สั่งซื้อและชำระเงิน (FR-18.1) — ✋ *จุดตรวจที่ 1*
+### ขั้น 2 — สั่งซื้อและชำระเงิน (FR-18.1) — 🔸 เสร็จกับผู้ให้บริการจำลอง 2026-09-25 · Omise รอ sandbox · ✋ *จุดตรวจที่ 1*
 - `/checkout/[courseId]` สรุปรายการ → สร้าง `Order` PENDING (ราคาจาก DB ณ ตอนนั้น) → ส่งไปหน้าชำระของผู้ให้บริการ (บัตร + PromptPay)
 - **ยืนยันผลที่ webhook เท่านั้น** `/api/payment/webhook/[provider]`
   1. ตรวจลายเซ็น → 2. ดึงสถานะจาก API ของผู้ให้บริการซ้ำ (ไม่เชื่อ payload) → 3. บันทึก `PaymentEvent` (กันประมวลผลซ้ำด้วย unique event id)
@@ -69,6 +69,21 @@
 - `/orders` — ประวัติการสั่งซื้อของฉัน
 - **Test:** unit คำนวณยอด/สตางค์ · ตรวจลายเซ็น · idempotency (webhook ซ้ำ 2 ครั้ง = ลงทะเบียนครั้งเดียว) · e2e ผ่าน mock provider: ซื้อ → เข้าเรียนได้ · จ่ายไม่สำเร็จ → ยังเข้าไม่ได้
 - ✋ **จุดตรวจที่ 1:** ทดสอบกับ sandbox ของผู้ให้บริการจริง (บัตรทดสอบ + PromptPay ทดสอบ) บน Chrome
+
+**สิ่งที่ทำจริง**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| migration `20260925170000_commerce_orders` | S1 คอลัมน์ `Order` · S2 partial unique `Order_one_pending_per_course` · S3 `Coupon.id` + CHECK · S4 `PaymentEvent` · S5 `DocumentCounter` · CHECK ยอดเงิน ≥ 0 |
+| `features/commerce/lib/settle.ts` | `settleOrder()` **จุดเดียวที่เปลี่ยนคำสั่งซื้อเป็น PAID** — ถาม `retrieve()` · ตรวจ orderId + ยอดสตางค์ตรง · `updateMany` มีเงื่อนไข (idempotent) + เปิดสิทธิ์ `PURCHASE` ใน transaction เดียว · FAILED → PAID ได้ (จ่ายหลังหมดอายุ) |
+| `features/commerce/lib/webhook.ts` · `/api/payment/webhook/[provider]` | ตรวจผู้ให้บริการ + ลายเซ็น → `PaymentEvent` (ซ้ำตอบ "duplicate") → `settleOrder()` → `processedAt` · ล้ม = 500 ให้ gateway ยิงซ้ำ |
+| `features/commerce/actions.ts` | `startCheckout()` (ราคาจาก DB · คำสั่งซื้อค้างเดิมถามผลก่อนแล้วปิดทิ้ง) · `checkOrderStatus()` · `payWithMock()` (หน้าจำลองส่ง webhook ที่เซ็นแล้วเข้าทางเดียวกับของจริง) |
+| หน้า | `/checkout/[courseId]` · `/checkout/mock/[orderId]` (เฉพาะ mock) · `/orders` · `/orders/[orderId]` (ถามผลซ้ำทุก 3 วินาทีระหว่างรอ) · เมนูผู้ใช้ "คำสั่งซื้อของฉัน" |
+| `features/commerce/lib/expire.ts` · `/api/cron/orders` | ทุก 15 นาที ปิดคำสั่งซื้อหมดอายุ (ถามผลก่อน) |
+
+- **ปรับจากแผน (CHANGELOG #39):** (1) cron ปิดคำสั่งซื้อเป็นงานใหม่ `orders` (ทุก 15 นาที) แทนการรวมใน `cleanup` ที่รันวันละครั้ง · (2) ตัวเชื่อม Omise เขียนตอนได้ sandbox (จุดตรวจที่ 1) — ต้องใช้ key จริงและหน้า token บัตร/QR PromptPay ที่ทดสอบไม่ได้โดยไม่มีบัญชี · (3) PDPA export รวมคำสั่งซื้อ
+- `.env` เครื่องพัฒนา + CI ตั้ง `PAYMENT_PROVIDER=mock`, `PAYMENT_WEBHOOK_SECRET`, `ALLOW_MOCK_PAYMENT=true`
+- e2e `checkout.spec` (support/checkout-fixture): จ่ายไม่สำเร็จ → ไม่มีสิทธิ์ · ทิ้งไว้หมดอายุ → cron ปิด · PromptPay สำเร็จ → เรียนได้ + แจ้งเตือน · webhook ลายเซ็นปลอม 400 / ผู้ให้บริการอื่น 404 / ยิงซ้ำ "duplicate" และเปิดสิทธิ์ครั้งเดียว · หน้าจำลอง ref ผิด 404
 
 ### ขั้น 3 — คูปองส่วนลด (FR-18.2)
 - `/admin/coupons` (สิทธิ์ตาม Q3) — สร้าง/ปิดใช้ · ลดเป็น % หรือบาท · จำกัดจำนวนครั้ง · วันเริ่ม/หมดอายุ · ทุกคอร์สหรือคอร์สเดียว

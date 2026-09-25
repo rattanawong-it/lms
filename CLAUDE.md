@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–1 เสร็จ (payment adapter · ตั้งราคา) · ถัดไปขั้น 2 สั่งซื้อ/ชำระเงิน · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–2 เสร็จ (adapter · ราคา · ชำระเงินกับ mock) · ✋ จุดตรวจที่ 1 รอ sandbox Omise · ขั้น 3 คูปองเริ่มได้ · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -47,7 +47,7 @@ pnpm test           # vitest run  (tests/unit)
 pnpm test:e2e --workers=2   # playwright (tests/e2e) — ค่าเริ่มต้น 5 workers หนักเกินเครื่องพัฒนา
 npx next typegen    # สร้าง type ของ route ใหม่ ก่อน typecheck จะผ่าน
 
-pnpm cron reminders # เรียก /api/cron/{reminders|live|cleanup} ของเซิร์ฟเวอร์ที่เปิดอยู่ (ต้องตั้ง CRON_SECRET)
+pnpm cron reminders # เรียก /api/cron/{reminders|live|cleanup|orders} ของเซิร์ฟเวอร์ที่เปิดอยู่ (ต้องตั้ง CRON_SECRET)
 
 pnpm db:migrate     # prisma migrate dev
 pnpm db:generate    # prisma generate → src/generated/prisma
@@ -87,6 +87,7 @@ src/
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
   app/(learn)/learn/[courseId]/qa[/threadId]          ถาม-ตอบ (M13) · กล่องคำถามผู้สอน `/teach/courses/[id]/qa`
   app/(learn)/settings/privacy · api/privacy/export   PDPA ของผู้ใช้ (M17) · ผู้ดูแล `/admin/{audit,settings,deletion-requests}`
+  app/(learn)/{checkout,orders} · api/payment/webhook  ซื้อคอร์ส (M18) — webhook พิสูจน์ตัวด้วยลายเซ็นเท่านั้น ไม่มี session
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -192,7 +193,9 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 
 **ขายคอร์ส (M18)** — "คอร์สนี้ต้องซื้อไหม" ถาม `isPaidCourse()` จาก `features/commerce/lib/pricing.ts` เท่านั้น (PUBLIC + ราคา > 0 · INTERNAL ฟรีเสมอ)
 · เงินคำนวณเป็นสตางค์ด้วย `toSatang()`/`fromSatang()` (`lib/payment/money.ts`) ห้ามคูณ float · แสดงผลด้วย `formatBaht()`
-· ทางเข้าคอร์สที่มีราคามีแค่ชำระสำเร็จ (ขั้น 2) หรือผู้ดูแลเพิ่มให้ — `enroll()` ปฏิเสธเสมอ · ผู้สอนแก้ราคาได้เฉพาะคอร์สร่าง (`canEditPrice()`)
+· ทางเข้าคอร์สที่มีราคามีแค่ชำระสำเร็จหรือผู้ดูแลเพิ่มให้ — `enroll()` ปฏิเสธเสมอ · ผู้สอนแก้ราคาได้เฉพาะคอร์สร่าง (`canEditPrice()`)
+· **คำสั่งซื้อเป็น PAID ได้ที่ `settleOrder()` (`features/commerce/lib/settle.ts`) จุดเดียว** — ถามสถานะจากผู้ให้บริการเสมอ ห้ามเชื่อ payload/query string · idempotent
+· webhook เข้าทาง `handlePaymentWebhook()` (บันทึก `PaymentEvent` กันซ้ำ) · หน้าจำลอง `/checkout/mock` ใช้ทางเดียวกัน · cron `orders` ปิดคำสั่งซื้อหมดอายุ
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ

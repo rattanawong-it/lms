@@ -986,10 +986,10 @@ flowchart LR
 |---|---|---|
 | `(public)` | `/`, `/courses`, `/courses/[slug]`, `/verify/[code]` | ทุกคน |
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
-| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/learn/[courseId]/qa`, `/learn/[courseId]/qa/[threadId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
+| `(learn)` | `/checkout/[courseId]`, `/checkout/mock/[orderId]` (เฉพาะ mock), `/orders[/orderId]` (M18), `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/learn/[courseId]/qa`, `/learn/[courseId]/qa/[threadId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
 | `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,reviews,announcements,reports,screen-events,audit,settings,deletion-requests,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN — audit/settings/deletion-requests เป็น SUPER_ADMIN) |
-| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup}`, `/api/privacy/export`, `/api/health` | ตามแต่ละ endpoint |
+| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup,orders}`, `/api/privacy/export`, `/api/payment/webhook/[provider]` (M18 · ลายเซ็นเท่านั้น), `/api/health` | ตามแต่ละ endpoint |
 
 ---
 

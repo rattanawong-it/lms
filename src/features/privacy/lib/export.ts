@@ -21,6 +21,7 @@ export async function buildPersonalDataExport(userId: string) {
     reviews,
     notifications,
     lineLink,
+    orders,
   ] = await Promise.all([
     db.user.findUniqueOrThrow({
       where: { id: userId },
@@ -118,6 +119,28 @@ export async function buildPersonalDataExport(userId: string) {
       select: { type: true, title: true, body: true, link: true, readAt: true, createdAt: true },
     }),
     db.lineLink.findUnique({ where: { userId }, select: { linkedAt: true } }),
+    // M18 — คำสั่งซื้อ (ไม่มีรหัสอ้างอิงของผู้ให้บริการ — เป็นข้อมูลภายในของ gateway)
+    db.order.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        subtotal: true,
+        discount: true,
+        amount: true,
+        currency: true,
+        couponCode: true,
+        status: true,
+        method: true,
+        createdAt: true,
+        paidAt: true,
+        refundedAt: true,
+        refundAmount: true,
+        receiptNo: true,
+        billing: true,
+        course: { select: { title: true } },
+      },
+    }),
   ]);
 
   const { accounts, sessions, department, ...rest } = profile;
@@ -165,5 +188,13 @@ export async function buildPersonalDataExport(userId: string) {
     },
     reviews: reviews.map(({ course, ...r }) => ({ course: course.title, ...r })),
     notifications,
+    orders: orders.map(({ course, subtotal, discount, amount, refundAmount, ...o }) => ({
+      course: course.title,
+      ...o,
+      subtotal: subtotal.toString(),
+      discount: discount.toString(),
+      amount: amount.toString(),
+      refundAmount: refundAmount?.toString() ?? null,
+    })),
   };
 }

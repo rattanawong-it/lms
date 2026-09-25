@@ -294,6 +294,7 @@ model Course {
   threads       Thread[]
   reviews       Review[]
   orders        Order[]
+  coupons       Coupon[]
 
   @@index([status, visibility])
   @@index([departmentId])
@@ -734,29 +735,78 @@ model SystemSetting {
   updatedAt DateTime @updatedAt
 }
 
-// ───────────── Commerce (เฟส 2 — สร้างตารางไว้ก่อน) ─────────────
+// ───────────── Commerce (M18 · Phase 4 — CHANGELOG #38) ─────────────
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  courseId    String
-  user        User        @relation(fields: [userId], references: [id])
-  course      Course      @relation(fields: [courseId], references: [id])
-  amount      Decimal     @db.Decimal(10, 2)
-  discount    Decimal     @default(0) @db.Decimal(10, 2)
-  couponCode  String?
-  status      OrderStatus @default(PENDING)
-  provider    String?
-  providerRef String?     @unique
-  paidAt      DateTime?
-  createdAt   DateTime    @default(now())
+  id           String      @id @default(cuid())
+  userId       String
+  courseId     String
+  user         User        @relation(fields: [userId], references: [id])
+  course       Course      @relation(fields: [courseId], references: [id])
+  // ยอดล็อกตอนสร้างคำสั่งซื้อ (Q7) · amount = subtotal - discount = ยอดที่ gateway เก็บจริง
+  subtotal     Decimal     @default(0) @db.Decimal(10, 2)
+  discount     Decimal     @default(0) @db.Decimal(10, 2)
+  amount       Decimal     @db.Decimal(10, 2)
+  currency     String      @default("THB")
+  couponId     String?
+  coupon       Coupon?     @relation(fields: [couponId], references: [id])
+  couponCode   String?     // สำเนารหัสตอนใช้ — คูปองถูกแก้/ปิดภายหลังได้
+  status       OrderStatus @default(PENDING)
+  provider     String?
+  providerRef  String?     @unique
+  method       String?     // card | promptpay
+  failureReason String?
+  expiresAt    DateTime?   // PENDING หมดอายุ 30 นาที (QR PromptPay) → cron ปิดเป็น FAILED
+  paidAt       DateTime?
+  refundedAt   DateTime?
+  refundAmount Decimal?    @db.Decimal(10, 2)
+  refundReason String?
+  receiptNo    String?     @unique // ขั้น 4 · เลขต่อเนื่องจาก DocumentCounter
+  billing      Json?       // ข้อมูลผู้ซื้อบนใบเสร็จ (Q2)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  events       PaymentEvent[]
+  // S2 — PENDING ได้ไม่เกิน 1 ต่อ [userId, courseId] เป็น partial unique index ใน migration (Prisma ประกาศไม่ได้)
+  @@index([userId, createdAt])
+  @@index([courseId, status])
+  @@index([status, createdAt])
 }
 
+/// FR-18.2 คูปองส่วนลด · มีอย่างใดอย่างหนึ่งระหว่าง percentOff (1–100) กับ amountOff (> 0) — CHECK ใน migration
 model Coupon {
-  code        String    @id
+  id          String    @id @default(cuid())
+  code        String    @unique // เก็บเป็นตัวพิมพ์ใหญ่เสมอ
   percentOff  Int?
   amountOff   Decimal?  @db.Decimal(10, 2)
   maxUses     Int?
   usedCount   Int       @default(0)
+  validFrom   DateTime?
   validUntil  DateTime?
-  courseId    String?
+  active      Boolean   @default(true)
+  courseId    String?   // null = ใช้ได้ทุกคอร์ส
+  course      Course?   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  orders      Order[]
+}
+
+/// FR-18.1 webhook ที่รับแล้ว — กันประมวลผลซ้ำ (eventId unique) และเก็บเป็นหลักฐานการชำระ
+model PaymentEvent {
+  id          String    @id @default(cuid())
+  provider    String
+  eventId     String
+  type        String
+  orderId     String?
+  order       Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
+  @@unique([provider, eventId])
+  @@index([orderId])
+}
+
+/// เลขเอกสารต่อเนื่อง (เช่น key "receipt:2569") — เพิ่มค่าใน transaction เดียวกับการชำระ ไม่ข้าม/ไม่ซ้ำ
+model DocumentCounter {
+  key   String @id
+  value Int    @default(0)
 }

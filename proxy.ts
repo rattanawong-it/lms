@@ -16,6 +16,8 @@ const PROTECTED_PREFIXES = [
   "/certificates",
   "/notifications",
   "/settings",
+  "/checkout",
+  "/orders",
   "/teach",
   "/admin",
 ];

@@ -35,6 +35,10 @@ jobs:
       BETTER_AUTH_SECRET: ci-secret-ci-secret-ci-secret-32
       EMAIL_PROVIDER: smtp
       SMTP_URL: smtp://localhost:1025
+      # M18 — e2e ซื้อคอร์สผ่านผู้ให้บริการจำลอง (next start เป็น production จึงต้องอนุญาต mock เอง)
+      PAYMENT_PROVIDER: mock
+      PAYMENT_WEBHOOK_SECRET: ci-payment-webhook-secret-32chars
+      ALLOW_MOCK_PAYMENT: "true"
 
     steps:
       - uses: actions/checkout@v4
