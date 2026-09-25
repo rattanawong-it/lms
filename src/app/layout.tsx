@@ -4,6 +4,8 @@ import { Anuphan, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { BrandingProvider } from "@/components/brand/branding-provider";
+import { getBranding } from "@/features/settings/queries";
 import "./globals.css";
 
 const inter = Inter({
@@ -25,20 +27,24 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "KRIRK LMS · ระบบจัดการเรียนรู้ออนไลน์ มหาวิทยาลัยเกริก",
-    template: "%s · KRIRK LMS",
-  },
-  description:
-    "ระบบบริหารจัดการการเรียนรู้ของมหาวิทยาลัยเกริก สำหรับนักศึกษา บุคลากร และผู้เรียนทั่วไป",
-  applicationName: "KRIRK LMS",
-  openGraph: {
-    type: "website",
-    locale: "th_TH",
-    siteName: "KRIRK LMS",
-  },
-};
+/** ชื่อระบบมาจากหน้าตั้งค่าระบบ (FR-17.3) · ค่าตั้งต้น "KRIRK LMS" */
+export async function generateMetadata(): Promise<Metadata> {
+  const { name } = await getBranding();
+  return {
+    title: {
+      default: `${name} · ระบบจัดการเรียนรู้ออนไลน์ มหาวิทยาลัยเกริก`,
+      template: `%s · ${name}`,
+    },
+    description:
+      "ระบบบริหารจัดการการเรียนรู้ของมหาวิทยาลัยเกริก สำหรับนักศึกษา บุคลากร และผู้เรียนทั่วไป",
+    applicationName: name,
+    openGraph: {
+      type: "website",
+      locale: "th_TH",
+      siteName: name,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -53,6 +59,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   // next-themes แทรก <script> ของตัวเองเพื่อกันจอกะพริบตอนโหลด
   // สคริปต์นั้นไม่ได้ผ่าน Next จึงต้องส่ง nonce ที่ proxy.ts ออกให้เอง ไม่งั้น CSP บล็อก
   const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const branding = await getBranding();
 
   return (
     <html
@@ -65,7 +72,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           {/* shadcn รุ่นนี้ไม่ได้ใส่ TooltipProvider มาให้ใน SidebarProvider แล้ว
               จึงต้องครอบที่ root เพื่อให้ tooltip ของ sidebar ใช้งานได้ */}
           <TooltipProvider delayDuration={200}>
-            {children}
+            <BrandingProvider value={branding}>{children}</BrandingProvider>
             <Toaster position="top-center" richColors closeButton />
           </TooltipProvider>
         </ThemeProvider>

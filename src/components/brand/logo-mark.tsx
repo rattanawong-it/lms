@@ -1,4 +1,8 @@
+"use client";
+
 import { cn } from "@/lib/utils";
+import { mediaSrc } from "@/lib/rich-text-doc";
+import { useBranding } from "@/components/brand/branding-provider";
 
 /** ไอคอนหมวกบัณฑิต — ใช้ร่วมกันทุกหน้าตาม design system */
 export function LogoMark({ className }: { className?: string }) {
@@ -20,7 +24,7 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-/** โลโก้พร้อมชื่อระบบ */
+/** โลโก้พร้อมชื่อระบบ — ชื่อ/รูปตามที่ตั้งไว้ที่ /admin/settings (FR-17.3) */
 export function Logo({
   className,
   subtitle,
@@ -28,13 +32,19 @@ export function Logo({
   className?: string;
   subtitle?: string;
 }) {
+  const { name, logoAssetId } = useBranding();
   return (
     <div className={cn("flex items-center gap-2.5", className)}>
-      <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-[9px]">
-        <LogoMark className="size-[18px]" />
-      </span>
+      {logoAssetId ? (
+        // eslint-disable-next-line @next/next/no-img-element -- รูปจาก /api/media ขนาดเล็ก แคชที่ route อยู่แล้ว
+        <img src={mediaSrc(logoAssetId)} alt="" className="size-8 shrink-0 rounded-[9px] object-contain" />
+      ) : (
+        <span className="bg-primary text-primary-foreground flex size-8 shrink-0 items-center justify-center rounded-[9px]">
+          <LogoMark className="size-[18px]" />
+        </span>
+      )}
       <span className="min-w-0">
-        <span className="block text-[14.5px] font-semibold tracking-[-0.01em]">KRIRK LMS</span>
+        <span className="block truncate text-[14.5px] font-semibold tracking-[-0.01em]">{name}</span>
         {subtitle ? (
           <span className="text-muted-foreground block truncate text-[11px] leading-tight">
             {subtitle}

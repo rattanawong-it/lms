@@ -151,6 +151,10 @@ model User {
   department    Department? @relation(fields: [departmentId], references: [id])
   notifyPrefs   Json      @default("{}")
   pdpaConsentAt DateTime?
+  // FR-17.4 PDPA (S5) — คำขอลบบัญชีรอ SUPER_ADMIN อนุมัติ · deletedAt = anonymize แล้ว
+  deletionRequestedAt DateTime?
+  deletionReason      String?
+  deletedAt           DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -175,6 +179,7 @@ model User {
 
   @@index([role])
   @@index([departmentId])
+  @@index([deletionRequestedAt])
 }
 
 model Session {
@@ -719,6 +724,8 @@ model AuditLog {
   createdAt DateTime @default(now())
   @@index([entity, entityId])
   @@index([actorId, createdAt])
+  @@index([createdAt])
+  @@index([action, createdAt])
 }
 
 model SystemSetting {

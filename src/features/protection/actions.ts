@@ -45,6 +45,7 @@ export async function setSystemProtection(formData: FormData): Promise<ActionRes
     after: { enabled: parsed.data.enabled },
   });
 
+  revalidatePath("/admin/settings");
   revalidatePath("/admin/screen-events");
   revalidatePath("/learn", "layout");
 

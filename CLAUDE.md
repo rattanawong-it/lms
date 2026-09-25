@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–6 เสร็จ (ถึง Reports & Dashboard 2026-09-25) · ถัดไปขั้น 7 Audit/ตั้งค่า/PDPA + จุดตรวจที่ 2 · Phase 2 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–6 commit แล้ว · ขั้น 7 Audit/ตั้งค่า/PDPA เขียนเสร็จ 2026-09-25 (รอ `prisma migrate deploy` + e2e) · ถัดไปจุดตรวจที่ 2 · Phase 2 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -86,6 +86,7 @@ src/
   app/api/certificate/[code] · (public)/verify/[code] ดาวน์โหลดใบประกาศ · หน้าตรวจสอบสาธารณะ (M10)
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
   app/(learn)/learn/[courseId]/qa[/threadId]          ถาม-ตอบ (M13) · กล่องคำถามผู้สอน `/teach/courses/[id]/qa`
+  app/(learn)/settings/privacy · api/privacy/export   PDPA ของผู้ใช้ (M17) · ผู้ดูแล `/admin/{audit,settings,deletion-requests}`
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -110,7 +111,7 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `upload-limits.ts` | `UPLOAD_RULES` ต่อ `AssetKind`, เพดานขนาด, `checkUpload()` |
 | `file-type.ts` | ตรวจ magic bytes ว่า MIME ที่ client แจ้งตรงกับเนื้อไฟล์จริง |
 | `object-key.ts` | ตั้ง object key ที่ปลอดภัย |
-| `audit.ts` | `writeAudit()` — บันทึก AuditLog |
+| `audit.ts` | `writeAudit()` — บันทึก AuditLog · ซ่อนค่าฟิลด์ password/token/secret ให้เอง (`redactSecrets()` ใน `features/audit/lib/json.ts`) |
 | `notify/index.ts` | `notify()` — **จุดเดียวที่สร้างการแจ้งเตือน** · ในแอปเขียนทันที · ช่องทางภายนอกส่งหลัง response ด้วย `after()` (นอก request รันต่อทันที) · ไม่ throw |
 | `notify/prefs.ts` (client ใช้ได้) | `User.notifyPrefs` → `parseNotifyPrefs()` เติมค่าเริ่มต้น (อีเมลเปิด: ENROLLED/GRADED/DUE_SOON/CERTIFICATE) · `pickRecipients()` · `notifyPrefsFromForm()` |
 | `notify/channels/line.ts` · `line/{client,signature}.ts` | push LINE ให้ผู้ที่ผูกบัญชีและเปิดไว้ · เรียก Messaging API ด้วย `fetch` (ไม่ throw) · ตรวจลายเซ็น webhook แบบ timing-safe |
@@ -183,6 +184,11 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 · ขอบเขตคณะของ DEPT_ADMIN บังคับใน query (`deptScope()`) ไม่ใช่แค่ซ่อนตัวเลือก · ไฟล์ส่งออกผ่าน `spreadsheetSafe()` ทุกช่องที่เป็นข้อความของผู้ใช้
 · Recharts ใช้เฉพาะ `/admin` ผ่าน `next/dynamic` — อย่า import ตรงในหน้าอื่น
 
+**Audit · ตั้งค่า · PDPA (M17)** — action ใหม่ที่เขียนข้อมูลสำคัญต้อง `writeAudit()` พร้อม `before`/`after` · อย่าใส่ค่าลับใน audit (ถูกซ่อนให้แต่ไม่ควรพึ่ง)
+· ชื่อระบบ/โลโก้อ่านด้วย `getBranding()` (server) หรือ `useBranding()` (client) — ห้ามเขียน "KRIRK LMS" ตายตัวในหัวเว็บใหม่
+· ตารางใหม่ที่เก็บข้อมูลส่วนบุคคลต้องเพิ่มใน `anonymizeUser()` และ `buildPersonalDataExport()` ของ `features/privacy/lib/` เสมอ
+· บัญชีที่ลบแล้วมี `deletedAt` — query ที่นับ/แสดงรายชื่อผู้ใช้ต้องกรอง `deletedAt: null` · สวิตช์การป้องกันระดับระบบอยู่ที่ `/admin/settings`
+
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
 
@@ -244,6 +250,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **Playwright โหลด Prisma client ที่ generate ไม่ได้** (ESM + `import.meta` แต่ Playwright โหลดแบบ CommonJS) — e2e ที่ต้องเตรียมข้อมูลใน DB
   ให้เขียนสคริปต์ใน `tests/e2e/support/` แล้วเรียกด้วย `runFixture()` จาก `helpers.ts` (tsx แยก process) · สคริปต์ tsx ห้ามใช้ top-level await (แปลงเป็น CJS)
 - **`prisma migrate dev` ใช้ไม่ได้เมื่อ AI สั่ง** (non-interactive) — เขียน `migration.sql` ด้วย `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` แล้ว `prisma migrate deploy`
+  · บางครั้ง `migrate deploy` ถูกระบบสิทธิ์ของ AI ปฏิเสธ (แก้ DB ที่ใช้ร่วม) — ให้เจ้าของระบบรันเอง แล้วค่อยรัน e2e
 - **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
 - **`loading.tsx` ทำให้ `forbidden()`/`notFound()` ที่เรียกในหน้าตอบสถานะ 200** (stream ออกไปก่อนแล้ว — UI 403 ยังแสดงถูก)
   หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้

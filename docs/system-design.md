@@ -920,6 +920,12 @@ model Coupon {
 ### 3.3 กติกาข้อมูลที่สำคัญ
 - **ID:** ใช้ `cuid()` ทุกตาราง ไม่เปิดเผย id แบบลำดับเลข
 - **Soft delete:** คอร์สใช้ `status = ARCHIVED` แทนการลบ ส่วนผู้ใช้ใช้ `banned` สำหรับระงับ และการลบบัญชีตาม PDPA ใช้วิธี anonymize
+- **Anonymize (FR-17.4 · S5):** ผู้ใช้ขอ (`deletionRequestedAt`) → SUPER_ADMIN คนอื่นอนุมัติ → `anonymizeUser()` ใน `features/privacy/lib/anonymize.ts`
+  · แทนชื่อเป็น "ผู้ใช้ที่ลบบัญชีแล้ว" อีเมลเป็น `deleted-<id>@deleted.invalid` ล้างเบอร์/รหัสนักศึกษา/รูป/`notifyPrefs` ตั้ง `banned` + `deletedAt`
+  · ลบ Session/Account/LineLink/Verification/Notification/ScreenEventLog · ลบไฟล์ PDF ใบประกาศเดิม (`pdfKey = null` แล้วสร้างใหม่เมื่อขอ)
+  · ล้างชื่อ/อีเมล/เบอร์/รหัสใน `AuditLog.before/after` และ IP ของการกระทำของผู้ใช้ · คงการลงทะเบียน คะแนน งานที่ส่ง กระทู้ รีวิว ใบประกาศ (ไม่ระบุตัวตน)
+  · บัญชีที่ `deletedAt` ไม่แสดงใน `/admin/users` และไม่นับในสถิติผู้ใช้
+- **Audit (FR-17.1):** `writeAudit()` แทนค่าฟิลด์ password/token/secret/apiKey/otp ด้วย `[ซ่อน]` ก่อนบันทึกเสมอ
 - **Snapshot:** `QuizAttempt.questionOrder` เก็บลำดับข้อที่สุ่มได้ เพื่อให้ผลสอบคงเดิมแม้ผู้สอนจะแก้คลังข้อสอบภายหลัง
 - **Progress:** คำนวณ `Enrollment.progressPct` ใหม่ทุกครั้งที่ `LessonProgress.completed` เปลี่ยน (ภายใน transaction)
 - **Score Curve (S5/S6):** เกณฑ์ที่ใช้กับคอร์สหาตามลำดับ `Course.gradeScale` → `ScoreCurve` ของคณะเจ้าของคอร์ส (ไล่ขึ้น `parentId`) → `ScoreCurve` ทั้งระบบ
@@ -982,8 +988,8 @@ flowchart LR
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
 | `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/learn/[courseId]/qa`, `/learn/[courseId]/qa/[threadId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
-| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,reviews,announcements,reports,screen-events,audit,settings,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
-| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup}`, `/api/health` | ตามแต่ละ endpoint |
+| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,reviews,announcements,reports,screen-events,audit,settings,deletion-requests,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN — audit/settings/deletion-requests เป็น SUPER_ADMIN) |
+| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup}`, `/api/privacy/export`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
 

@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { env, hasGoogleOAuth } from "@/lib/env";
 import { renderEmail, sendMail } from "@/lib/mail";
 import { ac, roles } from "@/lib/permissions";
+import { writeAudit } from "@/lib/audit";
 
 /**
  * M01 — Authentication & Account
@@ -111,12 +112,25 @@ export const auth = betterAuth({
 
   // FR-01.8 — บันทึกเวลาที่ให้ความยินยอม PDPA ตอนสร้างบัญชี
   // (หน้า /register บังคับติ๊กยอมรับ ส่วนการเข้าสู่ระบบด้วย Google แจ้งไว้ที่หน้า /login)
+  // FR-17.1 — สมัคร/ตั้งรหัสผ่านใหม่เกิดใน Better Auth ไม่ผ่าน actions.ts จึงบันทึก audit ที่นี่ (ไม่เก็บค่ารหัสผ่าน)
   databaseHooks: {
     user: {
       create: {
         before: async (user) => ({
           data: { ...user, pdpaConsentAt: new Date() },
         }),
+        after: async (user) => {
+          await writeAudit({ actorId: user.id, action: "user.register", entity: "User", entityId: user.id });
+        },
+      },
+    },
+    account: {
+      update: {
+        // โทเค็น Google ก็อัปเดตแถว account ทุกครั้งที่ login — นับเฉพาะบัญชีรหัสผ่าน
+        after: async (account) => {
+          if (account.providerId !== "credential") return;
+          await writeAudit({ actorId: account.userId, action: "user.password.change", entity: "User", entityId: account.userId });
+        },
       },
     },
   },

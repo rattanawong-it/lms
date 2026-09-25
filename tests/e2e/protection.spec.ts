@@ -113,11 +113,18 @@ test.describe("ผู้ดูแลระบบดูรายงานแล�
     await page.goto("/admin/screen-events");
 
     await expect(page.getByRole("heading", { name: "ความปลอดภัยเนื้อหา", level: 1 })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "การป้องกันเนื้อหาระดับระบบ" })).toBeVisible();
+    await expect(page.getByText("การป้องกันเนื้อหาระดับระบบเปิดอยู่")).toBeVisible();
     // ชุดเทสต์ด้านบนสร้างเหตุการณ์ "คลิกขวา" ไว้แล้ว
-    await expect(page.getByText("คลิกขวา").first()).toBeVisible({ timeout: 30_000 });
+    // ตัวกรองมี <option>คลิกขวา</option> ที่มองไม่เห็นอยู่ก่อน — หาในตารางเท่านั้น
+    await expect(page.locator("tbody").getByText("คลิกขวา").first()).toBeVisible({ timeout: 30_000 });
     // ข้อจำกัดของการป้องกันบนเว็บต้องบอกผู้ดูแลไว้ตรง ๆ (spec §M15)
     await expect(page.getByText(/ตรวจจับการจับภาพระดับระบบปฏิบัติการไม่ได้/)).toBeVisible();
+  });
+
+  test("สวิตช์ระดับระบบอยู่ที่หน้าตั้งค่าระบบ (FR-15.9 · FR-17.3)", async ({ page }) => {
+    await page.goto("/admin/settings");
+    await expect(page.getByRole("heading", { name: "การป้องกันเนื้อหาระดับระบบ" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "ปิดการป้องกันทั้งระบบ" })).toBeVisible();
   });
 });
 

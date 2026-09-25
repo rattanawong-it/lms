@@ -197,7 +197,7 @@
   · แดชบอร์ดแอดมินเลิกแสดงการ์ด "รอยืนยันอีเมล/ถูกระงับ" (ยังดูได้ที่ `/admin/users`) · ลบเมนู "การประเมินผล (เฟส 2)" ที่ไม่มีหน้าจริง แทนด้วย "รายงาน"
 - e2e `reports.spec` (support/reports-fixture): ผู้เรียนเห็นคอร์ส/คาบสด · ผู้สอนเห็น 33.3% / รอตรวจ 1 / คำถาม 1 + ส่งออก CSV · ผู้ดูแลคณะมองไม่เห็นคอร์สคณะอื่นแม้ส่ง id มาทาง URL + ส่งออก Excel · แอดมินเห็นกราฟและแยกคณะ + ส่งออก CSV ตรวจหัวคอลัมน์
 
-### ขั้น 7 — M17 Audit Log · ตั้งค่าระบบ · PDPA + ปิดเฟส — ✋ *จุดตรวจที่ 2*
+### ขั้น 7 — M17 Audit Log · ตั้งค่าระบบ · PDPA + ปิดเฟส — 🔸 เขียนเสร็จ 2026-09-25 (รอ migrate + e2e) · ✋ *จุดตรวจที่ 2*
 - **FR-17.1** ไล่ทุก action ที่เขียนข้อมูลสำคัญให้บันทึก `before`/`after` ครบ (ตารางตรวจใน PR) · ไม่เก็บรหัสผ่าน/โทเค็นใน `before`/`after`
 - **FR-17.2** `/admin/audit` (SUPER_ADMIN) — ค้นตามผู้กระทำ, action, entity/id, ช่วงวันที่ · แบ่งหน้า · ดู diff ก่อน/หลัง
 - **FR-17.3** `/admin/settings` (SUPER_ADMIN) — ชื่อระบบ, โลโก้ (อัปโหลดรูป), ค่าเริ่มต้นการป้องกันเนื้อหา (ย้ายจากที่เดิม),
@@ -213,6 +213,21 @@
 - ปิดเฟส: e2e `tests/e2e/phase-3.spec.ts` (ผู้เรียนถาม → ผู้สอนตอบ → แจ้งเตือนอีเมล → รีวิว → แดชบอร์ดผู้สอนเห็นตัวเลข → แอดมินเห็น audit)
   · อัปเดต spec §3.0.1/§6, system-design, CLAUDE.md
 - ✋ **จุดตรวจที่ 2:** ทดสอบบน Chrome ครบ flow + หน้า `/settings/privacy`
+
+**สิ่งที่ทำจริง**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| migration `20260925120000_pdpa_audit` | S5 `User.deletionRequestedAt/deletionReason/deletedAt` + index · S6 index `AuditLog(createdAt)`, `(action, createdAt)` |
+| `src/features/audit/lib/json.ts` | pure: `redactSecrets()` (เรียกใน `writeAudit()` ทุกครั้ง) · `scrubStrings()` (ใช้ตอน anonymize) · `auditDiff()` ตารางก่อน/หลังรายฟิลด์ |
+| `src/features/audit/{schemas,queries}.ts` · `/admin/audit` | ค้นตามผู้กระทำ (ชื่อ/อีเมล) · action ขึ้นต้นด้วย · ชนิดข้อมูล · id · ช่วงวันที่ · หน้าละ 50 · กางแถวดู diff + ลิงก์ "ประวัติทั้งหมดของข้อมูลนี้" |
+| `src/lib/auth.ts` (database hooks) | audit `user.register` · `user.password.change` (เฉพาะบัญชีรหัสผ่าน) |
+| `src/features/settings/*` · `/admin/settings` | ชื่อระบบ + โลโก้ (`SystemSetting` key `branding` → `BrandingProvider` ใน root layout → `<Logo>` และ `<title>`) · สวิตช์การป้องกันระดับระบบ (ย้ายมาจาก `/admin/screen-events`) · สถานะอีเมล/LINE + ปุ่มส่งทดสอบหาตัวเอง (5 ครั้ง/10 นาที) |
+| `src/features/privacy/*` · `/settings/privacy` · `/api/privacy/export` | ดาวน์โหลด JSON (ตัวตนจาก session เท่านั้น วันละ 3 ครั้ง) · ขอลบบัญชี (ยืนยันรหัสผ่าน หรือพิมพ์อีเมลถ้าเป็นบัญชี Google) · ยกเลิกเองได้ · แจ้ง SUPER_ADMIN ในแอป |
+| `/admin/deletion-requests` · `features/privacy/lib/anonymize.ts` | อนุมัติ (กดสองจังหวะ) / ปฏิเสธพร้อมเหตุผล · อีเมลแจ้งผลทั้งสองกรณี · อนุมัติตัวเอง/ลบ SUPER_ADMIN คนสุดท้ายไม่ได้ · anonymize ตามตารางใน system-design §3.3 |
+
+- **ปรับจากแผน (CHANGELOG #37):** งานที่ส่ง (รวมไฟล์) กระทู้ และรีวิวของบัญชีที่ลบคงไว้แบบไม่ระบุตัวตน (เจ้าของระบบยืนยัน 2026-09-25) · PDF ใบประกาศเดิมถูกลบแล้วสร้างใหม่ด้วยชื่อ "ผู้ใช้ที่ลบบัญชีแล้ว"
+- e2e `privacy.spec` (support/privacy-fixture) · `phase-3.spec` (support/phase3-fixture) · `protection.spec` ปรับตามที่ย้ายสวิตช์ · unit `audit-privacy.test.ts`
 
 ---
 

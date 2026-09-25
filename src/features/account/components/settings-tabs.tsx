@@ -9,6 +9,7 @@ const TABS = [
   { href: "/settings/sessions", label: "อุปกรณ์ที่เข้าสู่ระบบ" },
   { href: "/settings/notifications", label: "การแจ้งเตือน" },
   { href: "/settings/line", label: "LINE" },
+  { href: "/settings/privacy", label: "ความเป็นส่วนตัว" },
 ];
 
 export function SettingsTabs() {

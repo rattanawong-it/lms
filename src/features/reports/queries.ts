@@ -176,7 +176,8 @@ function deptSql(deptId: string | null) {
 export async function getAdminDashboard(now: Date = new Date()) {
   const actor = await requireAtLeast(Role.DEPT_ADMIN);
   const deptId = deptScope(actor);
-  const userWhere: Prisma.UserWhereInput = deptId === null ? {} : { departmentId: deptId };
+  // บัญชีที่ลบตาม PDPA แล้วไม่นับเป็นผู้ใช้ (S5)
+  const userWhere: Prisma.UserWhereInput = deptId === null ? { deletedAt: null } : { departmentId: deptId, deletedAt: null };
   const courseWhere: Prisma.CourseWhereInput = deptId === null ? {} : { departmentId: deptId };
   const months = lastMonths(now, 12);
   const since = months[0]!.start;

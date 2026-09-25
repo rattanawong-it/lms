@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Filter, ShieldAlert } from "lucide-react";
+import { Filter, ShieldAlert, ShieldCheck, ShieldOff } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pager } from "@/components/shared/pager";
 import { parseScreenEventFilter } from "@/features/protection/schemas";
-import { ProtectionSwitch } from "@/features/protection/components/protection-switch";
 import {
   getScreenEventReport,
   isProtectionEnabledSystemWide,
@@ -42,7 +41,7 @@ const EVENT_TONE: Record<ScreenEvent, string> = {
 const inputClass =
   "border-input bg-card focus-visible:ring-ring h-11 w-full rounded-[9px] border px-3 text-[14px] outline-none focus-visible:ring-2";
 
-/** M15 · FR-15.8 / FR-15.9 — รายงานเหตุการณ์หน้าจอ (กรอง + แบ่งหน้า · M16 ขั้น 6) และสวิตช์การป้องกันระดับระบบ */
+/** M15 · FR-15.8 — รายงานเหตุการณ์หน้าจอ (กรอง + แบ่งหน้า · M16 ขั้น 6) · สวิตช์ระดับระบบอยู่ที่ /admin/settings (FR-17.3) */
 export default async function ScreenEventsPage(props: PageProps<"/admin/screen-events">) {
   const filter = parseScreenEventFilter(await props.searchParams);
   const [report, systemEnabled] = await Promise.all([
@@ -61,12 +60,21 @@ export default async function ScreenEventsPage(props: PageProps<"/admin/screen-e
     <>
       <PageHeader
         title="ความปลอดภัยเนื้อหา"
-        description="สวิตช์การป้องกันระดับระบบ และเหตุการณ์ที่ระบบตรวจพบระหว่างผู้เรียนเปิดบทเรียน"
+        description="เหตุการณ์ที่ระบบตรวจพบระหว่างผู้เรียนเปิดบทเรียน"
       />
 
-      <div className="mb-5">
-        <ProtectionSwitch enabled={systemEnabled} />
-      </div>
+      {/* สวิตช์ย้ายไปอยู่หน้าตั้งค่าระบบ (FR-17.3) — ที่นี่บอกสถานะให้รู้ว่าตอนนี้มีการเก็บเหตุการณ์หรือไม่ */}
+      <p className="bg-card border-border mb-5 flex flex-wrap items-center gap-2 rounded-xl border p-4 text-[13px]" data-protection-status>
+        {systemEnabled ? (
+          <ShieldCheck className="text-success-fg size-[18px]" />
+        ) : (
+          <ShieldOff className="text-danger-fg size-[18px]" />
+        )}
+        การป้องกันเนื้อหาระดับระบบ{systemEnabled ? "เปิดอยู่" : "ปิดอยู่"}
+        <Link href="/admin/settings" className="text-primary ml-auto underline-offset-2 hover:underline">
+          เปลี่ยนที่หน้าตั้งค่าระบบ
+        </Link>
+      </p>
 
       <form
         aria-label="ตัวกรองเหตุการณ์"

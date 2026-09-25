@@ -13,9 +13,11 @@ import {
   Megaphone,
   MessageSquareQuote,
   Ruler,
+  ScrollText,
   Settings,
   UploadCloud,
   Users,
+  UserX,
 } from "lucide-react";
 import { Logo } from "@/components/brand/logo-mark";
 import {
@@ -90,11 +92,22 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
         roles: [Role.SUPER_ADMIN],
       },
       {
+        href: "/admin/audit",
+        label: "บันทึกการใช้งาน",
+        icon: ScrollText,
+        roles: [Role.SUPER_ADMIN],
+      },
+      {
+        href: "/admin/deletion-requests",
+        label: "คำขอลบบัญชี",
+        icon: UserX,
+        roles: [Role.SUPER_ADMIN],
+      },
+      {
         href: "/admin/settings",
         label: "ตั้งค่าระบบ",
         icon: Settings,
         roles: [Role.SUPER_ADMIN],
-        phase: "เฟส 3",
       },
     ],
   },

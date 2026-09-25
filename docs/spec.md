@@ -97,7 +97,7 @@
 | **M13 Q&A** | ✅ เสร็จ | Phase 3 ขั้น 4 | `features/qa` · `/learn/[courseId]/qa` · กล่องคำถามผู้สอน `/teach/courses/[id]/qa` · ข้อความล้วน (Q5) |
 | **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
 | **M16 Reports & Dashboard** | ✅ เสร็จ | Phase 3 ขั้น 6 | `features/reports` · `/dashboard` `/teach` `/admin` · `/admin/reports` ส่งออก CSV/XLSX · กราฟ Recharts (lazy) เฉพาะ `/admin` |
-| M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
+| **M17 Audit & Settings** | ✅ เสร็จ (รอ e2e + จุดตรวจที่ 2) | Phase 3 ขั้น 7 | `features/{audit,settings,privacy}` · `/admin/{audit,settings,deletion-requests}` · `/settings/privacy` · `/api/privacy/export` · anonymize ตาม Q9 (CHANGELOG #37) |
 | M18 | ⬜ ยังไม่เริ่ม | Phase 4 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
@@ -381,7 +381,7 @@
 | FR-17.3 | ตั้งค่าระบบ: ชื่อระบบ, โลโก้, ค่าเริ่มต้นของการป้องกันเนื้อหา · **ค่า secret ของอีเมล/LINE อยู่ใน env** หน้าเว็บแสดงสถานะการเชื่อมต่อ + ปุ่มส่งทดสอบ (CHANGELOG #31) |
 | FR-17.4 | PDPA: ผู้ใช้ขอ export ข้อมูลตนเอง และขอลบบัญชีได้ · **การลบบัญชีต้องให้ Super Admin อนุมัติก่อน** แล้ว anonymize (CHANGELOG #31) |
 
-- [ ] FR-17.1 · [ ] FR-17.2 · [ ] FR-17.3 · [ ] FR-17.4
+- [x] FR-17.1 · [x] FR-17.2 · [x] FR-17.3 · [x] FR-17.4
 - [ ] DoD ครบ 7 ข้อ
 
 ### M18 — Payment (P2 · เฟส 2)

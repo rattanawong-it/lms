@@ -212,6 +212,7 @@ export async function cancelEnrollRequest(formData: FormData): Promise<ActionRes
     action: "enrollment.cancel",
     entity: "Enrollment",
     entityId: enrollment.id,
+    before: { status: EnrollmentStatus.PENDING },
     after: { status: EnrollmentStatus.DROPPED },
   });
 

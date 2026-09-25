@@ -2,10 +2,12 @@ import "server-only";
 import { headers } from "next/headers";
 import { db } from "@/lib/db";
 import type { Prisma } from "@/generated/prisma/client";
+import { redactSecrets } from "@/features/audit/lib/json";
 
 /**
  * FR-17.1 — บันทึกว่าใครทำอะไรกับข้อมูลใด ค่าก่อน/หลัง เวลา และ IP
  * เรียกหลังจากการเขียนข้อมูลสำเร็จเสมอ และไม่ให้ error ของ audit ทำให้ action ล้ม
+ * ฟิลด์ชื่อ password/token/secret ถูกแทนด้วย "[ซ่อน]" ก่อนบันทึกเสมอ (`redactSecrets()`)
  */
 export type AuditInput = {
   actorId: string | null;
@@ -35,8 +37,8 @@ export async function writeAudit(input: AuditInput): Promise<void> {
         action: input.action,
         entity: input.entity,
         entityId: input.entityId ?? null,
-        before: input.before ?? undefined,
-        after: input.after ?? undefined,
+        before: input.before == null ? undefined : redactSecrets(input.before),
+        after: input.after == null ? undefined : redactSecrets(input.after),
         ip: await clientIp(),
       },
     });

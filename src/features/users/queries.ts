@@ -35,7 +35,8 @@ export type UserListResult = {
 export async function listUsers(filter: UserFilter): Promise<UserListResult> {
   const actor = await requireAtLeast(Role.DEPT_ADMIN);
 
-  const where: Prisma.UserWhereInput = { ...userScopeWhere(actor) };
+  // บัญชีที่ anonymize แล้ว (FR-17.4) ไม่ใช่ผู้ใช้ที่จัดการได้อีก — ดูประวัติได้ที่ /admin/audit
+  const where: Prisma.UserWhereInput = { ...userScopeWhere(actor), deletedAt: null };
 
   if (filter.q) {
     where.OR = [
