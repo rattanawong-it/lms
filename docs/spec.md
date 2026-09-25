@@ -98,7 +98,7 @@
 | **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
 | **M16 Reports & Dashboard** | ✅ เสร็จ | Phase 3 ขั้น 6 | `features/reports` · `/dashboard` `/teach` `/admin` · `/admin/reports` ส่งออก CSV/XLSX · กราฟ Recharts (lazy) เฉพาะ `/admin` |
 | **M17 Audit & Settings** | ✅ เสร็จ | Phase 3 ขั้น 7 | `features/{audit,settings,privacy}` · `/admin/{audit,settings,deletion-requests}` · `/settings/privacy` · `/api/privacy/export` · anonymize ตาม Q9 (CHANGELOG #37) |
-| M18 | ⬜ ยังไม่เริ่ม | Phase 4 | ตาม roadmap §6 |
+| M18 | 🔸 วางแผนแล้ว | Phase 4 | ลำดับงานใน [`phase-4-plan.md`](./phase-4-plan.md) · branch `phase-4` |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
@@ -432,7 +432,7 @@
 | **Phase 1 – MVP** | M03, M04, M05, M06, M15, M11 (in-app) | สร้างคอร์ส เรียน และป้องกันเนื้อหาได้ | ✅ เสร็จ 2026-09-23 |
 | **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | ✅ เสร็จ 2026-09-24 (7 ขั้น + จุดตรวจ 1–2) ([`phase-2-plan.md`](./phase-2-plan.md)) |
 | **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | ✅ ปิดเฟส 2026-09-25 ([`phase-3-plan.md`](./phase-3-plan.md)) |
-| **Phase 4 – Commerce** | M18, DRM (ทางเลือก) | ขายคอร์ส | ⬜ ยังไม่เริ่ม |
+| **Phase 4 – Commerce** | M18 (DRM ไม่ทำในเฟสนี้ — Q8) | ขายคอร์ส | 🔸 อนุมัติแผน 2026-09-25 ([`phase-4-plan.md`](./phase-4-plan.md)) |
 
 ---
 
@@ -443,4 +443,4 @@
 | D-02 | ผู้ให้บริการอีเมล (Resend / SMTP ของสถาบัน) | รอตัดสินใจ |
 | D-03 | จำกัดโดเมนอีเมลสถาบันเพื่อกำหนด role อัตโนมัติหรือไม่ | ยังไม่ต้องการในเฟส 1 |
 | D-04 | Transcode วิดีโอเป็น HLS หลายความละเอียด | **ตัดสินใจแล้ว 2026-09-20** — Phase 1 ใช้ MP4 ไฟล์เดียว (progressive) ยังไม่ทำ transcode · HLS เลื่อนไปพิจารณาเมื่อมีปัญหาแบนด์วิดท์จริง |
-| D-05 | Payment gateway | เฟส 2 |
+| D-05 | Payment gateway | **ตัดสินใจแล้ว 2026-09-25** — Opn Payments (Omise) ผ่าน adapter `src/lib/payment` (เปลี่ยนผู้ให้บริการได้โดยไม่แก้ฟีเจอร์) · รอฝ่ายการเงินยืนยันสัญญา (CHANGELOG #38) |
