@@ -10,6 +10,9 @@ export default defineConfig({
     globals: true,
     include: ["tests/unit/**/*.test.{ts,tsx}"],
     setupFiles: ["tests/unit/setup.ts"],
+    // เทสต์แรกของไฟล์ที่ render + getByRole จ่ายค่าเริ่ม jsdom/accessibility tree
+    // เมื่อ pre-commit รันทุกไฟล์พร้อมกันบนเครื่องที่หน่วยความจำตึงใช้ได้ถึง ~6 วิ (เกินค่าเริ่มต้น 5 วิ)
+    testTimeout: 15_000,
   },
   resolve: {
     alias: {

@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–6 commit แล้ว · ขั้น 7 Audit/ตั้งค่า/PDPA เขียนเสร็จ 2026-09-25 (รอ `prisma migrate deploy` + e2e) · ถัดไปจุดตรวจที่ 2 · Phase 2 ปิดครบแล้ว |
+| สถานะปัจจุบัน | **Phase 3 ปิดครบ 2026-09-25** (M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` · ถัดไป Phase 4 (M18 Payment ฯลฯ) — ต้องวางแผน `phase-4-plan.md` ให้เจ้าของระบบอนุมัติก่อน |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
