@@ -2,7 +2,9 @@ import "server-only";
 import { db } from "@/lib/db";
 import { requireAtLeast, type SessionUser } from "@/lib/rbac";
 import { Role, ScreenEvent } from "@/generated/prisma/enums";
-import { PROTECTION_SETTING_KEY } from "@/features/protection/schemas";
+import { PROTECTION_SETTING_KEY, type ScreenEventFilter } from "@/features/protection/schemas";
+import { reportDateRange } from "@/features/reports/lib/report";
+import type { Prisma } from "@/generated/prisma/client";
 
 /** M15 · FR-15.8 / FR-15.9 — การตั้งค่าการป้องกัน และรายงานเหตุการณ์หน้าจอ */
 
@@ -63,17 +65,39 @@ export type ScreenEventReport = {
   rows: ScreenEventRow[];
   counts: { event: ScreenEvent; total: number }[];
   total: number;
+  pageCount: number;
 };
 
 export const SCREEN_EVENT_PAGE_SIZE = 50;
 
-/** FR-15.8 — รายงานเหตุการณ์ล่าสุดให้ผู้ดูแลระบบ */
-export async function getScreenEventReport(): Promise<ScreenEventReport> {
+/**
+ * FR-15.8 — รายงานเหตุการณ์ให้ผู้ดูแลระบบ · กรองผู้ใช้ (ชื่อ/อีเมล) ชนิด และช่วงวันที่ + แบ่งหน้า
+ * ตัวเลขสรุปต่อชนิดนับตามตัวกรองเดียวกัน (ยกเว้นตัวกรองชนิด — ให้เห็นภาพรวมของทุกชนิด)
+ */
+export async function getScreenEventReport(filter: ScreenEventFilter): Promise<ScreenEventReport> {
   await requireAtLeast(Role.SUPER_ADMIN);
+
+  const createdAt = reportDateRange(filter);
+  const base: Prisma.ScreenEventLogWhereInput = {
+    ...(createdAt.gte || createdAt.lt ? { createdAt } : {}),
+    ...(filter.q
+      ? {
+          user: {
+            OR: [
+              { name: { contains: filter.q, mode: "insensitive" } },
+              { email: { contains: filter.q, mode: "insensitive" } },
+            ],
+          },
+        }
+      : {}),
+  };
+  const where: Prisma.ScreenEventLogWhereInput = { ...base, ...(filter.event ? { event: filter.event } : {}) };
 
   const [rows, grouped, total] = await Promise.all([
     db.screenEventLog.findMany({
+      where,
       orderBy: { createdAt: "desc" },
+      skip: (filter.page - 1) * SCREEN_EVENT_PAGE_SIZE,
       take: SCREEN_EVENT_PAGE_SIZE,
       select: {
         id: true,
@@ -85,12 +109,13 @@ export async function getScreenEventReport(): Promise<ScreenEventReport> {
         lesson: { select: { title: true, section: { select: { course: { select: { title: true } } } } } },
       },
     }),
-    db.screenEventLog.groupBy({ by: ["event"], _count: { _all: true } }),
-    db.screenEventLog.count(),
+    db.screenEventLog.groupBy({ by: ["event"], where: base, _count: { _all: true } }),
+    db.screenEventLog.count({ where }),
   ]);
 
   return {
     total,
+    pageCount: Math.max(1, Math.ceil(total / SCREEN_EVENT_PAGE_SIZE)),
     counts: grouped
       .map((g) => ({ event: g.event, total: g._count._all }))
       .sort((a, b) => b.total - a.total),

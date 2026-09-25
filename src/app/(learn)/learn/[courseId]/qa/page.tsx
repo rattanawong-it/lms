@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { getQaBoard } from "@/features/qa/queries";
 import { parseQaParams } from "@/features/qa/schemas";
 import { QaFilters } from "@/features/qa/components/qa-filters";
-import { QaPager } from "@/features/qa/components/qa-pager";
+import { Pager } from "@/components/shared/pager";
 import { ThreadComposer } from "@/features/qa/components/thread-composer";
 import { ThreadList } from "@/features/qa/components/thread-list";
 
@@ -48,7 +48,7 @@ export default async function CourseQaPage(props: PageProps<"/learn/[courseId]/q
           emptyTitle={options.filter === "all" && !options.lessonId ? "ยังไม่มีคำถาม" : "ไม่มีกระทู้ที่ตรงกับตัวกรอง"}
           emptyDescription={board.canPost ? "เริ่มถามคำถามแรกได้จากปุ่ม “ถามคำถาม”" : undefined}
         />
-        <QaPager
+        <Pager
           basePath={basePath}
           params={{ filter: options.filter, ...(options.lessonId ? { lesson: options.lessonId } : {}) }}
           page={options.page}

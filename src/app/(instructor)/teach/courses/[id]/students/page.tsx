@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { RosterManager } from "@/features/enrollment/components/roster-manager";
 import { ENROLL_POLICY_LABEL } from "@/features/enrollment/lib/labels";
 import { getCourseRoster } from "@/features/enrollment/queries";
+import { ExportButtons } from "@/features/reports/components/export-buttons";
 import type { EnrollPolicy } from "@/generated/prisma/enums";
 
 export async function generateMetadata(
@@ -16,7 +17,7 @@ export async function generateMetadata(
   return { title: `ผู้เรียน · ${roster.title}` };
 }
 
-/** M06 · FR-06.1 / FR-06.2 — จัดการผู้เรียนของคอร์ส */
+/** M06 · FR-06.1 / FR-06.2 — จัดการผู้เรียนของคอร์ส · M16 · FR-16.4 — ส่งออกความคืบหน้า */
 export default async function CourseStudentsPage(
   props: PageProps<"/teach/courses/[id]/students">,
 ) {
@@ -50,6 +51,10 @@ export default async function CourseStudentsPage(
           </>
         }
       />
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-muted-foreground text-[12.5px]">ส่งออกความคืบหน้าของผู้เรียนทุกคนในคอร์สนี้</p>
+        <ExportButtons target={{ kind: "course", courseId: id }} />
+      </div>
       <RosterManager roster={roster} />
     </>
   );

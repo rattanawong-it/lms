@@ -46,7 +46,10 @@ type AdminNavItem = {
 const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   {
     label: "ภาพรวม",
-    items: [{ href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard }],
+    items: [
+      { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard },
+      { href: "/admin/reports", label: "รายงาน", icon: FileBarChart },
+    ],
   },
   {
     label: "ผู้ใช้และคณะ",
@@ -74,7 +77,6 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
       { href: "/admin/certificates", label: "ใบประกาศ", icon: Award },
       { href: "/admin/reviews", label: "รีวิวคอร์ส", icon: MessageSquareQuote },
       { href: "/admin/score-curve", label: "เกณฑ์คะแนน", icon: Ruler },
-      { href: "/admin/assessment", label: "การประเมินผล", icon: FileBarChart, phase: "เฟส 2" },
     ],
   },
   {

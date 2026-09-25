@@ -99,19 +99,3 @@ export async function listUsers(filter: UserFilter): Promise<UserListResult> {
     actor,
   };
 }
-
-/** สถิติผู้ใช้สำหรับหน้าแดชบอร์ดผู้ดูแล (ขอบเขตตาม role) */
-export async function userStats() {
-  const actor = await requireAtLeast(Role.DEPT_ADMIN);
-  const scope = userScopeWhere(actor);
-
-  const [total, banned, unverified, instructors, departments] = await Promise.all([
-    db.user.count({ where: scope }),
-    db.user.count({ where: { ...scope, banned: true } }),
-    db.user.count({ where: { ...scope, emailVerified: false } }),
-    db.user.count({ where: { ...scope, role: Role.INSTRUCTOR } }),
-    db.department.count(),
-  ]);
-
-  return { total, banned, unverified, instructors, departments, actor };
-}

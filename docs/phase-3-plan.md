@@ -169,7 +169,7 @@
   · ตอบกลับว่าง = ลบคำตอบกลับ · เจ้าของรีวิวที่ถูกซ่อนเห็นข้อความแจ้ง
 - e2e `reviews.spec`: ต่ำกว่า 30% รีวิวไม่ได้ → รีวิว 4 ดาว → catalog 2.0 → 3.0 → ผู้สอนได้แจ้งเตือน + ตอบกลับ → แอดมินซ่อน → 2.0
 
-### ขั้น 6 — M16 Reports & Dashboard (FR-16.1–16.4)
+### ขั้น 6 — M16 Reports & Dashboard (FR-16.1–16.4) — ✅ เสร็จ 2026-09-25
 | หน้า | เพิ่มอะไร |
 |---|---|
 | `/dashboard` (ผู้เรียน · FR-16.1) | คอร์สที่กำลังเรียน + "เรียนต่อ" · งานใกล้ครบกำหนด (มีแล้ว) · Live class ที่จะมาถึง 7 วัน · ใบประกาศล่าสุด |
@@ -181,6 +181,21 @@
 - กราฟ: แนวโน้มการลงทะเบียน 12 เดือนด้วย shadcn chart (Recharts ตาม system-design §2) **เฉพาะหน้า `/admin`** และโหลดแบบ lazy (NFR-02) (Q7)
 - ตัวเลขทั้งหมดนับด้วย `groupBy`/`count` ใน DB ไม่ดึงแถวมานับใน JS · เพิ่ม index ที่ขาด (§4 S6)
 - **Test:** unit ของสูตรอัตราการเรียนจบ/ขอบเขตคณะ · e2e แต่ละบทบาทเห็นตัวเลขของตัวเอง + ส่งออกไฟล์ได้ (ตรวจหัวคอลัมน์)
+
+**สิ่งที่ทำจริง**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `src/features/reports/lib/report.ts` | pure: `completionRate()` (จบ ÷ ACTIVE+COMPLETED+EXPIRED) · `lastMonths()`/`fillMonths()` (เดือนตามเวลาไทย) · ตัวกรอง/ช่วงวันที่ · ตารางส่งออก + `spreadsheetSafe()` กันสูตร |
+| `src/features/reports/queries.ts` | `getLearnerDashboard()` · `getTeachDashboard()` (งานรอตรวจ = ครั้งส่งล่าสุดยัง SUBMITTED ด้วย `DISTINCT ON`) · `getAdminDashboard()` (แยกคณะ + แนวโน้ม 12 เดือนด้วย SQL) · `getReport()` · ขอบเขตคณะบังคับใน query |
+| `src/features/reports/actions.ts` | `exportReport()` / `exportCourseProgress()` → CSV/XLSX (base64) + AuditLog `report.export` / `course.progress.export` · สูงสุด 10,000 แถว |
+| หน้า | `/dashboard` (คอร์สที่กำลังเรียน + เรียนต่อ · คาบสด 7 วัน · ใบประกาศ) · `/teach` (การ์ดรวม + คอลัมน์ % จบ/รอตรวจ/คำถามรอตอบ) · `/admin` (การ์ด + กราฟ + ตารางแยกคณะ) · `/admin/reports` · ปุ่มส่งออกใน `/teach/courses/[id]/students` · ตัวกรอง + แบ่งหน้าใน `/admin/screen-events` |
+| `src/features/reports/components/enrollment-trend*.tsx` | Recharts โหลดด้วย `next/dynamic` (`ssr: false`) เฉพาะหน้า `/admin` · มีตารางตัวเลขเดียวกันให้ผู้อ่านหน้าจอ |
+| `src/components/shared/pager.tsx` | ย้ายตัวแบ่งหน้าจาก `features/qa` มาใช้ร่วม (ถาม-ตอบ · รีวิว · รายงาน · เหตุการณ์หน้าจอ) |
+
+- **ปรับจากแผน (CHANGELOG #36):** index ของ `AuditLog` (S6) ย้ายไปทำพร้อมหน้าค้นหา audit ในขั้น 7 — ตัวเลขขั้นนี้ใช้ index ที่มีอยู่แล้ว
+  · แดชบอร์ดแอดมินเลิกแสดงการ์ด "รอยืนยันอีเมล/ถูกระงับ" (ยังดูได้ที่ `/admin/users`) · ลบเมนู "การประเมินผล (เฟส 2)" ที่ไม่มีหน้าจริง แทนด้วย "รายงาน"
+- e2e `reports.spec` (support/reports-fixture): ผู้เรียนเห็นคอร์ส/คาบสด · ผู้สอนเห็น 33.3% / รอตรวจ 1 / คำถาม 1 + ส่งออก CSV · ผู้ดูแลคณะมองไม่เห็นคอร์สคณะอื่นแม้ส่ง id มาทาง URL + ส่งออก Excel · แอดมินเห็นกราฟและแยกคณะ + ส่งออก CSV ตรวจหัวคอลัมน์
 
 ### ขั้น 7 — M17 Audit Log · ตั้งค่าระบบ · PDPA + ปิดเฟส — ✋ *จุดตรวจที่ 2*
 - **FR-17.1** ไล่ทุก action ที่เขียนข้อมูลสำคัญให้บันทึก `before`/`after` ครบ (ตารางตรวจใน PR) · ไม่เก็บรหัสผ่าน/โทเค็นใน `before`/`after`

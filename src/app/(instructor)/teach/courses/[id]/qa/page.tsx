@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { getTeachQaInbox } from "@/features/qa/queries";
 import { parseQaParams } from "@/features/qa/schemas";
 import { QaFilters } from "@/features/qa/components/qa-filters";
-import { QaPager } from "@/features/qa/components/qa-pager";
+import { Pager } from "@/components/shared/pager";
 import { ThreadList } from "@/features/qa/components/thread-list";
 
 export async function generateMetadata(props: PageProps<"/teach/courses/[id]/qa">): Promise<Metadata> {
@@ -50,7 +50,7 @@ export default async function TeachQaPage(props: PageProps<"/teach/courses/[id]/
           emptyTitle={options.filter === "unanswered" ? "ไม่มีคำถามที่รอคำตอบ" : "ไม่มีกระทู้ในมุมมองนี้"}
           emptyDescription="เมื่อผู้เรียนตั้งคำถาม คุณจะได้รับการแจ้งเตือนที่กระดิ่ง"
         />
-        <QaPager
+        <Pager
           basePath={basePath}
           params={{ filter: options.filter, ...(options.lessonId ? { lesson: options.lessonId } : {}) }}
           page={options.page}

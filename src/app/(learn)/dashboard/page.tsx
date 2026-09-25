@@ -2,18 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
+  Award,
   BookOpen,
   Building2,
   CalendarClock,
   MailWarning,
   Megaphone,
   Pin,
+  Radio,
+  Search,
   ShieldCheck,
   Users,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
-import { PhaseNotice } from "@/components/shared/phase-notice";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { StatCard } from "@/components/shared/stat-card";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/rbac";
@@ -23,10 +26,11 @@ import { announcementSource } from "@/features/announcements/components/announce
 import { announcementLink } from "@/features/announcements/lib/audience";
 import { getMyAnnouncements } from "@/features/announcements/queries";
 import { getMyDueAssignments } from "@/features/assignments/queries";
+import { getLearnerDashboard } from "@/features/reports/queries";
 
 export const metadata: Metadata = { title: "หน้าหลัก" };
 
-/** M16 · FR-16.1 — หน้าหลักหลังเข้าสู่ระบบ (เนื้อหาเต็มจะมาใน Phase 1) */
+/** M16 · FR-16.1 — หน้าหลักหลังเข้าสู่ระบบ: งานที่ต้องส่ง · ประกาศ · คอร์สที่กำลังเรียน · คาบสด · ใบประกาศ */
 export default async function DashboardPage() {
   const user = await requireUser();
   const isStaff = user.role === Role.SUPER_ADMIN || user.role === Role.DEPT_ADMIN;
@@ -38,6 +42,8 @@ export default async function DashboardPage() {
   const announcements = await getMyAnnouncements(3);
   // M08 · FR-08.5 — งานที่ยังต้องส่ง (ส่งกลับให้แก้ขึ้นก่อน แล้วตามกำหนดส่ง)
   const dueAssignments = await getMyDueAssignments();
+  // M16 · FR-16.1 — คอร์สที่กำลังเรียน · คาบเรียนสด 7 วัน · ใบประกาศล่าสุด
+  const learning = await getLearnerDashboard();
 
   return (
     <>
@@ -165,44 +171,95 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <PhaseNotice
-          phase="Phase 1 – MVP"
-          title="การเรียนและคอร์สกำลังพัฒนา"
-          items={[
-            "FR-16.1 คอร์สที่กำลังเรียน งานใกล้ครบกำหนด และ Live class ที่จะมาถึง",
-            "FR-06.4 ปุ่มเรียนต่อจากบทเรียนล่าสุด",
-            "FR-03.2 ค้นหาคอร์สจากคลังคอร์สทั้งหมด",
-          ]}
-        />
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <section aria-labelledby="dashboard-courses" className="bg-card border-border min-w-0 rounded-xl border p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="dashboard-courses" className="flex items-center gap-2 text-[15px] font-semibold">
+              <BookOpen className="text-primary size-[18px]" aria-hidden /> คอร์สที่กำลังเรียน
+              <span className="text-muted-foreground num text-[13px] font-normal">({learning.courseCount})</span>
+            </h2>
+            <Link href="/my-courses" className="text-primary flex min-h-11 items-center text-[12.5px] font-medium hover:underline">
+              คอร์สของฉัน
+            </Link>
+          </div>
+          {learning.courses.length === 0 ? (
+            <div className="mt-2 text-[13px]">
+              <p className="text-muted-foreground">ยังไม่มีคอร์สที่กำลังเรียน</p>
+              <Button asChild variant="outline" size="sm" className="mt-3">
+                <Link href="/courses">
+                  <Search className="size-4" /> ค้นหาคอร์ส
+                </Link>
+              </Button>
+            </div>
+          ) : (
+            <ul className="divide-line mt-1 divide-y">
+              {learning.courses.map((c) => (
+                <li key={c.id} data-dashboard-course className="flex items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13.5px] font-medium">{c.title}</p>
+                    <div className="mt-1.5 flex items-center gap-2">
+                      <Progress value={c.progressPct} aria-label={`ความคืบหน้า ${c.progressPct} เปอร์เซ็นต์`} className="h-1.5 flex-1" />
+                      <span className="num text-muted-foreground w-10 text-right text-[12px]">{c.progressPct}%</span>
+                    </div>
+                  </div>
+                  <Button asChild size="sm" variant="outline" className="min-h-11 shrink-0">
+                    <Link href={`/learn/${c.id}`}>
+                      เรียนต่อ <ArrowRight className="size-4" />
+                    </Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
 
-        <div className="bg-card border-border rounded-xl border p-6">
-          <span className="bg-accent text-accent-foreground mb-3.5 flex size-10 items-center justify-center rounded-xl">
-            <BookOpen className="size-5" />
-          </span>
-          <p className="text-[15px] font-semibold">สิ่งที่ใช้ได้แล้วตอนนี้</p>
-          <ul className="text-fg-3 mt-3.5 space-y-2 text-[12.5px]">
-            <li>
-              <Link href="/settings/profile" className="text-primary hover:underline">
-                แก้ไขโปรไฟล์ของคุณ
-              </Link>{" "}
-              — ชื่อ เบอร์โทร รหัสนักศึกษา/พนักงาน
-            </li>
-            <li>
-              <Link href="/settings/sessions" className="text-primary hover:underline">
-                ตรวจอุปกรณ์ที่เข้าสู่ระบบ
-              </Link>{" "}
-              — ยกเลิกอุปกรณ์ที่ไม่ใช่ของคุณได้ทันที
-            </li>
-            {isStaff ? (
-              <li>
-                <Link href="/admin/users" className="text-primary hover:underline">
-                  จัดการผู้ใช้และบทบาท
-                </Link>{" "}
-                — ค้นหา กำหนดบทบาท ระงับบัญชี และนำเข้าจาก CSV
-              </li>
-            ) : null}
-          </ul>
+        <div className="min-w-0 space-y-5">
+          <section aria-labelledby="dashboard-live" className="bg-card border-border rounded-xl border p-4 sm:p-5">
+            <h2 id="dashboard-live" className="flex items-center gap-2 text-[15px] font-semibold">
+              <Radio className="text-primary size-[18px]" aria-hidden /> คาบเรียนสด 7 วันข้างหน้า
+            </h2>
+            {learning.lives.length === 0 ? (
+              <p className="text-muted-foreground mt-2 text-[13px]">ไม่มีคาบเรียนสดที่กำลังจะมาถึง</p>
+            ) : (
+              <ul className="divide-line mt-1 divide-y">
+                {learning.lives.map((l) => (
+                  <li key={l.id} data-dashboard-live>
+                    <Link href={`/learn/${l.course.id}/${l.id}`} className="hover:bg-muted/60 -mx-2 block rounded-lg px-2 py-2.5">
+                      <span className="block truncate text-[13.5px] font-medium">{l.title}</span>
+                      <span className="text-muted-foreground block truncate text-[12px]">
+                        {formatDateTime(l.startAt)} · {l.course.title}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section aria-labelledby="dashboard-certificates" className="bg-card border-border rounded-xl border p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <h2 id="dashboard-certificates" className="flex items-center gap-2 text-[15px] font-semibold">
+                <Award className="text-primary size-[18px]" aria-hidden /> ใบประกาศล่าสุด
+              </h2>
+              <Link href="/certificates" className="text-primary flex min-h-11 items-center text-[12.5px] font-medium hover:underline">
+                ดูทั้งหมด
+              </Link>
+            </div>
+            {learning.certificates.length === 0 ? (
+              <p className="text-muted-foreground mt-2 text-[13px]">เรียนจบคอร์สที่เปิดใบประกาศแล้วจะได้รับที่นี่</p>
+            ) : (
+              <ul className="divide-line mt-1 divide-y">
+                {learning.certificates.map((c) => (
+                  <li key={c.id} className="py-2.5">
+                    <p className="truncate text-[13.5px] font-medium">{c.course.title}</p>
+                    <p className="text-muted-foreground text-[12px]">
+                      <span className="font-mono">{c.code}</span> · {formatDate(c.issuedAt)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
       </div>
     </>

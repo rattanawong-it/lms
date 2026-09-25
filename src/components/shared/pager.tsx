@@ -2,8 +2,8 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-/** เลื่อนหน้ารายการกระทู้ — คงตัวกรองเดิมไว้ใน URL */
-export function QaPager({
+/** เลื่อนหน้ารายการแบบลิงก์ — คงตัวกรองเดิมไว้ใน URL (ถาม-ตอบ · รีวิว · รายงาน) */
+export function Pager({
   basePath,
   params,
   page,

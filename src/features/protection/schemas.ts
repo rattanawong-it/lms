@@ -33,3 +33,26 @@ export const EVENT_FLUSH_MS = 5_000;
 /** FR-15.5 — ลายน้ำสลับตำแหน่งใหม่ทุก 20–30 วินาที */
 export const WATERMARK_SHIFT_MIN_MS = 20_000;
 export const WATERMARK_SHIFT_MAX_MS = 30_000;
+
+/** FR-15.8 — ตัวกรองรายงานเหตุการณ์หน้าจอ (ค่าอยู่ใน URL) · วันที่เป็น "YYYY-MM-DD" ตามเวลาไทย */
+export type ScreenEventFilter = {
+  q: string;
+  event: ScreenEvent | null;
+  from: string | null;
+  to: string | null;
+  page: number;
+};
+
+export function parseScreenEventFilter(input: Record<string, string | string[] | undefined>): ScreenEventFilter {
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+  const date = (v: string | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) ? v : null);
+  const event = one(input.event);
+  const page = Number.parseInt(one(input.page) ?? "1", 10);
+  return {
+    q: (one(input.q) ?? "").trim().slice(0, 100),
+    event: event && (Object.values(ScreenEvent) as string[]).includes(event) ? (event as ScreenEvent) : null,
+    from: date(one(input.from)),
+    to: date(one(input.to)),
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+  };
+}

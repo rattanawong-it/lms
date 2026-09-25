@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–5 เสร็จ (ถึง Review & Rating 2026-09-25) · ถัดไปขั้น 6 Reports & Dashboard · Phase 2 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–6 เสร็จ (ถึง Reports & Dashboard 2026-09-25) · ถัดไปขั้น 7 Audit/ตั้งค่า/PDPA + จุดตรวจที่ 2 · Phase 2 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -179,6 +179,10 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **รีวิว (M14)** — แก้/ซ่อนรีวิวเมื่อไรต้องเรียก `recomputeCourseRating(tx, courseId)` ใน transaction เดียวกัน (`features/reviews/lib/aggregate.ts`)
 · catalog และหน้าคอร์สอ่าน `Course.ratingAvg/ratingCount` ที่เก็บไว้เท่านั้น ห้าม aggregate รีวิวต่อการ์ด · ชื่อผู้รีวิวแสดงผ่าน `publicReviewerName()` เสมอ
 
+**รายงาน (M16)** — ตัวเลขนับใน DB เท่านั้น (`count`/`groupBy`/`$queryRaw`) ไม่ดึงแถวมานับใน JS · สูตรอยู่ใน `features/reports/lib/report.ts`
+· ขอบเขตคณะของ DEPT_ADMIN บังคับใน query (`deptScope()`) ไม่ใช่แค่ซ่อนตัวเลือก · ไฟล์ส่งออกผ่าน `spreadsheetSafe()` ทุกช่องที่เป็นข้อความของผู้ใช้
+· Recharts ใช้เฉพาะ `/admin` ผ่าน `next/dynamic` — อย่า import ตรงในหน้าอื่น
+
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
 
@@ -236,6 +240,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **ไฟล์ `"use server"` export ได้เฉพาะ async function** — ค่าคงที่/ตัวแปรที่ export จากไฟล์ actions ทำให้ build ล้ม ให้วางไว้ใน `schemas.ts`
 - **`RichTextField` โหลด Tiptap แบบ lazy** — ตัว placeholder ต้องส่งค่าเดิมไปกับฟอร์มด้วย (แก้แล้วใน Phase 2 ขั้น 1)
   ไม่งั้นกดบันทึกก่อน editor โหลดเสร็จจะล้างเนื้อหาทิ้ง
+- **grid คอลัมน์เดียวบนมือถือขยายตามเนื้อหาที่ `truncate` จนล้นจอ** — ใส่ `grid-cols-1` และ `min-w-0` ให้ลูกเสมอ (เจอที่ `/dashboard`)
 - **Playwright โหลด Prisma client ที่ generate ไม่ได้** (ESM + `import.meta` แต่ Playwright โหลดแบบ CommonJS) — e2e ที่ต้องเตรียมข้อมูลใน DB
   ให้เขียนสคริปต์ใน `tests/e2e/support/` แล้วเรียกด้วย `runFixture()` จาก `helpers.ts` (tsx แยก process) · สคริปต์ tsx ห้ามใช้ top-level await (แปลงเป็น CJS)
 - **`prisma migrate dev` ใช้ไม่ได้เมื่อ AI สั่ง** (non-interactive) — เขียน `migration.sql` ด้วย `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` แล้ว `prisma migrate deploy`

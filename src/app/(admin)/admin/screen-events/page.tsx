@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
-import { ShieldAlert } from "lucide-react";
+import Link from "next/link";
+import { Filter, ShieldAlert } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Pager } from "@/components/shared/pager";
+import { parseScreenEventFilter } from "@/features/protection/schemas";
 import { ProtectionSwitch } from "@/features/protection/components/protection-switch";
 import {
   getScreenEventReport,
@@ -35,12 +39,23 @@ const EVENT_TONE: Record<ScreenEvent, string> = {
   [ScreenEvent.BLUR]: "bg-muted text-fg-3",
 };
 
-/** M15 · FR-15.8 / FR-15.9 — รายงานเหตุการณ์หน้าจอ และสวิตช์การป้องกันระดับระบบ */
-export default async function ScreenEventsPage() {
+const inputClass =
+  "border-input bg-card focus-visible:ring-ring h-11 w-full rounded-[9px] border px-3 text-[14px] outline-none focus-visible:ring-2";
+
+/** M15 · FR-15.8 / FR-15.9 — รายงานเหตุการณ์หน้าจอ (กรอง + แบ่งหน้า · M16 ขั้น 6) และสวิตช์การป้องกันระดับระบบ */
+export default async function ScreenEventsPage(props: PageProps<"/admin/screen-events">) {
+  const filter = parseScreenEventFilter(await props.searchParams);
   const [report, systemEnabled] = await Promise.all([
-    getScreenEventReport(),
+    getScreenEventReport(filter),
     isProtectionEnabledSystemWide(),
   ]);
+  const query: Record<string, string> = {
+    ...(filter.q ? { q: filter.q } : {}),
+    ...(filter.event ? { event: filter.event } : {}),
+    ...(filter.from ? { from: filter.from } : {}),
+    ...(filter.to ? { to: filter.to } : {}),
+  };
+  const filtered = Object.keys(query).length > 0;
 
   return (
     <>
@@ -53,34 +68,74 @@ export default async function ScreenEventsPage() {
         <ProtectionSwitch enabled={systemEnabled} />
       </div>
 
+      <form
+        aria-label="ตัวกรองเหตุการณ์"
+        className="bg-card border-border mb-4 grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-[1fr_200px_160px_160px_auto] lg:items-end"
+      >
+        <div className="space-y-1">
+          <label htmlFor="se-q" className="text-[12.5px] font-medium">ผู้ใช้ (ชื่อหรืออีเมล)</label>
+          <input id="se-q" name="q" defaultValue={filter.q} className={inputClass} />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="se-event" className="text-[12.5px] font-medium">ชนิดเหตุการณ์</label>
+          <select id="se-event" name="event" defaultValue={filter.event ?? ""} className={inputClass}>
+            <option value="">ทุกชนิด</option>
+            {Object.values(ScreenEvent).map((e) => (
+              <option key={e} value={e}>
+                {EVENT_LABEL[e]}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="se-from" className="text-[12.5px] font-medium">ตั้งแต่วันที่</label>
+          <input id="se-from" type="date" name="from" defaultValue={filter.from ?? ""} className={inputClass} />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="se-to" className="text-[12.5px] font-medium">ถึง</label>
+          <input id="se-to" type="date" name="to" defaultValue={filter.to ?? ""} className={inputClass} />
+        </div>
+        <div className="flex gap-2">
+          <Button type="submit" className="h-11">
+            <Filter className="size-4" /> กรอง
+          </Button>
+          {filtered ? (
+            <Button asChild variant="ghost" className="h-11">
+              <Link href="/admin/screen-events">ล้าง</Link>
+            </Button>
+          ) : null}
+        </div>
+      </form>
+
       {report.counts.length > 0 ? (
         <div className="mb-5 flex flex-wrap gap-2">
           {report.counts.map((row) => (
-            <span
+            <Link
               key={row.event}
-              className="bg-card border-border rounded-lg border px-3 py-1.5 text-[12.5px]"
+              href={`/admin/screen-events?${new URLSearchParams({ ...query, event: row.event })}`}
+              aria-current={filter.event === row.event ? "true" : undefined}
+              className="bg-card border-border hover:bg-muted inline-flex min-h-11 items-center rounded-lg border px-3 text-[12.5px] aria-[current=true]:border-ring"
             >
               {EVENT_LABEL[row.event]}{" "}
-              <span className="num text-muted-foreground">{row.total.toLocaleString("th-TH")}</span>
-            </span>
+              <span className="num text-muted-foreground ml-1">{row.total.toLocaleString("th-TH")}</span>
+            </Link>
           ))}
         </div>
       ) : null}
 
       <section aria-labelledby="events">
         <h2 id="events" className="mb-2 text-[15px] font-semibold">
-          เหตุการณ์ล่าสุด
-          {report.total > SCREEN_EVENT_PAGE_SIZE ? (
-            <span className="text-muted-foreground num ml-2 text-[12.5px] font-normal">
-              แสดง {SCREEN_EVENT_PAGE_SIZE} จาก {report.total.toLocaleString("th-TH")} รายการ
-            </span>
-          ) : null}
+          {filtered ? "เหตุการณ์ตามตัวกรอง" : "เหตุการณ์ล่าสุด"}
+          <span className="text-muted-foreground num ml-2 text-[12.5px] font-normal" data-event-total>
+            {report.total.toLocaleString("th-TH")} รายการ
+            {report.total > SCREEN_EVENT_PAGE_SIZE ? ` · หน้าละ ${SCREEN_EVENT_PAGE_SIZE}` : ""}
+          </span>
         </h2>
 
         {report.rows.length === 0 ? (
           <EmptyState
             icon={<ShieldAlert className="size-6" />}
-            title="ยังไม่พบเหตุการณ์ที่น่าสงสัย"
+            title={filtered ? "ไม่พบเหตุการณ์ตามตัวกรองนี้" : "ยังไม่พบเหตุการณ์ที่น่าสงสัย"}
             description="เมื่อผู้เรียนกดคีย์ลัดคัดลอกหน้าจอ เปิดเครื่องมือนักพัฒนา หรือสั่งพิมพ์บทเรียน รายการจะขึ้นที่นี่"
           />
         ) : (
@@ -149,6 +204,7 @@ export default async function ScreenEventsPage() {
             </div>
           </div>
         )}
+        <Pager basePath="/admin/screen-events" params={query} page={filter.page} pageCount={report.pageCount} />
       </section>
 
       <p className="text-muted-foreground mt-5 max-w-[720px] text-[12px] leading-relaxed">

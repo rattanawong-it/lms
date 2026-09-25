@@ -12,7 +12,7 @@ import { RatingStars } from "@/features/catalog/components/course-card";
 import { HideReviewButton } from "@/features/reviews/components/review-list";
 import { getAdminReviews } from "@/features/reviews/queries";
 import { ADMIN_REVIEW_FILTERS, type AdminReviewFilter } from "@/features/reviews/schemas";
-import { QaPager } from "@/features/qa/components/qa-pager";
+import { Pager } from "@/components/shared/pager";
 
 export const metadata: Metadata = { title: "รีวิวคอร์ส" };
 
@@ -117,7 +117,7 @@ export default async function AdminReviewsPage(props: PageProps<"/admin/reviews"
           ))}
         </ul>
       )}
-      <QaPager basePath="/admin/reviews" params={params} page={page} pageCount={data.pageCount} />
+      <Pager basePath="/admin/reviews" params={params} page={page} pageCount={data.pageCount} />
     </>
   );
 }

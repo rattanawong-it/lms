@@ -96,7 +96,8 @@
 | **M12 LINE** | ✅ เสร็จ (webhook จำลอง) | Phase 3 ขั้น 2–3 | `features/line` + cron แจ้งล่วงหน้า `/api/cron/*` · ทดสอบกับ LINE จริงเมื่อสถาบันมี Official Account |
 | **M13 Q&A** | ✅ เสร็จ | Phase 3 ขั้น 4 | `features/qa` · `/learn/[courseId]/qa` · กล่องคำถามผู้สอน `/teach/courses/[id]/qa` · ข้อความล้วน (Q5) |
 | **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
-| M16, M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
+| **M16 Reports & Dashboard** | ✅ เสร็จ | Phase 3 ขั้น 6 | `features/reports` · `/dashboard` `/teach` `/admin` · `/admin/reports` ส่งออก CSV/XLSX · กราฟ Recharts (lazy) เฉพาะ `/admin` |
+| M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
 | M18 | ⬜ ยังไม่เริ่ม | Phase 4 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
@@ -369,8 +370,8 @@
 | FR-16.3 | Dashboard แอดมิน: ผู้ใช้ทั้งหมด/ใหม่, คอร์ส, การลงทะเบียน, อัตราการเรียนจบ แยกตามคณะ |
 | FR-16.4 | รายงานความคืบหน้ารายผู้เรียน/รายคอร์ส พร้อม export CSV |
 
-- [ ] FR-16.1 · [ ] FR-16.2 · [ ] FR-16.3 · [ ] FR-16.4
-- [ ] DoD ครบ 7 ข้อ
+- [x] FR-16.1 · [x] FR-16.2 · [x] FR-16.3 · [x] FR-16.4 — Phase 3 ขั้น 6 (`features/reports`)
+- [x] DoD ครบ 7 ข้อ
 
 ### M17 — Audit Log & System Settings (P1)
 | ID | Requirement |
