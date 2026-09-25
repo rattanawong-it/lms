@@ -3,6 +3,8 @@ import Image from "next/image";
 import { BookOpen, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import type { CourseCard as CourseCardData } from "@/features/catalog/queries";
+import { Visibility } from "@/generated/prisma/enums";
+import { formatBaht } from "@/lib/payment/money";
 
 /** ดาวคะแนนรีวิว — ใช้ทั้งบนการ์ดและหน้ารายละเอียด */
 export function RatingStars({ value, size = 13 }: { value: number; size?: number }) {
@@ -90,6 +92,16 @@ export function CourseCard({ course }: { course: CourseCardData }) {
               <Users className="size-3.5" />
               <span className="num">{course.enrollmentCount.toLocaleString("th-TH")}</span> ผู้เรียน
             </span>
+            {/* M18 — ราคา (คอร์สภายในไม่แสดงป้าย "ฟรี" เพราะไม่เคยขาย) */}
+            {course.price ? (
+              <span className="text-foreground num font-semibold" data-price>
+                {formatBaht(course.price)}
+              </span>
+            ) : course.visibility === Visibility.PUBLIC ? (
+              <span className="text-success-fg font-medium" data-price>
+                ฟรี
+              </span>
+            ) : null}
             {course.ratingAvg !== null ? (
               <span className="inline-flex items-center gap-1.5">
                 <RatingStars value={course.ratingAvg} />

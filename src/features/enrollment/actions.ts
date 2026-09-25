@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { isPaidCourse } from "@/features/commerce/lib/pricing";
 import { db } from "@/lib/db";
 import { assertCourseAccess, requireUser } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
@@ -80,10 +81,17 @@ export async function enroll(formData: FormData): Promise<ActionResult> {
       title: true,
       status: true,
       enrollPolicy: true,
+      visibility: true,
+      price: true,
       instructors: { select: { userId: true } },
     },
   });
   if (!course) return { ok: false, message: "ไม่พบคอร์สที่ต้องการลงทะเบียน" };
+
+  // M18 — คอร์สที่มีราคาได้สิทธิ์เรียนจากการชำระเงินสำเร็จเท่านั้น (หรือผู้ดูแลเพิ่มให้) · deny by default แม้ยิง action ตรง
+  if (isPaidCourse(course)) {
+    return { ok: false, message: "คอร์สนี้ต้องชำระเงินก่อนเรียน" };
+  }
 
   // คอร์สที่ยังไม่เผยแพร่เปิดให้ผู้สอนดูหน้ารายละเอียดได้ แต่ไม่ควรลงทะเบียนได้
   if (course.status !== CourseStatus.PUBLISHED) {

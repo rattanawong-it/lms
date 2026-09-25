@@ -24,7 +24,8 @@ import {
   VISIBILITY_LABEL,
 } from "@/features/courses/lib/labels";
 import type { CourseEditor } from "@/features/courses/queries";
-import { EnrollPolicy, Visibility } from "@/generated/prisma/enums";
+import { CourseStatus, EnrollPolicy, Visibility } from "@/generated/prisma/enums";
+import { canEditPrice } from "@/features/commerce/lib/pricing";
 import { submitForm } from "@/lib/form";
 
 type Options = {
@@ -214,6 +215,26 @@ export function CourseForm({
           <SelectError message={fieldErrors.enrollPolicy} />
         </div>
       </div>
+
+      {/* M18 · FR-18.1 — ราคาใช้เฉพาะคอร์สสาธารณะ (Q4) · ผู้สอนแก้ได้ระหว่างร่าง ผู้ดูแลแก้ได้เสมอ (Q3)
+          ล็อกแล้วช่องเป็น disabled จึงไม่ถูกส่งไปกับฟอร์ม → server คงราคาเดิม */}
+      <Field
+        label="ราคา (บาท)"
+        name="price"
+        inputMode="decimal"
+        defaultValue={course?.price ? String(Number(course.price)) : ""}
+        placeholder="เว้นว่าง = เรียนฟรี"
+        disabled={course ? !canEditPrice(course.status, course.canManage) : false}
+        hint={
+          course && !canEditPrice(course.status, course.canManage)
+            ? "คอร์สส่งตรวจหรือเผยแพร่แล้ว — ติดต่อผู้ดูแลเพื่อเปลี่ยนราคา"
+            : course?.status === CourseStatus.DRAFT || !course
+              ? "เฉพาะคอร์สสาธารณะ · ราคามีผลเมื่อผู้ดูแลอนุมัติคอร์ส"
+              : "เฉพาะคอร์สสาธารณะ"
+        }
+        error={fieldErrors.price}
+        className="max-w-[240px]"
+      />
 
       {canChooseDepartment ? (
         <div className="space-y-[7px]">

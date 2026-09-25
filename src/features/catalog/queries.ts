@@ -6,6 +6,7 @@ import { CourseStatus, EnrollPolicy, Role, Visibility } from "@/generated/prisma
 import type { Prisma } from "@/generated/prisma/client";
 import { mediaSrc } from "@/lib/rich-text-doc";
 import { CATALOG_PAGE_SIZE, type CatalogParams } from "@/features/catalog/schemas";
+import { isPaidCourse } from "@/features/commerce/lib/pricing";
 
 /**
  * M03 — คลังคอร์สและหน้ารายละเอียด
@@ -54,6 +55,9 @@ export type CourseCard = {
   ratingAvg: number | null;
   ratingCount: number;
   publishedAt: Date | null;
+  visibility: Visibility;
+  /** M18 — ราคาบาท ("990.00") เมื่อเป็นคอร์สที่ต้องซื้อ (`isPaidCourse`) · null = ฟรี */
+  price: string | null;
 };
 
 const cardSelect = {
@@ -67,6 +71,8 @@ const cardSelect = {
   // FR-14.2 — ค่าที่เก็บไว้บนคอร์ส (features/reviews คำนวณใหม่ทุกครั้งที่รีวิวเปลี่ยน)
   ratingAvg: true,
   ratingCount: true,
+  visibility: true,
+  price: true,
   category: { select: { name: true } },
   department: { select: { name: true } },
   instructors: { select: { user: { select: { name: true } } } },
@@ -93,6 +99,8 @@ function toCard(row: CourseCardRow): CourseCard {
     ratingAvg: row.ratingCount > 0 && row.ratingAvg !== null ? Number(row.ratingAvg) : null,
     ratingCount: row.ratingCount,
     publishedAt: row.publishedAt,
+    visibility: row.visibility,
+    price: isPaidCourse(row) ? row.price!.toString() : null,
   };
 }
 

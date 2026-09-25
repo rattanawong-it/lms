@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0 payment adapter เสร็จ · ถัดไปขั้น 1 ตั้งราคา · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–1 เสร็จ (payment adapter · ตั้งราคา) · ถัดไปขั้น 2 สั่งซื้อ/ชำระเงิน · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -190,6 +190,10 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 · ตารางใหม่ที่เก็บข้อมูลส่วนบุคคลต้องเพิ่มใน `anonymizeUser()` และ `buildPersonalDataExport()` ของ `features/privacy/lib/` เสมอ
 · บัญชีที่ลบแล้วมี `deletedAt` — query ที่นับ/แสดงรายชื่อผู้ใช้ต้องกรอง `deletedAt: null` · สวิตช์การป้องกันระดับระบบอยู่ที่ `/admin/settings`
 
+**ขายคอร์ส (M18)** — "คอร์สนี้ต้องซื้อไหม" ถาม `isPaidCourse()` จาก `features/commerce/lib/pricing.ts` เท่านั้น (PUBLIC + ราคา > 0 · INTERNAL ฟรีเสมอ)
+· เงินคำนวณเป็นสตางค์ด้วย `toSatang()`/`fromSatang()` (`lib/payment/money.ts`) ห้ามคูณ float · แสดงผลด้วย `formatBaht()`
+· ทางเข้าคอร์สที่มีราคามีแค่ชำระสำเร็จ (ขั้น 2) หรือผู้ดูแลเพิ่มให้ — `enroll()` ปฏิเสธเสมอ · ผู้สอนแก้ราคาได้เฉพาะคอร์สร่าง (`canEditPrice()`)
+
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
 
@@ -241,6 +245,8 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
 - **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`
   ไม่งั้นสองโปรเจกต์จะแย่งสถานะของกันเอง (ดู `tests/e2e/enrollment.spec.ts`)
+- **โปรเจกต์ mobile ของ Playwright เห็น DOM เก่ากับใหม่พร้อมกันชั่วครู่หลัง `goto`/`reload`** — locator ที่คาดว่ามีตัวเดียวเจอ 2 ตัว (strict mode)
+  แบบสุ่ม · ให้ `await expect(locator).toHaveCount(1)` ก่อนใช้งาน (ยังจับกรณีมีซ้ำจริงได้) · เจอที่ `score-curve.spec`, `privacy.spec`
 - **`PAYMENT_PROVIDER=mock` ใน production ทำให้ระบบไม่ยอมเริ่ม** — Playwright ใช้ `next start` (production) จึงต้องตั้ง `ALLOW_MOCK_PAYMENT=true` บนเครื่องทดสอบด้วย
 - **`<Progress>` ของ shadcn ไม่ส่ง `value` ต่อให้ Radix** → ไม่มี `aria-valuenow` · เทสต์ให้อ่านจาก `aria-label` ที่ใส่เปอร์เซ็นต์ไว้
 - **checkbox ใน Zod v4** — `z.union([...]).nullish().transform(...)` ไม่ใช่ใส่ `z.undefined()` ใน union

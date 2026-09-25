@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ClipboardCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { formatBaht } from "@/lib/payment/money";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
@@ -63,6 +64,13 @@ export default async function AdminCoursesPage() {
                       <p className="text-muted-foreground mt-0.5 text-[11.5px]">
                         {row.departmentName ?? "ไม่สังกัดคณะ"}
                         {row.categoryName ? ` · ${row.categoryName}` : ""}
+                      </p>
+                      <p className="mt-0.5 text-[11.5px]" data-review-price>
+                        {row.price ? (
+                          <span className="num font-semibold">ราคา {formatBaht(row.price)}</span>
+                        ) : (
+                          <span className="text-muted-foreground">เรียนฟรี</span>
+                        )}
                       </p>
                     </td>
                     <td className="text-muted-foreground px-4 py-3">

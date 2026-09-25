@@ -5,6 +5,7 @@ import { CourseStatus, Role } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
 import { formatBytes } from "@/lib/upload-limits";
 import { parseCompletionRule, type CompletionRule } from "@/features/courses/schemas";
+import { isPaidCourse } from "@/features/commerce/lib/pricing";
 
 /** M04 — ข้อมูลฝั่งผู้สอนและผู้ดูแล (หน้า catalog สาธารณะอยู่ใน features/catalog) */
 
@@ -123,6 +124,8 @@ export type CourseEditor = {
   level: string | null;
   status: CourseStatus;
   visibility: string;
+  /** M18 — ราคาเป็นบาท ("990.00") · null = ฟรี */
+  price: string | null;
   enrollPolicy: string;
   sequential: boolean;
   protectionEnabled: boolean;
@@ -150,6 +153,7 @@ export async function getCourseForEdit(courseId: string): Promise<CourseEditor> 
       level: true,
       status: true,
       visibility: true,
+      price: true,
       enrollPolicy: true,
       sequential: true,
       protectionEnabled: true,
@@ -171,6 +175,7 @@ export async function getCourseForEdit(courseId: string): Promise<CourseEditor> 
 
   return {
     ...course,
+    price: course.price?.toString() ?? null,
     cover: toAttached(cover),
     completionRule: parseCompletionRule(course.completionRule),
     canManage: access.isManager,
@@ -283,7 +288,11 @@ export async function courseFormOptions(): Promise<{
   return { categories, departments };
 }
 
-export type ReviewQueueRow = TeachCourseRow & { instructorNames: string[] };
+export type ReviewQueueRow = TeachCourseRow & {
+  instructorNames: string[];
+  /** M18 · Q3 — ราคาที่ผู้สอนเสนอ มีผลเมื่ออนุมัติ · null = ฟรี */
+  price: string | null;
+};
 
 /**
  * FR-04.6 — คิวคอร์สที่รออนุมัติเผยแพร่ (ผู้ดูแลคณะขึ้นไป)
@@ -302,11 +311,16 @@ export async function listReviewQueue(): Promise<ReviewQueueRow[]> {
   const rows = await db.course.findMany({
     where,
     orderBy: [{ updatedAt: "asc" }],
-    select: { ...rowSelect, instructors: { select: { userId: true, user: { select: { name: true } } } } },
+    select: {
+      ...rowSelect,
+      price: true,
+      instructors: { select: { userId: true, user: { select: { name: true } } } },
+    },
   });
 
   return rows.map((row) => ({
     ...toRow(row, user.id),
     instructorNames: row.instructors.map((i) => i.user.name),
+    price: isPaidCourse({ visibility: row.visibility, price: row.price }) ? row.price!.toString() : null,
   }));
 }

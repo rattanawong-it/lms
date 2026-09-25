@@ -15,7 +15,9 @@ import {
   LessonType,
   Role,
   VideoSource,
+  type Visibility,
 } from "@/generated/prisma/enums";
+import { canEditPrice, parsePriceInput } from "@/features/commerce/lib/pricing";
 import {
   attachmentRemoveSchema,
   attachmentSchema,
@@ -93,6 +95,26 @@ function readRichText(formData: FormData, field: string): RichTextDoc | typeof P
   return parseRichTextField(formData.get(field)) ?? Prisma.DbNull;
 }
 
+/**
+ * M18 · FR-18.1 — อ่านช่องราคา · ไม่มีช่องในฟอร์ม (ถูกล็อก) = คงราคาเดิม
+ * ผู้สอนเปลี่ยนราคาได้เฉพาะคอร์สร่าง (Q3) — ราคาที่ผู้ดูแลเห็นตอนอนุมัติต้องเป็นราคาที่ขายจริง
+ */
+function readPrice(
+  formData: FormData,
+  visibility: Visibility,
+  current: { price: string | null; status: CourseStatus } | null,
+  isManager: boolean,
+): { ok: true; price: string | null } | { ok: false; message: string } {
+  const raw = formData.get("price");
+  if (raw === null) return { ok: true, price: current?.price ?? null };
+  const parsed = parsePriceInput(raw, visibility);
+  if (!parsed.ok) return parsed;
+  if (current && parsed.price !== current.price && !canEditPrice(current.status, isManager)) {
+    return { ok: false, message: "คอร์สที่ส่งตรวจหรือเผยแพร่แล้ว เปลี่ยนราคาได้เฉพาะผู้ดูแล" };
+  }
+  return parsed;
+}
+
 /** FR-04.1 — สร้างคอร์สใหม่ (ผู้สร้างเป็นผู้สอนเจ้าของคอร์สทันที) */
 export async function createCourse(
   formData: FormData,
@@ -115,12 +137,16 @@ export async function createCourse(
 
   const { coverAssetId, ...courseData } = parsed.data;
 
+  const price = readPrice(formData, courseData.visibility, null, true);
+  if (!price.ok) return { ok: false, message: price.message, fieldErrors: { price: price.message } };
+
   const cover = await resolveCoverKey(coverAssetId, user.id, null);
   if (!cover.ok) return { ok: false, message: cover.message };
 
   const created = await db.course.create({
     data: {
       ...courseData,
+      price: price.price,
       coverKey: cover.key,
       description: readRichText(formData, "description"),
       departmentId,
@@ -135,7 +161,7 @@ export async function createCourse(
     action: "course.create",
     entity: "Course",
     entityId: created.id,
-    after: { title: created.title, slug: created.slug },
+    after: { title: created.title, slug: created.slug, price: price.price },
   });
 
   revalidateCourse(created.id, created.slug);
@@ -163,8 +189,13 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
       departmentId: true,
       status: true,
       coverKey: true,
+      price: true,
     },
   });
+
+  const beforePrice = before.price?.toString() ?? null;
+  const price = readPrice(formData, data.visibility, { price: beforePrice, status: before.status }, access.isManager);
+  if (!price.ok) return { ok: false, message: price.message, fieldErrors: { price: price.message } };
 
   const cover = await resolveCoverKey(coverAssetId, access.user.id, before.coverKey);
   if (!cover.ok) return { ok: false, message: cover.message };
@@ -182,10 +213,11 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
     data: {
       ...data,
       departmentId,
+      price: price.price,
       coverKey: cover.key,
       description: readRichText(formData, "description"),
     },
-    select: { title: true, slug: true, visibility: true, departmentId: true },
+    select: { title: true, slug: true, visibility: true, departmentId: true, price: true },
   });
 
   await writeAudit({
@@ -193,8 +225,8 @@ export async function updateCourse(formData: FormData): Promise<ActionResult> {
     action: "course.update",
     entity: "Course",
     entityId: id,
-    before,
-    after,
+    before: { ...before, price: beforePrice },
+    after: { ...after, price: after.price?.toString() ?? null },
   });
 
   revalidateCourse(id, before.slug);

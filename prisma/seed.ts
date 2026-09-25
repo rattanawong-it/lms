@@ -463,6 +463,17 @@ async function main() {
       departmentId: hr!.id,
       categoryId: general!.id,
     },
+    {
+      // M18 (Phase 4) — คอร์สสาธารณะที่มีราคา · ไม่มีใครลงทะเบียนตั้งต้น ใช้สาธิตการซื้อ
+      slug: "excel-for-work",
+      title: "Excel สำหรับการทำงาน (คอร์สมีค่าใช้จ่าย)",
+      summary: "สูตร ตาราง Pivot และกราฟที่ใช้จริงในงานประจำวัน พร้อมไฟล์ฝึกหัด",
+      level: "เบื้องต้น",
+      visibility: Visibility.PUBLIC,
+      departmentId: bus!.id,
+      categoryId: business!.id,
+      price: "990.00",
+    },
   ];
 
   for (const data of moreCourses) {

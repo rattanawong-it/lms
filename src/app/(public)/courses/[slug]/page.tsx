@@ -16,6 +16,9 @@ import { RichText } from "@/components/shared/rich-text";
 import { RatingStars } from "@/features/catalog/components/course-card";
 import { getCourseBySlug, getCourseMeta } from "@/features/catalog/queries";
 import { EnrollPanel } from "@/features/enrollment/components/enroll-panel";
+import { PurchasePanel } from "@/features/commerce/components/purchase-panel";
+import { courseOffer } from "@/features/commerce/lib/pricing";
+import { hasPayment } from "@/lib/env";
 import { ReviewSection } from "@/features/reviews/components/review-section";
 import { getEnrollmentState } from "@/features/enrollment/queries";
 import { getSessionUser } from "@/lib/rbac";
@@ -67,6 +70,13 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
 
   // FR-06.1 — สถานะการลงทะเบียนของผู้ใช้คนนี้ ตัดสินว่าแผงข้างขวาแสดงปุ่มอะไร
   const enrollment = viewer ? await getEnrollmentState(course.id) : null;
+  // M18 — คอร์สที่มีราคาแสดงแผงซื้อ เว้นแต่ผู้ดูมีสิทธิ์เรียนอยู่แล้ว (ซื้อแล้ว/ผู้ดูแลเพิ่มให้) หรือเป็นผู้สอน
+  const offer = courseOffer(
+    { visibility: course.visibility, price: course.price, enrollPolicy: course.enrollPolicy },
+    hasPayment,
+  );
+  const alreadyIn =
+    course.viewerCanTeach || enrollment?.kind === "active" || enrollment?.kind === "completed" || enrollment?.kind === "pending";
 
   const totalLessons = course.sections.reduce((sum, s) => sum + s.lessons.length, 0);
   const description = <RichText content={course.description} className="space-y-1" />;
@@ -242,7 +252,13 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
                 </div>
               </dl>
 
-              {viewer ? (
+              {offer.kind !== "free" && !alreadyIn ? (
+                <PurchasePanel
+                  courseId={course.id}
+                  offer={offer}
+                  loginHref={viewer ? null : `/login?next=${encodeURIComponent(`/courses/${course.slug}`)}`}
+                />
+              ) : viewer ? (
                 <EnrollPanel
                   courseId={course.id}
                   enrollPolicy={course.enrollPolicy}

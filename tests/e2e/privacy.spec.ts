@@ -140,7 +140,8 @@ test.describe("ผู้ดูแลระบบ", () => {
     // FR-17.2 — ค้นหาใน audit ตามรหัสข้อมูล แล้วดูค่าก่อน/หลัง
     await page.goto(`/admin/audit?entity=User&entityId=${f.approve.id}`);
     const row = page.locator('[data-audit-row="privacy.deletion.approve"]');
-    await expect(row).toBeVisible();
+    // ต้องมีแถวเดียว (กันอนุมัติซ้ำ) · บนมือถือ DOM เก่ากับใหม่อยู่พร้อมกันชั่วครู่หลังเปลี่ยนหน้า จึงรอให้นิ่งก่อน
+    await expect(row).toHaveCount(1, { timeout: 15_000 });
     await row.locator("summary").click();
     await expect(row.getByText("anonymized")).toBeVisible();
   });
