@@ -95,7 +95,8 @@
 | **M10 Certificate** | ✅ เสร็จ (รอจุดตรวจที่ 2) | Phase 2 ขั้น 6 | `features/certificates` · PDF ด้วย `@react-pdf/renderer` + Anuphan · `/verify/[code]` สาธารณะ |
 | **M12 LINE** | ✅ เสร็จ (webhook จำลอง) | Phase 3 ขั้น 2–3 | `features/line` + cron แจ้งล่วงหน้า `/api/cron/*` · ทดสอบกับ LINE จริงเมื่อสถาบันมี Official Account |
 | **M13 Q&A** | ✅ เสร็จ | Phase 3 ขั้น 4 | `features/qa` · `/learn/[courseId]/qa` · กล่องคำถามผู้สอน `/teach/courses/[id]/qa` · ข้อความล้วน (Q5) |
-| M14, M16, M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
+| **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
+| M16, M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
 | M18 | ⬜ ยังไม่เริ่ม | Phase 4 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
@@ -332,8 +333,8 @@
 | FR-14.2 | แสดงคะแนนเฉลี่ยและการกระจายของดาวในหน้าคอร์สและใน catalog |
 | FR-14.3 | ผู้สอนตอบกลับรีวิวได้ ส่วนแอดมินซ่อนรีวิวที่ไม่เหมาะสมได้ |
 
-- [ ] FR-14.1 · [ ] FR-14.2 · [ ] FR-14.3
-- [ ] DoD ครบ 7 ข้อ
+- [x] FR-14.1 · [x] FR-14.2 · [x] FR-14.3 — Phase 3 ขั้น 5 (`features/reviews`)
+- [x] DoD ครบ 7 ข้อ
 
 ### M15 — Content Protection / Anti-capture (P0)
 | ID | Requirement |

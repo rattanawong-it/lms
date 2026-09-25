@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–4 เสร็จ (ถึง Q&A 2026-09-25) · ถัดไปขั้น 5 Review & Rating · Phase 2 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–5 เสร็จ (ถึง Review & Rating 2026-09-25) · ถัดไปขั้น 6 Reports & Dashboard · Phase 2 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -175,6 +175,9 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **ถาม-ตอบ (M13)** — ตรวจสิทธิ์ด้วย `assertQaAccess()` (`features/qa/lib/access.ts`) ไม่ใช่ `assertCourseAccess(…, "learn")` เพราะผู้เรียนหมดอายุยังอ่านได้
 · เนื้อหาเป็น**ข้อความล้วน** แสดงผ่าน `<PlainText>` (text node + `linkify()` เฉพาะ http/https) ห้าม `dangerouslySetInnerHTML` · อยู่นอก `<ProtectedViewer>`
 · ป้าย "แก้ไขแล้ว" มาจาก `editedAt` (ตั้งเฉพาะ action แก้เนื้อหา) · ลบโดยผู้ดูแล = ลบจริง + สำเนาใน AuditLog
+
+**รีวิว (M14)** — แก้/ซ่อนรีวิวเมื่อไรต้องเรียก `recomputeCourseRating(tx, courseId)` ใน transaction เดียวกัน (`features/reviews/lib/aggregate.ts`)
+· catalog และหน้าคอร์สอ่าน `Course.ratingAvg/ratingCount` ที่เก็บไว้เท่านั้น ห้าม aggregate รีวิวต่อการ์ด · ชื่อผู้รีวิวแสดงผ่าน `publicReviewerName()` เสมอ
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ

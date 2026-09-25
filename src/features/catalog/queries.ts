@@ -56,24 +56,6 @@ export type CourseCard = {
   publishedAt: Date | null;
 };
 
-type RatingStat = { avg: number; count: number };
-
-/** คะแนนรีวิวเฉลี่ยของคอร์สตามรายการ id ที่ระบุ (ไม่นับรีวิวที่ถูกซ่อน) */
-async function ratingsByCourse(courseIds: string[]): Promise<Map<string, RatingStat>> {
-  if (courseIds.length === 0) return new Map();
-
-  const rows = await db.review.groupBy({
-    by: ["courseId"],
-    where: { courseId: { in: courseIds }, isHidden: false },
-    _avg: { rating: true },
-    _count: { _all: true },
-  });
-
-  return new Map(
-    rows.map((r) => [r.courseId, { avg: r._avg.rating ?? 0, count: r._count._all }]),
-  );
-}
-
 const cardSelect = {
   id: true,
   slug: true,
@@ -82,6 +64,9 @@ const cardSelect = {
   level: true,
   coverKey: true,
   publishedAt: true,
+  // FR-14.2 — ค่าที่เก็บไว้บนคอร์ส (features/reviews คำนวณใหม่ทุกครั้งที่รีวิวเปลี่ยน)
+  ratingAvg: true,
+  ratingCount: true,
   category: { select: { name: true } },
   department: { select: { name: true } },
   instructors: { select: { user: { select: { name: true } } } },
@@ -91,7 +76,7 @@ const cardSelect = {
 
 type CourseCardRow = Prisma.CourseGetPayload<{ select: typeof cardSelect }>;
 
-function toCard(row: CourseCardRow, rating: RatingStat | undefined): CourseCard {
+function toCard(row: CourseCardRow): CourseCard {
   return {
     id: row.id,
     slug: row.slug,
@@ -105,8 +90,8 @@ function toCard(row: CourseCardRow, rating: RatingStat | undefined): CourseCard 
     instructorNames: row.instructors.map((i) => i.user.name),
     lessonCount: row.sections.reduce((sum, s) => sum + s._count.lessons, 0),
     enrollmentCount: row._count.enrollments,
-    ratingAvg: rating && rating.count > 0 ? rating.avg : null,
-    ratingCount: rating?.count ?? 0,
+    ratingAvg: row.ratingCount > 0 && row.ratingAvg !== null ? Number(row.ratingAvg) : null,
+    ratingCount: row.ratingCount,
     publishedAt: row.publishedAt,
   };
 }
@@ -144,60 +129,27 @@ export type CatalogResult = {
 /**
  * FR-03.2 — รายการคอร์สพร้อมค้นหา กรอง เรียง และแบ่งหน้า
  *
- * การเรียงตาม "คะแนนรีวิว" ต้องใช้ค่าเฉลี่ยของตารางลูก ซึ่ง Prisma สั่ง orderBy ไม่ได้
- * จึงดึงเฉพาะ id ของคอร์สที่ตรงเงื่อนไขมาจัดอันดับในแอปแล้วค่อยแบ่งหน้า
- * วิธีนี้ยังคงใช้ where ชุดเดียวกับเส้นทางอื่น (ไม่มี SQL ซ้ำซ้อนให้หลุดกัน)
- * ถ้าจำนวนคอร์สโตจนวิธีนี้ช้า ค่อยพิจารณาเก็บ ratingAvg/ratingCount ไว้บน Course
+ * เรียงตามคะแนนรีวิวด้วย `Course.ratingAvg` ที่เก็บไว้ (คอร์สที่ยังไม่มีรีวิวอยู่ท้าย)
  */
 export async function listCourses(params: CatalogParams): Promise<CatalogResult> {
   const viewer = await getSessionUser();
   const where = catalogWhere(viewer, params);
   const skip = (params.page - 1) * CATALOG_PAGE_SIZE;
 
-  if (params.sort === "rating") {
-    const candidates = await db.course.findMany({ where, select: { id: true } });
-    const ratings = await ratingsByCourse(candidates.map((c) => c.id));
-
-    const ordered = candidates
-      .map((c) => ({ id: c.id, stat: ratings.get(c.id) }))
-      .sort((a, b) => {
-        const scoreA = a.stat && a.stat.count > 0 ? a.stat.avg : -1;
-        const scoreB = b.stat && b.stat.count > 0 ? b.stat.avg : -1;
-        if (scoreA !== scoreB) return scoreB - scoreA;
-        return (b.stat?.count ?? 0) - (a.stat?.count ?? 0);
-      });
-
-    const pageIds = ordered.slice(skip, skip + CATALOG_PAGE_SIZE).map((o) => o.id);
-    const rows = await db.course.findMany({ where: { id: { in: pageIds } }, select: cardSelect });
-    const byId = new Map(rows.map((r) => [r.id, r]));
-
-    return {
-      rows: await withCovers(
-        pageIds.flatMap((id) => {
-          const row = byId.get(id);
-          return row ? [toCard(row, ratings.get(id))] : [];
-        }),
-      ),
-      total: candidates.length,
-      page: params.page,
-      pageCount: Math.max(1, Math.ceil(candidates.length / CATALOG_PAGE_SIZE)),
-    };
-  }
-
   const orderBy: Prisma.CourseOrderByWithRelationInput[] =
     params.sort === "popular"
       ? [{ enrollments: { _count: "desc" } }, { publishedAt: "desc" }]
-      : [{ publishedAt: "desc" }, { createdAt: "desc" }];
+      : params.sort === "rating"
+        ? [{ ratingAvg: { sort: "desc", nulls: "last" } }, { ratingCount: "desc" }, { publishedAt: "desc" }]
+        : [{ publishedAt: "desc" }, { createdAt: "desc" }];
 
   const [rows, total] = await Promise.all([
     db.course.findMany({ where, orderBy, skip, take: CATALOG_PAGE_SIZE, select: cardSelect }),
     db.course.count({ where }),
   ]);
 
-  const ratings = await ratingsByCourse(rows.map((r) => r.id));
-
   return {
-    rows: await withCovers(rows.map((row) => toCard(row, ratings.get(row.id)))),
+    rows: await withCovers(rows.map(toCard)),
     total,
     page: params.page,
     pageCount: Math.max(1, Math.ceil(total / CATALOG_PAGE_SIZE)),
@@ -260,13 +212,8 @@ export type CourseDetail = CourseCard & {
     title: string;
     lessons: { id: string; title: string; type: string; isPreview: boolean; durationSec: number | null }[];
   }[];
-  reviews: {
-    id: string;
-    rating: number;
-    comment: string | null;
-    createdAt: Date;
-    authorName: string;
-  }[];
+  /** ใช้ตัดสินสิทธิ์ผู้ดูแลของส่วนรีวิว (features/reviews) */
+  departmentId: string | null;
 };
 
 /**
@@ -301,18 +248,6 @@ export async function getCourseBySlug(slug: string): Promise<CourseDetail | null
           },
         },
       },
-      reviews: {
-        where: { isHidden: false },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-        select: {
-          id: true,
-          rating: true,
-          comment: true,
-          createdAt: true,
-          user: { select: { name: true } },
-        },
-      },
     },
   });
 
@@ -330,8 +265,7 @@ export async function getCourseBySlug(slug: string): Promise<CourseDetail | null
   if (course.status !== CourseStatus.PUBLISHED && !canPreviewDraft) return null;
   if (course.visibility === Visibility.INTERNAL && !viewer) return null;
 
-  const ratings = await ratingsByCourse([course.id]);
-  const [card] = await withCovers([toCard(course, ratings.get(course.id))]);
+  const [card] = await withCovers([toCard(course)]);
 
   return {
     ...card!,
@@ -346,13 +280,7 @@ export async function getCourseBySlug(slug: string): Promise<CourseDetail | null
       title: s.title,
       lessons: s.lessons,
     })),
-    reviews: course.reviews.map((r) => ({
-      id: r.id,
-      rating: r.rating,
-      comment: r.comment,
-      createdAt: r.createdAt,
-      authorName: r.user.name,
-    })),
+    departmentId: course.departmentId,
   };
 }
 

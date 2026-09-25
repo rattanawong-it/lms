@@ -663,6 +663,59 @@ async function main() {
     });
   }
 
+  // ── ตัวอย่างถาม-ตอบและรีวิวใน assessment-demo (Phase 3 ขั้น 4–5) ──
+  // ผู้เรียนสาธิตไม่มีรหัสผ่าน (ล็อกอินไม่ได้) — มีไว้ให้หน้าถาม-ตอบ/รีวิวไม่ว่างตอนสาธิต
+  if ((await db.review.count({ where: { courseId: demo.id } })) === 0) {
+    const learners = await Promise.all(
+      [
+        { email: "demo-learner-1@example.com", name: "สมชาย ใจดี", progressPct: 100, rating: 5, comment: "อธิบายเข้าใจง่าย แบบทดสอบครบทุกชนิด ได้ลองทำจริง" },
+        { email: "demo-learner-2@example.com", name: "สมหญิง รักเรียน", progressPct: 40, rating: 4, comment: null },
+      ].map(async (l) => {
+        const user = await db.user.upsert({
+          where: { email: l.email },
+          update: {},
+          create: { email: l.email, name: l.name, role: Role.STUDENT, emailVerified: true, pdpaConsentAt: new Date() },
+        });
+        await db.enrollment.upsert({
+          where: { userId_courseId: { userId: user.id, courseId: demo.id } },
+          update: {},
+          create: { userId: user.id, courseId: demo.id, progressPct: l.progressPct },
+        });
+        return { ...l, user };
+      }),
+    );
+    for (const l of learners) {
+      await db.review.create({ data: { courseId: demo.id, userId: l.user.id, rating: l.rating, comment: l.comment } });
+    }
+    await db.review.updateMany({
+      where: { courseId: demo.id, userId: learners[0]!.user.id },
+      data: { reply: "ขอบคุณครับ ขอให้สนุกกับบทต่อไป", repliedAt: new Date() },
+    });
+    const agg = await db.review.aggregate({ where: { courseId: demo.id, isHidden: false }, _avg: { rating: true }, _count: { _all: true } });
+    await db.course.update({
+      where: { id: demo.id },
+      data: { ratingCount: agg._count._all, ratingAvg: agg._avg.rating === null ? null : Math.round(agg._avg.rating * 100) / 100 },
+    });
+
+    const thread = await db.thread.create({
+      data: {
+        courseId: demo.id,
+        authorId: learners[0]!.user.id,
+        title: "ข้อจับคู่ต้องจับครบทุกคู่ไหมถึงจะได้คะแนน",
+        body: "ลองทำแล้วจับได้ 2 จาก 3 คู่ อยากรู้ว่าได้คะแนนบางส่วนหรือเปล่าครับ",
+      },
+    });
+    await db.post.create({
+      data: {
+        threadId: thread.id,
+        authorId: instructor.id,
+        body: "ข้อจับคู่ให้คะแนนตามสัดส่วนที่จับถูกครับ จับถูก 2 ใน 3 คู่ได้ 2/3 ของคะแนนข้อนั้น",
+        isAnswer: true,
+      },
+    });
+    await db.thread.update({ where: { id: thread.id }, data: { isResolved: true, lastPostAt: new Date() } });
+  }
+
   console.log("seed เสร็จแล้ว:");
   console.log(`  คณะ/หน่วยงาน ${departments.length} รายการ · หมวดหมู่ ${categories.length} รายการ`);
   console.log(`  Super Admin : ${admin.email}`);

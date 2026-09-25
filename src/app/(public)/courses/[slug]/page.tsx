@@ -7,7 +7,6 @@ import {
   CirclePlay,
   Clock,
   FileText,
-  MessageSquareQuote,
   Radio,
   Users,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import { RichText } from "@/components/shared/rich-text";
 import { RatingStars } from "@/features/catalog/components/course-card";
 import { getCourseBySlug, getCourseMeta } from "@/features/catalog/queries";
 import { EnrollPanel } from "@/features/enrollment/components/enroll-panel";
+import { ReviewSection } from "@/features/reviews/components/review-section";
 import { getEnrollmentState } from "@/features/enrollment/queries";
 import { getSessionUser } from "@/lib/rbac";
 import { formatDate, formatDuration } from "@/lib/dates";
@@ -109,7 +109,9 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
               <span className="inline-flex items-center gap-1.5">
                 <RatingStars value={course.ratingAvg} size={14} />
                 <span className="num">{course.ratingAvg.toFixed(1)}</span>
-                <span className="num">({course.ratingCount} รีวิว)</span>
+                <a href="#course-reviews" className="num hover:underline">
+                  ({course.ratingCount.toLocaleString("th-TH")} รีวิว)
+                </a>
               </span>
             ) : null}
             {course.publishedAt ? <span>เผยแพร่ {formatDate(course.publishedAt)}</span> : null}
@@ -195,37 +197,7 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
             )}
           </section>
 
-          <section aria-labelledby="course-reviews" className="mt-8">
-            <h2 id="course-reviews" className="mb-3 text-[17px] font-semibold">
-              รีวิวจากผู้เรียน
-            </h2>
-
-            {course.reviews.length === 0 ? (
-              <div className="bg-card border-border text-muted-foreground flex items-center gap-3 rounded-xl border px-4 py-5 text-[13px]">
-                <MessageSquareQuote className="size-5 shrink-0" />
-                <p>
-                  ยังไม่มีรีวิว — ผู้เรียนจะรีวิวได้เมื่อเรียนไปแล้วอย่างน้อย 30% (FR-14.1 · เฟส 3)
-                </p>
-              </div>
-            ) : (
-              <ul className="space-y-3">
-                {course.reviews.map((review) => (
-                  <li key={review.id} className="bg-card border-border rounded-xl border p-4">
-                    <div className="flex items-center gap-2">
-                      <RatingStars value={review.rating} />
-                      <span className="text-[13px] font-medium">{review.authorName}</span>
-                      <span className="text-muted-foreground num text-[12px]">
-                        {formatDate(review.createdAt)}
-                      </span>
-                    </div>
-                    {review.comment ? (
-                      <p className="text-fg-2 mt-2 text-[13px] leading-relaxed">{review.comment}</p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
+          <ReviewSection course={course} />
         </div>
 
         {/* แผงลงทะเบียน */}

@@ -271,6 +271,9 @@ model Course {
   categoryId         String?
   category           Category?    @relation(fields: [categoryId], references: [id])
   publishedAt        DateTime?
+  // FR-14.2 ค่าเฉลี่ยรีวิวที่ไม่ถูกซ่อน — คำนวณใหม่จากแถวจริงทุกครั้งที่รีวิวเปลี่ยน (features/reviews) · catalog ไม่ต้อง aggregate ต่อการ์ด
+  ratingAvg          Decimal?     @db.Decimal(3, 2)
+  ratingCount        Int          @default(0)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -655,10 +658,12 @@ model Review {
   rating    Int      // 1..5 (ตรวจด้วย Zod + CHECK constraint)
   comment   String?
   reply     String?
+  repliedAt DateTime? // FR-14.3 ผู้สอนตอบกลับได้ 1 ข้อความ (แก้ทับได้)
   isHidden  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@unique([courseId, userId])
+  @@index([courseId, isHidden])
 }
 
 model Notification {

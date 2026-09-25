@@ -440,6 +440,8 @@ model Course {
   categoryId         String?
   category           Category?    @relation(fields: [categoryId], references: [id])
   publishedAt        DateTime?
+  ratingAvg          Decimal?     @db.Decimal(3, 2) // รีวิวที่ไม่ถูกซ่อน · คำนวณใหม่จากแถวจริงทุกครั้ง (features/reviews)
+  ratingCount        Int          @default(0)
   createdAt          DateTime     @default(now())
   updatedAt          DateTime     @updatedAt
 
@@ -822,10 +824,12 @@ model Review {
   rating    Int      // 1..5 (ตรวจด้วย Zod + CHECK constraint)
   comment   String?
   reply     String?
-  isHidden  Boolean  @default(false)
+  repliedAt DateTime?          // ผู้สอนตอบกลับ 1 ข้อความ (แก้ทับได้ · ว่าง = ลบ)
+  isHidden  Boolean  @default(false) // ไม่แสดงและไม่นับในค่าเฉลี่ย
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@unique([courseId, userId])
+  @@index([courseId, isHidden])
 }
 
 model Notification {
@@ -978,7 +982,7 @@ flowchart LR
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
 | `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/learn/[courseId]/qa`, `/learn/[courseId]/qa/[threadId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
-| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,announcements,reports,screen-events,audit,settings,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
+| `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,reviews,announcements,reports,screen-events,audit,settings,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
 | API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup}`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
