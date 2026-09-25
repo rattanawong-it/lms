@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 2 (Assessment: M07–M10) — **ครบ 7 ขั้น** บน branch `phase-2` · จุดตรวจ 1–2 ทดสอบบน Chrome แล้ว · ขั้น 7 Score Curve (Q6) เสร็จ 2026-09-24 |
+| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–3 เสร็จ (ถึง cron แจ้งล่วงหน้า 2026-09-25) · ถัดไปจุดตรวจที่ 1 แล้วขั้น 4 Q&A · Phase 2 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -27,7 +27,7 @@
 |---|---|
 | [`docs/spec.md`](./docs/spec.md) | ต้องทำอะไร (FR/NFR, checklist รายโมดูล, สถานะงาน §3.0.1, roadmap) |
 | [`docs/system-design.md`](./docs/system-design.md) | ทำอย่างไร (สถาปัตยกรรม, data model, authorization, flow, โครงสร้างโฟลเดอร์ §11) |
-| [`docs/phase-2-plan.md`](./docs/phase-2-plan.md) | ลำดับงานของเฟสปัจจุบัน (Phase 2 — อนุมัติแล้ว 2026-09-23) + จุดหยุดตรวจ · แผนเฟสก่อนหน้าอยู่ `phase-1-plan.md` |
+| [`docs/phase-3-plan.md`](./docs/phase-3-plan.md) | ลำดับงานของเฟสปัจจุบัน (Phase 3 — อนุมัติแล้ว 2026-09-24) + จุดหยุดตรวจ · แผนเฟสก่อนหน้าอยู่ `phase-1-plan.md` / `phase-2-plan.md` |
 | [`docs/CHANGELOG-REQUIREMENTS.md`](./docs/CHANGELOG-REQUIREMENTS.md) | อะไรเปลี่ยนไปจาก baseline เพราะอะไร |
 
 **กฎการเปลี่ยนแปลง:** แก้ requirement, Prisma schema, โครงสร้างโฟลเดอร์ หรือ tech stack
@@ -46,6 +46,8 @@ pnpm typecheck      # tsc --noEmit
 pnpm test           # vitest run  (tests/unit)
 pnpm test:e2e --workers=2   # playwright (tests/e2e) — ค่าเริ่มต้น 5 workers หนักเกินเครื่องพัฒนา
 npx next typegen    # สร้าง type ของ route ใหม่ ก่อน typecheck จะผ่าน
+
+pnpm cron reminders # เรียก /api/cron/{reminders|live|cleanup} ของเซิร์ฟเวอร์ที่เปิดอยู่ (ต้องตั้ง CRON_SECRET)
 
 pnpm db:migrate     # prisma migrate dev
 pnpm db:generate    # prisma generate → src/generated/prisma
@@ -80,6 +82,7 @@ src/
   app/api/{lesson-media,lesson-file,events/screen}   เสิร์ฟ PDF · ไฟล์ประกอบ · รับรายงานหน้าจอ
   app/api/line/webhook                               LINE (M12) — ตัวตนพิสูจน์ด้วย X-Line-Signature เท่านั้น ไม่มี session
   app/api/submission-file                            เสิร์ฟไฟล์งานที่ผู้เรียนส่ง (เจ้าของ/ผู้สอนของคอร์ส)
+  app/api/cron/[job]                                 reminders · live · cleanup — ตัวตนพิสูจน์ด้วย Bearer CRON_SECRET · ไม่มี session
   app/api/certificate/[code] · (public)/verify/[code] ดาวน์โหลดใบประกาศ · หน้าตรวจสอบสาธารณะ (M10)
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
@@ -164,6 +167,7 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **การแจ้งเตือน (M11)** — เรียก `notify()` จาก `@/lib/notify` เท่านั้น ห้าม `db.notification.create*` เอง · ห้ามเรียก `sendMail()` เพื่อแจ้งเตือนเอง
 (ช่องทางตามการตั้งค่า FR-11.4 ที่ `/settings/notifications` จัดการใน `notify()` แล้ว) · ชนิดใหม่ต้องเพิ่มใน `NOTIFY_TYPE_LABEL` ของ `prefs.ts`
 ตัวเลขบนกระดิ่งมาจาก `getUnreadNotificationCount()` ที่ layout `(learn)`/`(instructor)` ส่งให้ `TopBar`/`BottomNav`
+แจ้งเตือนที่ต้องไม่ซ้ำ (cron) ส่ง `dedupeKey` ให้ `notify()` — DB กันซ้ำด้วย unique `[userId, dedupeKey]` และช่องทางภายนอกส่งเฉพาะแถวใหม่ · key ผูกเวลาของเหตุการณ์ (`features/cron/lib/rules.ts`)
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
 และการแก้/ลบ/ปักหมุดตรวจกับระดับที่บันทึกใน DB ไม่ใช่ค่าจากฟอร์ม
 
@@ -224,6 +228,9 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **ไฟล์ `"use server"` export ได้เฉพาะ async function** — ค่าคงที่/ตัวแปรที่ export จากไฟล์ actions ทำให้ build ล้ม ให้วางไว้ใน `schemas.ts`
 - **`RichTextField` โหลด Tiptap แบบ lazy** — ตัว placeholder ต้องส่งค่าเดิมไปกับฟอร์มด้วย (แก้แล้วใน Phase 2 ขั้น 1)
   ไม่งั้นกดบันทึกก่อน editor โหลดเสร็จจะล้างเนื้อหาทิ้ง
+- **Playwright โหลด Prisma client ที่ generate ไม่ได้** (ESM + `import.meta` แต่ Playwright โหลดแบบ CommonJS) — e2e ที่ต้องเตรียมข้อมูลใน DB
+  ให้เขียนสคริปต์ใน `tests/e2e/support/` แล้วรันด้วย tsx แยก process (ดู `cron.spec.ts`) · สคริปต์ tsx ห้ามใช้ top-level await (แปลงเป็น CJS)
+- **`prisma migrate dev` ใช้ไม่ได้เมื่อ AI สั่ง** (non-interactive) — เขียน `migration.sql` ด้วย `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` แล้ว `prisma migrate deploy`
 - **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
 - **`loading.tsx` ทำให้ `forbidden()`/`notFound()` ที่เรียกในหน้าตอบสถานะ 200** (stream ออกไปก่อนแล้ว — UI 403 ยังแสดงถูก)
   หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้

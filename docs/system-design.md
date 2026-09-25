@@ -972,7 +972,7 @@ flowchart LR
 | `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
 | `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,announcements,reports,screen-events,audit,settings,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
-| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live}`, `/api/health` | ตามแต่ละ endpoint |
+| API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup}`, `/api/health` | ตามแต่ละ endpoint |
 
 ---
 
@@ -1139,6 +1139,13 @@ sequenceDiagram
 · webhook ตอบ 404 เมื่อไม่ได้ตั้ง env LINE และ 200 ทุกครั้งที่ลายเซ็นถูก (ตอบ error แล้ว LINE ส่งซ้ำ)
 · push ส่งผ่าน `notify()` → `lib/notify/channels/line.ts` (multicast ชุดละ ≤ 500) · เรียก API ด้วย `fetch` ใน `lib/line/client.ts`
 
+**ที่ทำจริง (Phase 3 ขั้น 3 — cron):** route เดียว `app/api/cron/[job]` เรียก `features/cron/jobs.ts`
+· `reminders` ทุกชั่วโมง (งาน `dueAt` ใน 24 ชม. · ผู้ที่ยังไม่ส่งหรือถูกส่งกลับให้แก้) · `live` ทุก 15 นาที (บทเรียน `LIVE` เริ่มใน 1 ชม.)
+  ผู้รับ = enrollment `ACTIVE` ที่ยังไม่หมดอายุของคอร์ส `PUBLISHED` · `cleanup` วันละครั้ง (§8 NFR-05)
+· **กันแจ้งซ้ำด้วย DB ไม่ใช่การเช็คก่อนเขียน:** `notify({ dedupeKey })` → `createManyAndReturn({ skipDuplicates })` บน unique `[userId, dedupeKey]`
+  แล้วส่งอีเมล/LINE เฉพาะแถวที่สร้างใหม่ · key ผูกเวลา (`due:<id>:<dueAt>`, `live:<id>:<liveStartAt>`) เลื่อนเวลาแล้วแจ้งใหม่
+· ไม่ได้ตั้ง `CRON_SECRET` → 404 · token ผิด → 401 (เทียบ hash แบบ timing-safe) · รับ GET/POST · ตอบ `{ job, items, notified }`
+
 ### 5.8 อัปโหลดวิดีโอขนาดใหญ่ (ผู้สอน)
 ```mermaid
 sequenceDiagram
@@ -1269,7 +1276,7 @@ flowchart LR
 | Secrets | อยู่ใน env ทั้งหมด ไม่ commit และมี `.env.example` เป็นตัวอย่าง |
 | Performance | RSC + streaming (`loading.tsx`), `next/image`, ใช้ cache สำหรับ catalog (`"use cache"` + `cacheTag` แล้ว revalidate เมื่อ publish), pagination แบบ cursor, index ตาม §3.2 |
 | Scalability | แอป stateless, ใช้ connection pooling (PgBouncer/Neon pooler), ไฟล์ไม่ผ่าน app server (presigned) |
-| Reliability | ใช้ transaction ในงานที่มีหลายขั้นตอน (grade, progress, certificate), idempotency ของ cron ด้วยการเช็ค Notification ที่เคยส่ง |
+| Reliability | ใช้ transaction ในงานที่มีหลายขั้นตอน (grade, progress, certificate), idempotency ของ cron ด้วย unique `Notification[userId, dedupeKey]` |
 | Observability | `/api/health` (เช็ค DB), structured log (pino), Sentry (ทางเลือก), AuditLog |
 | Backup | pg_dump รายวัน / snapshot ของผู้ให้บริการ และเปิด versioning ของ bucket (ทางเลือก) |
 | Testing | Vitest (rbac, grading, progress calc), Playwright (login, enroll → learn, quiz, submit) บน viewport 375 และ 1280 |

@@ -47,29 +47,45 @@ function runAfterResponse(task: () => Promise<void>): void {
  *
  * ไม่ throw — การแจ้งเตือนล้มไม่ควรทำให้งานหลักที่สำเร็จแล้ว (ลงทะเบียน, เผยแพร่ประกาศ)
  * กลายเป็นล้มเหลวในสายตาผู้ใช้ · คืนจำนวนแถวในแอปที่สร้างได้จริงไว้ใช้ในข้อความตอบกลับ
+ *
+ * มี `dedupeKey` → ข้ามผู้ที่เคยได้รับ key เดียวกันแล้ว และส่งช่องทางภายนอกเฉพาะแถวที่สร้างใหม่จริง
+ * (ถ้าเขียนในแอปไม่สำเร็จจะไม่ส่งภายนอกเลย — รอบถัดไปของ cron จะลองใหม่เองโดยไม่ซ้ำ)
  */
 export async function notify(input: NotifyInput): Promise<number> {
   const userIds = [...new Set(input.userIds)];
   if (userIds.length === 0) return 0;
 
+  const dedupeKey = input.dedupeKey;
+  const delivered: string[] = [];
   let created = 0;
   try {
     for (const ids of chunk(userIds, NOTIFY_CHUNK_SIZE)) {
-      const result = await db.notification.createMany({
-        data: ids.map((userId) => ({
-          userId,
-          type: input.type,
-          title: input.title,
-          body: input.body ?? null,
-          link: input.link ?? null,
-        })),
-      });
-      created += result.count;
+      const data = ids.map((userId) => ({
+        userId,
+        type: input.type,
+        title: input.title,
+        body: input.body ?? null,
+        link: input.link ?? null,
+        ...(dedupeKey ? { dedupeKey } : {}),
+      }));
+      if (dedupeKey) {
+        const rows = await db.notification.createManyAndReturn({
+          data,
+          skipDuplicates: true,
+          select: { userId: true },
+        });
+        created += rows.length;
+        delivered.push(...rows.map((r) => r.userId));
+      } else {
+        const result = await db.notification.createMany({ data });
+        created += result.count;
+      }
     }
   } catch (error) {
     console.error("[notify] สร้างการแจ้งเตือนไม่สำเร็จ", error);
   }
 
-  runAfterResponse(() => deliverExternal(input, userIds));
+  const externalIds = dedupeKey ? delivered : userIds;
+  if (externalIds.length > 0) runAfterResponse(() => deliverExternal(input, externalIds));
   return created;
 }

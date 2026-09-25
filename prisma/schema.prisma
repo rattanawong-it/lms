@@ -660,8 +660,12 @@ model Notification {
   body      String?
   link      String?
   readAt    DateTime?
+  // cron แจ้งล่วงหน้า (FR-12.3) — เหตุการณ์เดียวกันแจ้งคนละครั้ง ให้ DB กันซ้ำแทนการเช็คก่อนเขียน
+  // เช่น "due:<assignmentId>:<dueAt>" · null = แจ้งเตือนทั่วไปที่ซ้ำได้ (Postgres ไม่นับ NULL ชนกัน)
+  dedupeKey String?
   createdAt DateTime         @default(now())
   @@index([userId, readAt])
+  @@unique([userId, dedupeKey])
 }
 
 model LineLink {

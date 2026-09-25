@@ -34,6 +34,13 @@ const serverEnvSchema = z.object({
   LINE_OA_BASIC_ID: z.string().optional(),
   // ปลายทาง Messaging API — เปลี่ยนเฉพาะตอนทดสอบ (ชี้ไปที่ที่ไม่มีอยู่จริงเพื่อไม่ยิง LINE จริง)
   LINE_API_URL: z.url().default("https://api.line.me"),
+
+  // cron (FR-12.3, NFR-05) — ผู้เรียก `/api/cron/*` ต้องส่ง `Authorization: Bearer <ค่านี้>`
+  // ไม่กำหนด = ปิด cron ทั้งหมด (ตอบ 404) · ว่างใน .env ถือว่าไม่กำหนด
+  CRON_SECRET: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().min(16, "CRON_SECRET ต้องยาวอย่างน้อย 16 ตัวอักษร").optional(),
+  ),
 });
 
 export type ServerEnv = z.infer<typeof serverEnvSchema>;

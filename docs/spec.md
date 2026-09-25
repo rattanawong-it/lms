@@ -309,7 +309,7 @@
 | FR-12.3 | แจ้งเตือนงานที่ครบกำหนดใน 24 ชม. และ Live class ที่จะเริ่มใน 1 ชม. ผ่าน cron job |
 | FR-12.4 | ยกเลิกการผูกบัญชีได้ทั้งจากเว็บ และเมื่อผู้ใช้ unfollow (ผ่าน webhook) |
 
-- [x] FR-12.1 · [x] FR-12.2 · [ ] FR-12.3 (Phase 3 ขั้น 3) · [x] FR-12.4 — Phase 3 ขั้น 2 ทดสอบด้วย webhook จำลอง (ยังไม่มี LINE Official Account)
+- [x] FR-12.1 · [x] FR-12.2 · [x] FR-12.3 (Phase 3 ขั้น 3 — `/api/cron/{reminders,live}`) · [x] FR-12.4 — Phase 3 ขั้น 2 ทดสอบด้วย webhook จำลอง (ยังไม่มี LINE Official Account)
 - [ ] DoD ครบ 7 ข้อ
 
 ### M13 — Q&A Discussion (P1)

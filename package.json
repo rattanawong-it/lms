@@ -21,6 +21,7 @@
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "storage:init": "tsx scripts/storage-init.ts",
+    "cron": "tsx scripts/cron.ts",
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {

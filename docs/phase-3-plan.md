@@ -95,7 +95,7 @@
 - env ใหม่ `LINE_OA_BASIC_ID`, `LINE_API_URL` · Playwright โหลด `.env` เพื่อเซ็น webhook ด้วย secret เดียวกับ dev server (CHANGELOG #32)
 - e2e `line.spec` ใช้บัญชีผู้สอน (บัญชีผู้เรียนถูก `notification-settings.spec` ตรวจสถานะ LINE อยู่) · ข้ามทั้งไฟล์เมื่อไม่ได้เปิด LINE ใน `.env`
 
-### ขั้น 3 — Cron แจ้งล่วงหน้า + เก็บกวาด (FR-12.3, NFR-05) — ✋ *จุดตรวจที่ 1*
+### ขั้น 3 — Cron แจ้งล่วงหน้า + เก็บกวาด (FR-12.3, NFR-05) — ✅ เสร็จ 2026-09-25 · ✋ *จุดตรวจที่ 1*
 - `/api/cron/reminders` (ทุกชั่วโมง) — งานที่ `dueAt` อยู่ในอีก ≤ 24 ชม. แจ้งผู้เรียนที่ยังไม่ส่ง (`DUE_SOON`)
 - `/api/cron/live` (ทุก 15 นาที) — บทเรียน `LIVE` ที่เริ่มใน ≤ 1 ชม. แจ้งผู้เรียนของคอร์ส (`LIVE_SOON`)
 - **ไม่ส่งซ้ำ:** `Notification.dedupeKey` (§4 S1) เช่น `due:<assignmentId>` · `live:<lessonId>:<liveStartAt>` (เลื่อนเวลาแล้วแจ้งใหม่ได้)
@@ -103,6 +103,22 @@
 - ทุก endpoint: `Authorization: Bearer ${CRON_SECRET}` · คืนจำนวนที่ส่ง · ตอนพัฒนาเรียกด้วย `pnpm cron <ชื่อ>` (สคริปต์ใหม่)
 - **Test:** unit ของตัวเลือกผู้รับ (ขอบ 24 ชม., ส่งแล้ว, หมดอายุ, enrollment ไม่ active) · e2e เรียก cron 2 ครั้ง → แจ้งครั้งเดียว · ไม่มี token → 401
 - ✋ **จุดตรวจที่ 1:** ตั้งค่า → อีเมลใน Mailpit → ผูก LINE (ถ้ามี channel) → cron แจ้งงานใกล้ครบกำหนด
+
+**สิ่งที่ทำจริง**
+
+| ไฟล์ | หน้าที่ |
+|---|---|
+| `prisma/migrations/20260925020000_notification_dedupe_key` | S1 `Notification.dedupeKey` + unique `[userId, dedupeKey]` |
+| `src/lib/notify/index.ts` | `notify({ dedupeKey })` → `createManyAndReturn({ skipDuplicates })` · อีเมล/LINE ส่งเฉพาะแถวที่สร้างใหม่จริง |
+| `src/features/cron/lib/rules.ts` | pure: ช่วงเวลา, key กันซ้ำ, `activeLearners()`, `pendingSubmitters()`, อายุการเก็บข้อมูล |
+| `src/features/cron/jobs.ts` | `runDueReminders()` · `runLiveReminders()` · `runCleanup()` (+ AuditLog `cron.cleanup` เมื่อมีการลบ) |
+| `src/app/api/cron/[job]/route.ts` | route เดียวรับ `reminders` / `live` / `cleanup` · GET (Vercel Cron) และ POST · 404 เมื่อไม่ได้ตั้ง `CRON_SECRET` · 401 token ผิด |
+| `scripts/cron.ts` | `pnpm cron <reminders\|live\|cleanup>` เรียก endpoint ของเซิร์ฟเวอร์ที่เปิดอยู่ |
+
+- **ปรับจากแผน (CHANGELOG #33):** key ของงานผูกกำหนดส่งด้วย `due:<assignmentId>:<dueAt>` (ผู้สอนเลื่อนกำหนดแล้วผู้เรียนได้แจ้งใหม่ เหมือน live)
+  · "ยังไม่ส่ง" รวมผู้ที่งานล่าสุดถูก**ส่งกลับให้แก้** · ผู้รับ = enrollment `ACTIVE` ที่ยังไม่หมดอายุ ในคอร์ส `PUBLISHED`
+- e2e `cron.spec` เตรียมข้อมูลตรงใน DB ผ่าน `tests/e2e/support/cron-fixture.ts` (รันด้วย tsx แยก process — Prisma client ที่ generate ใช้ `import.meta` ซึ่ง Playwright โหลดแบบ CommonJS ไม่ได้)
+  · ผู้รับอีเมลเป็นบัญชีชั่วคราวค่าเริ่มต้น · ข้ามทั้งไฟล์เมื่อไม่ได้ตั้ง `CRON_SECRET`
 
 ### ขั้น 4 — M13 Q&A Discussion (FR-13.1–13.4)
 - กระทู้ระดับคอร์สหรือรายบทเรียน · ผู้ตั้ง/ตอบได้ = ผู้มีสิทธิ์ `learn` หรือ `teach` ของคอร์ส (ผู้เรียนหมดอายุอ่านได้แต่โพสต์ไม่ได้)

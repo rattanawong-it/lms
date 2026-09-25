@@ -12,11 +12,12 @@ import {
 /** M11 · FR-11.3/11.4 — การตั้งค่าช่องทาง + ช่องทางอีเมลของ notify() */
 
 const createMany = vi.fn();
+const createManyAndReturn = vi.fn();
 const findMany = vi.fn();
 const sendMail = vi.fn();
 const afterTasks: Promise<unknown>[] = [];
 
-vi.mock("@/lib/db", () => ({ db: { notification: { createMany }, user: { findMany } } }));
+vi.mock("@/lib/db", () => ({ db: { notification: { createMany, createManyAndReturn }, user: { findMany } } }));
 vi.mock("@/lib/env", () => ({ env: { NEXT_PUBLIC_APP_URL: "https://lms.example.ac.th" }, hasLine: false }));
 vi.mock("@/lib/mail", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/mail")>()),
@@ -151,5 +152,38 @@ describe("notify() — ในแอปทันที + อีเมลหลั
     await expect(notify({ userIds: ["u1"], type: NotificationType.GRADED, title: "x" })).resolves.toBe(1);
     await Promise.all(afterTasks);
     log.mockRestore();
+  });
+
+  it("dedupeKey: ข้ามผู้ที่เคยได้รับแล้ว และส่งอีเมลเฉพาะแถวที่สร้างใหม่ (FR-12.3)", async () => {
+    // DB ข้าม u1 (เคยได้รับ key นี้แล้ว) — คืนเฉพาะ u2
+    createManyAndReturn.mockReset().mockResolvedValue([{ userId: "u2" }]);
+    findMany.mockResolvedValue([{ email: "u2@krirk.ac.th", notifyPrefs: {} }]);
+
+    const created = await notify({
+      userIds: ["u1", "u2"],
+      type: NotificationType.DUE_SOON,
+      title: "งานใกล้ครบกำหนด",
+      dedupeKey: "due:a1:2026-09-26T00:00:00.000Z",
+    });
+    expect(created).toBe(1);
+    expect(createMany).not.toHaveBeenCalled();
+    const args = createManyAndReturn.mock.calls[0]![0];
+    expect(args.skipDuplicates).toBe(true);
+    expect(args.data.map((d: { dedupeKey: string }) => d.dedupeKey)).toEqual([
+      "due:a1:2026-09-26T00:00:00.000Z",
+      "due:a1:2026-09-26T00:00:00.000Z",
+    ]);
+
+    await Promise.all(afterTasks);
+    expect(findMany.mock.calls[0]![0].where.id).toEqual({ in: ["u2"] });
+  });
+
+  it("dedupeKey: ทุกคนเคยได้รับแล้ว → ไม่แตะช่องทางภายนอกเลย", async () => {
+    createManyAndReturn.mockReset().mockResolvedValue([]);
+    await expect(
+      notify({ userIds: ["u1"], type: NotificationType.LIVE_SOON, title: "x", dedupeKey: "live:l1:t" }),
+    ).resolves.toBe(0);
+    expect(afterTasks).toHaveLength(0);
+    expect(findMany).not.toHaveBeenCalled();
   });
 });
