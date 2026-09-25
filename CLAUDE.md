@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | **Phase 3 ปิดครบ 2026-09-25** (M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` · ถัดไป Phase 4 (M18 Payment ฯลฯ) — ต้องวางแผน `phase-4-plan.md` ให้เจ้าของระบบอนุมัติก่อน |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0 payment adapter เสร็จ · ถัดไปขั้น 1 ตั้งราคา · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -120,6 +120,7 @@ docs/   spec · system-design · phase-1-plan · CHANGELOG-REQUIREMENTS
 | `dates.ts` | จัดรูปแบบวันที่ไทย (พ.ศ.) |
 | `csv.ts` · `xlsx.ts` (server) | ตาราง `string[][]` ↔ CSV (RFC 4180 + BOM) / Excel — ตัวตรวจของฟีเจอร์รับตารางชุดเดียวกันทั้งสองแบบ |
 | `decimal.ts` | `toScore()` แปลง `Decimal` ของคะแนนเป็น number ก่อนส่งให้ client · `formatScore()` |
+| `payment/` (server) | **จุดเดียวที่รู้จัก payment gateway** — `getPaymentProvider()` ตาม env `PAYMENT_PROVIDER` (null = ปิดการขาย) · `money.ts` บาท↔สตางค์แบบไม่ผ่าน float (client ใช้ได้) · `providers/mock.ts` หน้าชำระจำลอง dev/e2e · ผลการชำระตัดสินที่ webhook + `retrieve()` เท่านั้น |
 | `mail.ts` · `env.ts` · `rich-text-doc.ts` · `utils.ts` | อีเมล · env ที่ผ่าน Zod · เอกสาร Tiptap แบบ sanitize แล้ว · `cn()` |
 
 ## 5. Conventions
@@ -240,6 +241,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
 - **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`
   ไม่งั้นสองโปรเจกต์จะแย่งสถานะของกันเอง (ดู `tests/e2e/enrollment.spec.ts`)
+- **`PAYMENT_PROVIDER=mock` ใน production ทำให้ระบบไม่ยอมเริ่ม** — Playwright ใช้ `next start` (production) จึงต้องตั้ง `ALLOW_MOCK_PAYMENT=true` บนเครื่องทดสอบด้วย
 - **`<Progress>` ของ shadcn ไม่ส่ง `value` ต่อให้ Radix** → ไม่มี `aria-valuenow` · เทสต์ให้อ่านจาก `aria-label` ที่ใส่เปอร์เซ็นต์ไว้
 - **checkbox ใน Zod v4** — `z.union([...]).nullish().transform(...)` ไม่ใช่ใส่ `z.undefined()` ใน union
   (ไม่งั้น key ที่ไม่ถูกส่งมาจะไม่ผ่าน) และห้ามใช้ `z.coerce.boolean()` กับค่า `"false"` เพราะได้ `true`

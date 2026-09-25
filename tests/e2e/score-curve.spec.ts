@@ -61,6 +61,8 @@ test.describe("ผู้ดูแลระบบ", () => {
     await page.getByRole("button", { name: "บันทึกเกณฑ์" }).click();
     await expect(page.getByText("บันทึกเกณฑ์คะแนนแล้ว").first()).toBeVisible({ timeout: 15_000 });
     await page.reload();
+    // หลัง reload บนมือถือ DOM เก่ากับใหม่อยู่พร้อมกันชั่วครู่ (ช่องซ้ำ 2 ช่อง → strict mode) — รอให้เหลือชุดเดียวก่อน
+    await expect(page.getByLabel("Max ของ A")).toHaveCount(1, { timeout: 15_000 });
     await expect(page.getByLabel("Max ของ A")).toHaveValue("100");
     await expect(page.getByText(/แก้ล่าสุด .* โดย /).first()).toBeVisible();
   });

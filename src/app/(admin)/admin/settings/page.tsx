@@ -34,7 +34,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader title="ตั้งค่าระบบ" description="ชื่อระบบ โลโก้ การป้องกันเนื้อหา และช่องทางแจ้งเตือน" />
+      <PageHeader title="ตั้งค่าระบบ" description="ชื่อระบบ โลโก้ การป้องกันเนื้อหา ช่องทางแจ้งเตือน และการชำระเงิน" />
 
       <div className="grid grid-cols-1 gap-5">
         <section aria-labelledby="branding" className="bg-card border-border min-w-0 rounded-xl border p-4">
@@ -55,7 +55,7 @@ export default async function SettingsPage() {
 
         <section aria-labelledby="channels" className="bg-card border-border min-w-0 rounded-xl border p-4">
           <h2 id="channels" className="text-[15px] font-semibold">
-            ช่องทางแจ้งเตือน
+            ช่องทางแจ้งเตือนและการชำระเงิน
           </h2>
           <p className="text-muted-foreground mt-1 mb-4 text-[12.5px]">
             รหัสผ่านและโทเค็นของผู้ให้บริการตั้งใน env ของเซิร์ฟเวอร์ ไม่เก็บในฐานข้อมูล — แก้ค่าแล้วต้องรีสตาร์ตเซิร์ฟเวอร์
@@ -98,6 +98,23 @@ export default async function SettingsPage() {
                 label="ส่ง LINE ทดสอบถึงฉัน"
                 disabled={!status.line.configured || !status.selfLineLinked}
               />
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 py-3" data-channel="payment">
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  ชำระเงิน{" "}
+                  <Status ok={status.payment.configured} label={status.payment.configured ? "ตั้งค่าแล้ว" : "ยังไม่เปิดขาย"} />
+                  {status.payment.provider === "mock" ? (
+                    <Badge variant="secondary" className="bg-warning-bg text-warning-fg">
+                      โหมดจำลอง — ไม่มีการเก็บเงินจริง
+                    </Badge>
+                  ) : null}
+                </p>
+                <p className="text-muted-foreground num mt-0.5 text-[12px]">
+                  ผู้ให้บริการ {status.payment.provider ? status.payment.provider.toUpperCase() : "—"} · ตั้งค่าด้วย PAYMENT_* ใน env
+                </p>
+              </div>
             </div>
           </div>
         </section>

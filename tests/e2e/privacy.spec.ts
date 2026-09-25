@@ -158,6 +158,8 @@ test.describe("ผู้ดูแลระบบ", () => {
     await expect(page.getByRole("heading", { name: "ตั้งค่าระบบ", level: 1 })).toBeVisible();
     await expect(page.locator("[data-channel=email]")).toContainText("ตั้งค่าแล้ว");
     await expect(page.locator("[data-channel=line]")).toBeVisible();
+    // M18 ขั้น 0 — สถานะผู้ให้บริการชำระเงิน (ไม่แสดงค่า secret)
+    await expect(page.locator("[data-channel=payment]")).toContainText("ผู้ให้บริการ");
 
     const before = (await findMail(ACCOUNTS.admin.email, "ทดสอบการส่งอีเมล · KRIRK LMS")).length;
     await page.getByRole("button", { name: "ส่งอีเมลทดสอบถึงฉัน" }).click();

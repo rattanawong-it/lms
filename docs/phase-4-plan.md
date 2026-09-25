@@ -29,7 +29,7 @@
 เรียงตามการพึ่งพา: ราคาต้องมีก่อนชำระเงิน · ชำระเงินต้องมีก่อนคูปอง/ใบเสร็จ/คืนเงิน · หยุดให้ตรวจที่จุด ✋
 ทุกขั้นพัฒนากับ **ผู้ให้บริการจำลอง (mock provider)** ได้ก่อน แล้วค่อยต่อ sandbox จริงเมื่อได้บัญชี — e2e ไม่ยิงเงินจริง/ไม่ต้องใช้อินเทอร์เน็ต
 
-### ขั้น 0 — โครง payment adapter + mock (1 วัน)
+### ขั้น 0 — โครง payment adapter + mock (1 วัน) — ✅ เสร็จ 2026-09-25
 - `src/lib/payment/` — จุดเดียวที่รู้จักผู้ให้บริการ (เหมือน `storage.ts` รู้จัก S3)
   ```
   lib/payment/
@@ -40,6 +40,11 @@
   ```
 - จำนวนเงินส่งให้ gateway เป็นหน่วยสตางค์ (จำนวนเต็ม) · คำนวณจาก `Decimal` ฝั่ง server เท่านั้น
 - env ใหม่ (ไม่บังคับ): `PAYMENT_PROVIDER`, `PAYMENT_SECRET_KEY`, `PAYMENT_PUBLIC_KEY`, `PAYMENT_WEBHOOK_SECRET` — ไม่กำหนด = ปิดการขาย (คอร์สที่มีราคาแสดง "ยังไม่เปิดขาย")
+
+**สิ่งที่ทำจริง:** `src/lib/payment/{index,types,money,guard}.ts` + `providers/mock.ts` (สถานะเก็บในหน่วยความจำ · webhook เซ็น HMAC-SHA256 ด้วย `PAYMENT_WEBHOOK_SECRET` ใน header `x-mock-signature`)
+· env `PAYMENT_PROVIDER` (ตอนนี้รับ `mock` — `omise` เพิ่มในขั้น 2) · `hasPayment` · production + mock ไม่ยอมเริ่ม เว้นแต่ `ALLOW_MOCK_PAYMENT=true` (สำหรับ `next start` ของ Playwright)
+· `/admin/settings` แสดงสถานะการชำระเงิน · unit `payment.test.ts` (สตางค์, ลายเซ็น, หมดอายุ, คืนเงิน, ตัวกัน production)
+· **แก้บั๊กจาก Phase 3 ที่ e2e จับได้:** อนุมัติ/ปฏิเสธคำขอลบบัญชีกดซ้อนแล้วทำงานสองครั้ง (audit 2 แถว) → จองคำขอด้วย `updateMany` แบบมีเงื่อนไขก่อนเริ่มงาน
 
 ### ขั้น 1 — ตั้งราคาและแสดงราคา (FR-18.1 ส่วนแรก)
 - ฟอร์มคอร์ส: ช่อง "ราคา (บาท)" เฉพาะคอร์ส `PUBLIC` · ว่าง/0 = ฟรี · ผู้ตั้งราคาตาม Q3

@@ -84,7 +84,7 @@ flowchart TB
 ```
 src/app/**            → Routing, layout, page (ประกอบ UI + เรียก queries)
 src/features/<mod>/   → queries.ts, actions.ts, schemas.ts (Zod), components/, lib/
-src/lib/              → auth, db (Prisma client), rbac, storage, notify, audit, utils
+src/lib/              → auth, db (Prisma client), rbac, storage, notify, audit, payment (M18 adapter · D-05), utils
 src/components/       → ui/ (shadcn), layout/, shared/
 prisma/               → schema.prisma, migrations, seed.ts
 ```

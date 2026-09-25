@@ -137,6 +137,14 @@ export async function approveAccountDeletion(formData: FormData): Promise<Action
     return { ok: false, message: "ลบผู้ดูแลระบบคนสุดท้ายไม่ได้" };
   }
 
+  // จองคำขอแบบ atomic ก่อนทำอะไร — กดซ้ำ/สองแท็บ/ผู้ดูแลสองคนพร้อมกัน ต้อง anonymize ครั้งเดียว
+  // (e2e มือถือเคยกดยืนยันซ้อนจนได้ audit อนุมัติ 2 แถว) · `deletedAt` ที่ตั้งตรงนี้ยังกันผู้ใช้ยกเลิกคำขอระหว่างลบด้วย
+  const claimed = await db.user.updateMany({
+    where: { id: target.id, deletionRequestedAt: { not: null }, deletedAt: null },
+    data: { deletedAt: new Date() },
+  });
+  if (claimed.count === 0) return { ok: false, message: "คำขอนี้ถูกดำเนินการไปแล้ว" };
+
   // แจ้งผลทางอีเมลก่อน — หลัง anonymize แล้วจะไม่มีอีเมลจริงให้ส่งอีก
   // เป็นอีเมลเกี่ยวกับบัญชี (เหมือนลิงก์รีเซ็ตรหัสผ่าน) ส่งเสมอไม่ขึ้นกับการตั้งค่าแจ้งเตือน
   try {
@@ -155,7 +163,16 @@ export async function approveAccountDeletion(formData: FormData): Promise<Action
     console.error("[privacy] ส่งอีเมลแจ้งผลการลบบัญชีไม่สำเร็จ", error);
   }
 
-  const result = await anonymizeUser(target.id);
+  let result: Awaited<ReturnType<typeof anonymizeUser>>;
+  try {
+    result = await anonymizeUser(target.id);
+  } catch (error) {
+    // transaction หลักยังไม่ commit (deletionRequestedAt ยังอยู่) → ปล่อยการจองคืนให้กดใหม่ได้
+    // ถ้า commit แล้วแต่ขั้นท้าย (ล้าง audit/ไฟล์) ล้ม บัญชีถูก anonymize แล้ว — ไม่ถอย deletedAt
+    console.error("[privacy] anonymize ไม่สำเร็จ", error);
+    await db.user.updateMany({ where: { id: target.id, deletionRequestedAt: { not: null } }, data: { deletedAt: null } });
+    return { ok: false, message: "ลบข้อมูลไม่สำเร็จ กรุณาลองใหม่" };
+  }
 
   await writeAudit({
     actorId: admin.id,
@@ -181,7 +198,12 @@ export async function rejectAccountDeletion(formData: FormData): Promise<ActionR
   const target = await pendingTarget(parsed.data.userId);
   if (!target) return { ok: false, message: "ไม่พบคำขอ หรือคำขอถูกยกเลิก/ดำเนินการไปแล้ว" };
 
-  await db.user.update({ where: { id: target.id }, data: { deletionRequestedAt: null, deletionReason: null } });
+  // เงื่อนไขอยู่ใน where — กดซ้ำหรือผู้ดูแลอีกคนเพิ่งอนุมัติไป จะไม่ปฏิเสธซ้อน/ส่งอีเมลซ้ำ
+  const cleared = await db.user.updateMany({
+    where: { id: target.id, deletionRequestedAt: { not: null }, deletedAt: null },
+    data: { deletionRequestedAt: null, deletionReason: null },
+  });
+  if (cleared.count === 0) return { ok: false, message: "คำขอนี้ถูกดำเนินการไปแล้ว" };
   await writeAudit({
     actorId: admin.id,
     action: "privacy.deletion.reject",

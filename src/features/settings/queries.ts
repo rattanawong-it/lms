@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { db } from "@/lib/db";
-import { env, hasLine } from "@/lib/env";
+import { env, hasLine, hasPayment } from "@/lib/env";
 import { requireAtLeast } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/enums";
 import { BRANDING_SETTING_KEY, DEFAULT_BRANDING, parseBranding, type Branding } from "@/features/settings/schemas";
@@ -23,6 +23,8 @@ export const getBranding = cache(async (): Promise<Branding> => {
 export type IntegrationStatus = {
   email: { provider: "smtp" | "resend"; configured: boolean; from: string };
   line: { configured: boolean; basicId: string | null; linkedUsers: number };
+  /** M18 — ผู้ให้บริการชำระเงิน (ไม่มีปุ่มทดสอบ — ทดสอบด้วยการซื้อจริงบน sandbox) */
+  payment: { provider: string | null; configured: boolean };
   /** ผู้ดูแลที่กำลังดูหน้านี้ผูก LINE แล้วหรือยัง — ปุ่มส่งทดสอบ LINE ส่งหาตัวเอง */
   selfLineLinked: boolean;
 };
@@ -41,6 +43,7 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
       from: env.EMAIL_FROM,
     },
     line: { configured: hasLine, basicId: env.LINE_OA_BASIC_ID ?? null, linkedUsers },
+    payment: { provider: env.PAYMENT_PROVIDER ?? null, configured: hasPayment },
     selfLineLinked: Boolean(selfLink),
   };
 }
