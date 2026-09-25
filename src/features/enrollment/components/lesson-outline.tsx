@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BookOpen, BookOpenCheck, CircleCheck, CirclePlay, FileText, Lock, Radio } from "lucide-react";
+import { BookOpen, BookOpenCheck, CircleCheck, CirclePlay, FileText, Lock, MessagesSquare, Radio } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { LearnOutline } from "@/features/enrollment/queries";
 import { LessonType } from "@/generated/prisma/enums";
@@ -43,15 +43,24 @@ export function LessonOutline({
             aria-label={`ความคืบหน้าของคอร์ส ${outline.progressPct} เปอร์เซ็นต์`}
           />
         </div>
-        {/* M09 · FR-09.4 — ผู้สอนดูคะแนนทุกคนที่สมุดคะแนน จึงแสดงลิงก์นี้เฉพาะผู้เรียน */}
-        {outline.isPreviewingAsStaff ? null : (
+        <div className="mt-2 flex flex-wrap gap-x-4">
+          {/* M09 · FR-09.4 — ผู้สอนดูคะแนนทุกคนที่สมุดคะแนน จึงแสดงลิงก์นี้เฉพาะผู้เรียน */}
+          {outline.isPreviewingAsStaff ? null : (
+            <Link
+              href={`/learn/${outline.course.id}/grades`}
+              className="text-primary inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-medium hover:underline"
+            >
+              <BookOpenCheck className="size-4" aria-hidden /> คะแนนของฉัน
+            </Link>
+          )}
+          {/* M13 — กระดานถาม-ตอบของทั้งคอร์ส */}
           <Link
-            href={`/learn/${outline.course.id}/grades`}
-            className="text-primary mt-2 inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-medium hover:underline"
+            href={`/learn/${outline.course.id}/qa`}
+            className="text-primary inline-flex min-h-11 items-center gap-1.5 text-[12.5px] font-medium hover:underline"
           >
-            <BookOpenCheck className="size-4" aria-hidden /> คะแนนของฉัน
+            <MessagesSquare className="size-4" aria-hidden /> ถาม-ตอบ
           </Link>
-        )}
+        </div>
       </div>
 
       <ol className="max-h-[520px] overflow-y-auto p-2">

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Award, BookOpenCheck, ClipboardCheck, ExternalLink, FileQuestion, FileText, ListTree, Megaphone, Users } from "lucide-react";
+import { Award, BookOpenCheck, ClipboardCheck, ExternalLink, FileQuestion, FileText, ListTree, Megaphone, MessagesSquare, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { CourseForm } from "@/features/courses/components/course-form";
@@ -60,6 +60,11 @@ export default async function CourseSettingsPage(props: PageProps<"/teach/course
             <Button asChild variant="outline">
               <Link href={`/teach/courses/${course.id}/announcements`}>
                 <Megaphone className="size-4" /> ประกาศ
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href={`/teach/courses/${course.id}/qa`}>
+                <MessagesSquare className="size-4" /> ถาม-ตอบ
               </Link>
             </Button>
             <Button asChild variant="outline">

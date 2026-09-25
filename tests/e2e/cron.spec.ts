@@ -1,8 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { execFileSync } from "node:child_process";
-import path from "node:path";
 import { ACCOUNTS, STATE_FILE } from "./constants";
-import { findMail } from "./helpers";
+import { findMail, runFixture } from "./helpers";
 import type { CronFixture, CronNotification } from "./support/cron-fixture";
 
 /**
@@ -24,14 +22,9 @@ const auth = { authorization: `Bearer ${SECRET}` };
 const assignmentTitle = (p: string) => `งานใกล้ครบกำหนด ${p} ${RUN_ID}`;
 const liveTitle = (p: string) => `คาบสดใกล้เริ่ม ${p} ${RUN_ID}`;
 
-/** รันงานกับ DB ใน process แยก (ดู `support/cron-fixture.ts`) */
+/** เตรียม/อ่าน/ล้างข้อมูลใน DB (ดู `support/cron-fixture.ts`) */
 function fixture<T>(action: string, args: unknown): T {
-  const out = execFileSync(
-    process.execPath,
-    [path.resolve("node_modules/tsx/dist/cli.mjs"), path.resolve("tests/e2e/support/cron-fixture.ts"), action, JSON.stringify(args)],
-    { encoding: "utf8" },
-  );
-  return JSON.parse(out) as T;
+  return runFixture<T>("cron-fixture.ts", action, args);
 }
 
 const fixtures = new Map<string, CronFixture>();

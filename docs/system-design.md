@@ -790,7 +790,10 @@ model Thread {
   isHidden   Boolean  @default(false)
   posts      Post[]
   createdAt  DateTime @default(now())
+  editedAt   DateTime?          // ผู้เขียนแก้หัวข้อ/เนื้อหา (ป้าย "แก้ไขแล้ว") — ปักหมุด/ซ่อน/ปิดไม่นับ
+  lastPostAt DateTime @default(now()) // ความเคลื่อนไหวล่าสุด ใช้เรียงรายการ
   @@index([courseId, lessonId])
+  @@index([courseId, lastPostAt])
 }
 
 model Post {
@@ -799,11 +802,15 @@ model Post {
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
-  parentId  String?
+  parentId  String?            // ตอบซ้อน 1 ชั้น → คำตอบระดับบนสุดเสมอ
+  parent    Post?    @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Post[]   @relation("PostReplies")
   body      String
   isAnswer  Boolean  @default(false)
   isHidden  Boolean  @default(false)
   createdAt DateTime @default(now())
+  editedAt  DateTime?
+  @@index([threadId, createdAt])
 }
 
 model Review {
@@ -969,7 +976,7 @@ flowchart LR
 |---|---|---|
 | `(public)` | `/`, `/courses`, `/courses/[slug]`, `/verify/[code]` | ทุกคน |
 | `(auth)` | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | ยังไม่ login |
-| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
+| `(learn)` | `/dashboard`, `/my-courses`, `/learn/[courseId]/[lessonId]`, `/learn/[courseId]/grades`, `/learn/[courseId]/qa`, `/learn/[courseId]/qa/[threadId]`, `/quiz/[attemptId]`, `/certificates`, `/notifications`, `/announcements`, `/settings/*` | login แล้ว |
 | `(instructor)` | `/teach`, `/teach/courses/[id]/{edit,curriculum,students,questions,quizzes,quizzes/new,quizzes/[quizId],quizzes/[quizId]/results,quizzes/[quizId]/attempts/[attemptId],quizzes/review,assignments,assignments/new,assignments/[assignmentId],assignments/[assignmentId]/submissions,assignments/[assignmentId]/submissions/[submissionId],assignments/review,gradebook,gradebook/settings,certificate,qa,announcements}` | INSTRUCTOR+ |
 | `(admin)` | `/admin`, `/admin/{users,departments,categories,courses,certificates,announcements,reports,screen-events,audit,settings,score-curve}` | DEPT_ADMIN+ (บางหน้าเฉพาะ SUPER_ADMIN) |
 | API | `/api/auth/[...all]` (Better Auth), `/api/upload/{presign,complete}`, `/api/media/[assetId]`, `/api/submission-file/[assetId]`, `/api/certificate/[code]`, `/api/events/screen`, `/api/line/webhook`, `/api/cron/{reminders,live,cleanup}`, `/api/health` | ตามแต่ละ endpoint |

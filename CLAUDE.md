@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–3 เสร็จ (ถึง cron แจ้งล่วงหน้า 2026-09-25) · ถัดไปจุดตรวจที่ 1 แล้วขั้น 4 Q&A · Phase 2 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 3 (Engagement: M11 อีเมล, M12–M14, M16, M17) บน branch `phase-3` — ขั้น 0–4 เสร็จ (ถึง Q&A 2026-09-25) · ถัดไปขั้น 5 Review & Rating · Phase 2 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -85,6 +85,7 @@ src/
   app/api/cron/[job]                                 reminders · live · cleanup — ตัวตนพิสูจน์ด้วย Bearer CRON_SECRET · ไม่มี session
   app/api/certificate/[code] · (public)/verify/[code] ดาวน์โหลดใบประกาศ · หน้าตรวจสอบสาธารณะ (M10)
   app/(learn)/{announcements,notifications}           ผู้รับอ่านประกาศ · หน้ารวมการแจ้งเตือน (M11)
+  app/(learn)/learn/[courseId]/qa[/threadId]          ถาม-ตอบ (M13) · กล่องคำถามผู้สอน `/teach/courses/[id]/qa`
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -171,6 +172,10 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 ประกาศตรวจสิทธิ์ตามระดับ: `COURSE` → `assertCourseAccess(…, "teach")` · `GLOBAL`/`DEPARTMENT` → `canPostOrgAnnouncement()`
 และการแก้/ลบ/ปักหมุดตรวจกับระดับที่บันทึกใน DB ไม่ใช่ค่าจากฟอร์ม
 
+**ถาม-ตอบ (M13)** — ตรวจสิทธิ์ด้วย `assertQaAccess()` (`features/qa/lib/access.ts`) ไม่ใช่ `assertCourseAccess(…, "learn")` เพราะผู้เรียนหมดอายุยังอ่านได้
+· เนื้อหาเป็น**ข้อความล้วน** แสดงผ่าน `<PlainText>` (text node + `linkify()` เฉพาะ http/https) ห้าม `dangerouslySetInnerHTML` · อยู่นอก `<ProtectedViewer>`
+· ป้าย "แก้ไขแล้ว" มาจาก `editedAt` (ตั้งเฉพาะ action แก้เนื้อหา) · ลบโดยผู้ดูแล = ลบจริง + สำเนาใน AuditLog
+
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
 
@@ -229,7 +234,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **`RichTextField` โหลด Tiptap แบบ lazy** — ตัว placeholder ต้องส่งค่าเดิมไปกับฟอร์มด้วย (แก้แล้วใน Phase 2 ขั้น 1)
   ไม่งั้นกดบันทึกก่อน editor โหลดเสร็จจะล้างเนื้อหาทิ้ง
 - **Playwright โหลด Prisma client ที่ generate ไม่ได้** (ESM + `import.meta` แต่ Playwright โหลดแบบ CommonJS) — e2e ที่ต้องเตรียมข้อมูลใน DB
-  ให้เขียนสคริปต์ใน `tests/e2e/support/` แล้วรันด้วย tsx แยก process (ดู `cron.spec.ts`) · สคริปต์ tsx ห้ามใช้ top-level await (แปลงเป็น CJS)
+  ให้เขียนสคริปต์ใน `tests/e2e/support/` แล้วเรียกด้วย `runFixture()` จาก `helpers.ts` (tsx แยก process) · สคริปต์ tsx ห้ามใช้ top-level await (แปลงเป็น CJS)
 - **`prisma migrate dev` ใช้ไม่ได้เมื่อ AI สั่ง** (non-interactive) — เขียน `migration.sql` ด้วย `prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script` แล้ว `prisma migrate deploy`
 - **ค้นข้อความใน Tiptap JSON** — `string_contains` ของ Prisma ใช้ได้เฉพาะเมื่อค่า JSON เป็นสตริง ใช้ `$queryRaw` กับ `col::text ILIKE` (ส่งพารามิเตอร์) แทน
 - **`loading.tsx` ทำให้ `forbidden()`/`notFound()` ที่เรียกในหน้าตอบสถานะ 200** (stream ออกไปก่อนแล้ว — UI 403 ยังแสดงถูก)

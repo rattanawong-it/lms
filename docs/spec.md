@@ -93,7 +93,9 @@
 | **M08 Assignment** | ✅ เสร็จ | Phase 2 ขั้น 4 | `features/assignments` · ผู้เรียนอัปโหลดได้เฉพาะในบริบทของงาน · `/api/submission-file/[assetId]` |
 | **M09 Gradebook** | ✅ เสร็จ | Phase 2 ขั้น 5 | `features/gradebook` · Q6 ได้เกณฑ์จริงแล้ว → Score Curve (FR-09.6–09.9) เสร็จ 2026-09-24 · `features/score-curve` · `/admin/score-curve` |
 | **M10 Certificate** | ✅ เสร็จ (รอจุดตรวจที่ 2) | Phase 2 ขั้น 6 | `features/certificates` · PDF ด้วย `@react-pdf/renderer` + Anuphan · `/verify/[code]` สาธารณะ |
-| M12–M14, M16, M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
+| **M12 LINE** | ✅ เสร็จ (webhook จำลอง) | Phase 3 ขั้น 2–3 | `features/line` + cron แจ้งล่วงหน้า `/api/cron/*` · ทดสอบกับ LINE จริงเมื่อสถาบันมี Official Account |
+| **M13 Q&A** | ✅ เสร็จ | Phase 3 ขั้น 4 | `features/qa` · `/learn/[courseId]/qa` · กล่องคำถามผู้สอน `/teach/courses/[id]/qa` · ข้อความล้วน (Q5) |
+| M14, M16, M17 | 🔸 วางแผนแล้ว | Phase 3 | ลำดับงานใน [`phase-3-plan.md`](./phase-3-plan.md) · branch `phase-3` |
 | M18 | ⬜ ยังไม่เริ่ม | Phase 4 | ตาม roadmap §6 |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
@@ -320,8 +322,8 @@
 | FR-13.3 | ปักหมุด/ซ่อน/ลบกระทู้ที่ไม่เหมาะสม (ผู้สอน, แอดมิน) |
 | FR-13.4 | แจ้งเตือนผู้สอนเมื่อมีคำถามใหม่ และแจ้งผู้ถามเมื่อมีคนตอบ |
 
-- [ ] FR-13.1 · [ ] FR-13.2 · [ ] FR-13.3 · [ ] FR-13.4
-- [ ] DoD ครบ 7 ข้อ
+- [x] FR-13.1 · [x] FR-13.2 · [x] FR-13.3 · [x] FR-13.4 — Phase 3 ขั้น 4 (`features/qa`)
+- [x] DoD ครบ 7 ข้อ
 
 ### M14 — Review & Rating (P1)
 | ID | Requirement |

@@ -620,7 +620,12 @@ model Thread {
   isHidden   Boolean  @default(false)
   posts      Post[]
   createdAt  DateTime @default(now())
+  // เวลาที่ผู้เขียนแก้หัวข้อ/เนื้อหาล่าสุด (ป้าย "แก้ไขแล้ว") — ไม่ใช้ @updatedAt เพราะปักหมุด/ซ่อน/ปิดกระทู้ไม่นับเป็นการแก้
+  editedAt   DateTime?
+  // เวลาความเคลื่อนไหวล่าสุด (ตั้งกระทู้/ตอบ) — เรียงรายการกระทู้ · null ไม่ได้เพราะเริ่มจากเวลาตั้ง
+  lastPostAt DateTime @default(now())
   @@index([courseId, lessonId])
+  @@index([courseId, lastPostAt])
 }
 
 model Post {
@@ -629,11 +634,16 @@ model Post {
   thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
   authorId  String
   author    User     @relation(fields: [authorId], references: [id])
+  // ตอบซ้อนได้ 1 ชั้น — ชี้ไปที่คำตอบระดับบนสุดเสมอ (FR-13.2)
   parentId  String?
+  parent    Post?    @relation("PostReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Post[]   @relation("PostReplies")
   body      String
   isAnswer  Boolean  @default(false)
   isHidden  Boolean  @default(false)
   createdAt DateTime @default(now())
+  editedAt  DateTime? // ผู้เขียนแก้เนื้อหาล่าสุด (เลือกเป็นคำตอบ/ซ่อนไม่นับ)
+  @@index([threadId, createdAt])
 }
 
 model Review {

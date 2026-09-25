@@ -28,6 +28,7 @@ import { QuizPanel } from "@/features/quiz/components/quiz-panel";
 import { AssignmentPanel } from "@/features/assignments/components/assignment-panel";
 import { getLessonAssignment, type LessonAssignment } from "@/features/assignments/queries";
 import { getLessonQuiz, type LessonQuiz } from "@/features/quiz/queries";
+import { LessonQa } from "@/features/qa/components/lesson-qa";
 import { requireUser } from "@/lib/rbac";
 import { parseRichTextDoc } from "@/lib/rich-text-doc";
 
@@ -216,6 +217,9 @@ export default async function LessonPage(props: PageProps<"/learn/[courseId]/[le
             />
           )}
         </div>
+
+        {/* M13 — ถาม-ตอบของบทนี้ อยู่นอก ProtectedViewer */}
+        <LessonQa courseId={courseId} lessonId={lesson.id} />
       </article>
     </div>
   );
