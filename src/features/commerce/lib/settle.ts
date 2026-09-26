@@ -16,6 +16,7 @@ import { issueReceipt } from "@/features/commerce/lib/receipt";
  * แล้วเปิดสิทธิ์เรียนใน transaction เดียวกัน
  *
  * FAILED → PAID ยอมรับ: ผู้ซื้อจ่ายหลังเราปิดคำสั่งซื้อที่หมดอายุไปแล้ว — เงินเข้าแล้วต้องได้สิทธิ์
+ * PAID → REFUNDED เมื่อผู้ให้บริการบอกว่า charge ถูกคืนแล้ว (`finalizeRefund()`)
  * ผู้เรียกต้องตรวจสิทธิ์ของผู้ขอมาก่อน (เจ้าของคำสั่งซื้อ/ผู้ดูแล/webhook ที่ผ่านลายเซ็น)
  */
 export type SettleResult = { status: OrderStatus; changed: boolean };
@@ -36,15 +37,20 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
     },
   });
   if (!order) return null;
-  if (!order.providerRef || (order.status !== OrderStatus.PENDING && order.status !== OrderStatus.FAILED)) {
-    return { status: order.status, changed: false };
-  }
+  if (!order.providerRef || order.status === OrderStatus.REFUNDED) return { status: order.status, changed: false };
 
   const provider = getPaymentProvider();
   if (!provider || provider.name !== order.provider) return { status: order.status, changed: false };
 
   const charge = await provider.retrieve(order.providerRef);
   if (!charge) return { status: order.status, changed: false };
+
+  // PAID → REFUNDED ตัดสินจากสถานะที่ถามผู้ให้บริการเช่นกัน (คืนจากหน้า /admin/orders หรือจากแดชบอร์ดของผู้ให้บริการ)
+  if (order.status === OrderStatus.PAID) {
+    return charge.status === "refunded" && charge.orderId === order.id
+      ? finalizeRefund(order)
+      : { status: order.status, changed: false };
+  }
 
   // ยอด/คำสั่งซื้อต้องตรงกับที่เราสร้าง — ไม่งั้นมีคนเอา charge อื่นมาสวม
   if (charge.orderId !== order.id || charge.amountSatang !== toSatang(order.amount)) {
@@ -137,4 +143,77 @@ export async function announcePaid(
   revalidatePath("/dashboard");
   revalidatePath(`/courses/${order.course.slug}`);
   revalidatePath(`/teach/courses/${order.courseId}/students`);
+}
+
+/**
+ * FR-18.2 · Q6 — ปิดการคืนเงินหลังผู้ให้บริการยืนยันว่า charge ถูกคืนแล้ว (เรียกจาก `settleOrder()` เท่านั้น)
+ * ทรานแซกชันเดียว: PAID → REFUNDED (idempotent ด้วยเงื่อนไขสถานะ) · สิทธิ์เรียนเป็น DROPPED · เพิกถอนใบประกาศของคอร์สนี้
+ * ใบเสร็จเดิมคงไว้ (เอกสารทางบัญชี) · เหตุผล/ยอดที่ผู้ดูแลกรอกถูกบันทึกไว้ก่อนเรียกผู้ให้บริการ (`refundOrder()`)
+ * คืนจากแดชบอร์ดของผู้ให้บริการโดยตรง (ไม่มีเหตุผลในระบบ) → ใส่เหตุผลกลางและยอดเต็ม
+ */
+async function finalizeRefund(order: {
+  id: string;
+  userId: string;
+  courseId: string;
+  amount: { toString(): string };
+  course: { title: string; slug: string };
+}): Promise<SettleResult> {
+  const refundedAt = new Date();
+  const result = await db.$transaction(async (tx) => {
+    const current = await tx.order.findUniqueOrThrow({
+      where: { id: order.id },
+      select: { refundReason: true, refundAmount: true },
+    });
+    const reason = current.refundReason ?? "คืนเงินผ่านผู้ให้บริการชำระเงิน";
+    const updated = await tx.order.updateMany({
+      where: { id: order.id, status: OrderStatus.PAID },
+      data: {
+        status: OrderStatus.REFUNDED,
+        refundedAt,
+        refundReason: reason,
+        refundAmount: current.refundAmount ?? order.amount.toString(),
+      },
+    });
+    if (updated.count === 0) return null;
+
+    const dropped = await tx.enrollment.updateMany({
+      where: { userId: order.userId, courseId: order.courseId },
+      data: { status: EnrollmentStatus.DROPPED },
+    });
+    const revoked = await tx.certificate.updateMany({
+      where: { userId: order.userId, courseId: order.courseId, revokedAt: null },
+      data: { revokedAt: refundedAt, revokeReason: `คืนเงินค่าคอร์ส — ${reason}` },
+    });
+    return { reason, dropped: dropped.count, revoked: revoked.count };
+  });
+  if (!result) {
+    const now = await db.order.findUniqueOrThrow({ where: { id: order.id }, select: { status: true } });
+    return { status: now.status, changed: false };
+  }
+
+  await writeAudit({
+    actorId: null,
+    action: "order.refunded",
+    entity: "Order",
+    entityId: order.id,
+    before: { status: OrderStatus.PAID },
+    after: { status: OrderStatus.REFUNDED, reason: result.reason, enrollmentDropped: result.dropped, certificatesRevoked: result.revoked },
+  });
+  await notify({
+    userIds: [order.userId],
+    type: NotificationType.ENROLLED,
+    title: `คืนเงินค่าคอร์ส “${order.course.title}” แล้ว`,
+    body: "สิทธิ์เรียนคอร์สนี้สิ้นสุดลง · เงินจะเข้าบัญชีตามรอบของธนาคาร/ผู้ออกบัตร",
+    link: `/orders/${order.id}`,
+  });
+
+  revalidatePath("/orders");
+  revalidatePath(`/orders/${order.id}`);
+  revalidatePath("/admin/orders");
+  revalidatePath("/my-courses");
+  revalidatePath("/dashboard");
+  revalidatePath("/certificates");
+  revalidatePath(`/courses/${order.course.slug}`);
+  revalidatePath(`/teach/courses/${order.courseId}/students`);
+  return { status: OrderStatus.REFUNDED, changed: true };
 }

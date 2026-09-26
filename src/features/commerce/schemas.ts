@@ -94,6 +94,23 @@ export const couponFormSchema = z
 
 export const couponIdSchema = z.cuid("ไม่พบคูปอง");
 
+/** FR-18.2 · Q6 — คืนเงิน (`/admin/orders`) · `override` = ยืนยันคืนนอกนโยบาย 7 วัน/20% */
+export const refundSchema = z.object({
+  orderId: z.cuid("ไม่พบคำสั่งซื้อ"),
+  reason: z
+    .string({ error: "กรุณาระบุเหตุผลการคืนเงิน" })
+    .trim()
+    .min(5, "เหตุผลต้องยาวอย่างน้อย 5 ตัวอักษร")
+    .max(500, "เหตุผลยาวได้ไม่เกิน 500 ตัวอักษร"),
+  override: z
+    .union([z.literal("on"), z.literal("true")])
+    .nullish()
+    .transform((v) => v != null),
+});
+
+/** ตัวกรอง `/admin/orders` */
+export const ORDER_FILTER_STATUSES = ["PENDING", "PAID", "FAILED", "REFUNDED"] as const;
+
 export const orderIdSchema = z.object({ orderId: z.cuid("ไม่พบคำสั่งซื้อ") });
 
 /** หน้าชำระเงินจำลอง (dev/e2e) */
@@ -103,3 +120,38 @@ export const mockPaySchema = z.object({
   outcome: z.enum(["paid", "failed"]),
   method: z.enum(["card", "promptpay"]),
 });
+
+export type OrderFilter = {
+  /** อีเมล/ชื่อผู้ซื้อ · เลขคำสั่งซื้อ · เลขใบเสร็จ · ชื่อคอร์ส */
+  q: string;
+  status: (typeof ORDER_FILTER_STATUSES)[number] | null;
+  /** "YYYY-MM-DD" ตามเวลาไทย (วันที่สร้างคำสั่งซื้อ) */
+  from: string | null;
+  to: string | null;
+  page: number;
+};
+
+export const ORDER_PAGE_SIZE = 50;
+
+export function parseOrderFilter(input: Record<string, string | string[] | undefined>): OrderFilter {
+  const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+  const date = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) ? v : null);
+  const status = one(input.status);
+  const page = Number.parseInt(one(input.page) || "1", 10);
+  return {
+    q: one(input.q).trim().slice(0, 100),
+    status: (ORDER_FILTER_STATUSES as readonly string[]).includes(status) ? (status as OrderFilter["status"]) : null,
+    from: date(one(input.from)),
+    to: date(one(input.to)),
+    page: Number.isFinite(page) && page > 0 ? page : 1,
+  };
+}
+
+export function orderQuery(filter: OrderFilter): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (filter.q) out.q = filter.q;
+  if (filter.status) out.status = filter.status;
+  if (filter.from) out.from = filter.from;
+  if (filter.to) out.to = filter.to;
+  return out;
+}

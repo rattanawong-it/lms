@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–4 เสร็จ (adapter · ราคา · ชำระเงินกับ mock · คูปอง · ใบเสร็จรับเงิน) · ✋ จุดตรวจที่ 1 รอ sandbox Omise (Q1/Q2 ข้ามไว้ก่อน — ข้อมูลสถาบันยังไม่พร้อม) · ถัดไปขั้น 5 คืนเงิน · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–5 เสร็จ (adapter · ราคา · ชำระเงินกับ mock · คูปอง · ใบเสร็จรับเงิน · คืนเงิน) · ✋ จุดตรวจที่ 1 รอ sandbox Omise (Q1/Q2 ข้ามไว้ก่อน — ข้อมูลสถาบันยังไม่พร้อม) · ถัดไปขั้น 6 รายงานยอดขาย + ปิดเฟส · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -88,7 +88,7 @@ src/
   app/(learn)/learn/[courseId]/qa[/threadId]          ถาม-ตอบ (M13) · กล่องคำถามผู้สอน `/teach/courses/[id]/qa`
   app/(learn)/settings/privacy · api/privacy/export   PDPA ของผู้ใช้ (M17) · ผู้ดูแล `/admin/{audit,settings,deletion-requests}`
   app/(learn)/{checkout,orders} · api/payment/webhook  ซื้อคอร์ส (M18) — webhook พิสูจน์ตัวด้วยลายเซ็นเท่านั้น ไม่มี session
-  app/api/receipt/[orderId] · (admin)/admin/coupons     PDF ใบเสร็จ (เจ้าของ/SUPER_ADMIN) · คูปอง (M18)
+  app/api/receipt/[orderId] · (admin)/admin/{coupons,orders}  PDF ใบเสร็จ (เจ้าของ/SUPER_ADMIN) · คูปอง · คำสั่งซื้อ/คืนเงิน (M18)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -200,6 +200,7 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 · webhook เข้าทาง `handlePaymentWebhook()` (บันทึก `PaymentEvent` กันซ้ำ) · หน้าจำลอง `/checkout/mock` ใช้ทางเดียวกัน · cron `orders` ปิดคำสั่งซื้อหมดอายุ
 · ทุกทางที่ทำให้คำสั่งซื้อเป็น PAID เปิดสิทธิ์ด้วย `grantPurchase()` (นับ `Coupon.usedCount` ด้วย) แล้วตามด้วย `announcePaid()` — คูปองลด 100% ใช้ทางนี้โดยไม่ผ่าน gateway
 · ใบเสร็จออกใน `grantPurchase()` → `issueReceipt()` เท่านั้น (เลขจาก `DocumentCounter` ในทรานแซกชันเดียวกับ PAID + snapshot ผู้ขาย/ผู้ซื้อใน `Order.billing`) · PDF สร้างจาก snapshot ทุกครั้งผ่าน `buildReceiptModel()` ห้ามอ่านผู้ขายปัจจุบันตอนดาวน์โหลด
+· คืนเงิน: นโยบาย 7 วัน/20% อยู่ใน `checkRefund()` (pure) · `refundOrder()` จองคำขอ (`refundReason`) → `provider.refund()` → `settleOrder()` · **PAID → REFUNDED เกิดที่ `finalizeRefund()` ใน `settle.ts` จุดเดียว** (ตัดสิทธิ์ DROPPED + เพิกถอนใบประกาศในทรานแซกชันเดียวกัน) · PAID ที่มี `refundReason` = รอผู้ให้บริการยืนยัน
 · คูปองตรวจด้วย `quoteCoupon()` (pure) ผ่าน `findCouponQuote()` เท่านั้น · สิทธิ์คงเหลือ = `maxUses − usedCount − คำสั่งซื้อ PENDING ที่ยังไม่หมดอายุ` · ตอนสร้างคำสั่งซื้อต้อง `lock: true` ในทรานแซกชันเดียวกัน
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)

@@ -5,6 +5,10 @@ import { requireRole, requireUser } from "@/lib/rbac";
 import { hasPayment } from "@/lib/env";
 import { CourseStatus, EnrollmentStatus, OrderStatus, Role, Visibility } from "@/generated/prisma/enums";
 import { courseOffer, type CourseOffer } from "@/features/commerce/lib/pricing";
+import { checkRefund, type RefundCheck } from "@/features/commerce/lib/refund-rules";
+import { ORDER_PAGE_SIZE, type OrderFilter } from "@/features/commerce/schemas";
+import { reportDateRange } from "@/features/reports/lib/report";
+import type { Prisma } from "@/generated/prisma/client";
 
 /** M18 · FR-18.1 — ข้อมูลหน้าชำระเงินและคำสั่งซื้อ (เจ้าของเท่านั้น — ตัวตนจาก session) */
 
@@ -114,12 +118,12 @@ export async function listMyOrders(): Promise<OrderRow[]> {
 export async function getMyOrder(
   orderId: string,
 ): Promise<
-  OrderRow & { failureReason: string | null; subtotal: string; discount: string; couponCode: string | null; receiptNo: string | null }
+  OrderRow & { failureReason: string | null; subtotal: string; discount: string; couponCode: string | null; receiptNo: string | null; refundedAt: Date | null }
 > {
   const user = await requireUser(`/orders/${orderId}`);
   const order = await db.order.findFirst({
     where: { id: orderId, userId: user.id },
-    select: { ...orderSelect, failureReason: true, subtotal: true, discount: true, couponCode: true, receiptNo: true },
+    select: { ...orderSelect, failureReason: true, subtotal: true, discount: true, couponCode: true, receiptNo: true, refundedAt: true },
   });
   if (!order) notFound();
   return {
@@ -129,6 +133,7 @@ export async function getMyOrder(
     discount: order.discount.toString(),
     couponCode: order.couponCode,
     receiptNo: order.receiptNo,
+    refundedAt: order.refundedAt,
   };
 }
 
@@ -197,4 +202,112 @@ export async function couponCourseOptions(): Promise<{ id: string; title: string
     take: 500,
     select: { id: true, title: true },
   });
+}
+
+export type AdminOrderRow = {
+  id: string;
+  createdAt: Date;
+  paidAt: Date | null;
+  status: OrderStatus;
+  subtotal: string;
+  discount: string;
+  amount: string;
+  couponCode: string | null;
+  method: string | null;
+  receiptNo: string | null;
+  refundedAt: Date | null;
+  refundReason: string | null;
+  /** มีคำขอคืนเงินค้างรอผู้ให้บริการยืนยัน */
+  refundPending: boolean;
+  buyer: { name: string; email: string };
+  course: { id: string; title: string };
+  progressPct: number;
+  refund: RefundCheck;
+};
+
+/** `/admin/orders` — FR-18.2 ค้นหา/กรองคำสั่งซื้อ + ผลตรวจนโยบายคืนเงิน (SUPER_ADMIN) */
+export async function listAdminOrders(filter: OrderFilter) {
+  await requireRole(Role.SUPER_ADMIN);
+  const createdAt = reportDateRange(filter);
+  const q = filter.q;
+  const where: Prisma.OrderWhereInput = {
+    ...(filter.status ? { status: filter.status } : {}),
+    ...(createdAt.gte || createdAt.lt ? { createdAt } : {}),
+    ...(q
+      ? {
+          OR: [
+            { id: q },
+            { receiptNo: { equals: q.toUpperCase() } },
+            { user: { email: { contains: q, mode: "insensitive" } } },
+            { user: { name: { contains: q, mode: "insensitive" } } },
+            { course: { title: { contains: q, mode: "insensitive" } } },
+          ],
+        }
+      : {}),
+  };
+
+  const [rows, total] = await Promise.all([
+    db.order.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      skip: (filter.page - 1) * ORDER_PAGE_SIZE,
+      take: ORDER_PAGE_SIZE,
+      select: {
+        id: true,
+        userId: true,
+        courseId: true,
+        createdAt: true,
+        paidAt: true,
+        status: true,
+        subtotal: true,
+        discount: true,
+        amount: true,
+        couponCode: true,
+        method: true,
+        receiptNo: true,
+        providerRef: true,
+        refundedAt: true,
+        refundReason: true,
+        user: { select: { name: true, email: true } },
+        course: { select: { id: true, title: true } },
+      },
+    }),
+    db.order.count({ where }),
+  ]);
+
+  const enrollments = rows.length
+    ? await db.enrollment.findMany({
+        where: { OR: rows.map((r) => ({ userId: r.userId, courseId: r.courseId })) },
+        select: { userId: true, courseId: true, progressPct: true },
+      })
+    : [];
+  const progress = new Map(enrollments.map((e) => [`${e.userId}:${e.courseId}`, e.progressPct]));
+  const now = new Date();
+
+  return {
+    total,
+    pageCount: Math.max(1, Math.ceil(total / ORDER_PAGE_SIZE)),
+    rows: rows.map((r): AdminOrderRow => {
+      const progressPct = progress.get(`${r.userId}:${r.courseId}`) ?? 0;
+      return {
+        id: r.id,
+        createdAt: r.createdAt,
+        paidAt: r.paidAt,
+        status: r.status,
+        subtotal: r.subtotal.toString(),
+        discount: r.discount.toString(),
+        amount: r.amount.toString(),
+        couponCode: r.couponCode,
+        method: r.method,
+        receiptNo: r.receiptNo,
+        refundedAt: r.refundedAt,
+        refundReason: r.refundReason,
+        refundPending: r.status === OrderStatus.PAID && r.refundReason !== null,
+        buyer: r.user,
+        course: r.course,
+        progressPct,
+        refund: checkRefund(r, progressPct, now),
+      };
+    }),
+  };
 }

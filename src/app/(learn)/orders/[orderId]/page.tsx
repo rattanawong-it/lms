@@ -46,6 +46,13 @@ export default async function OrderPage(props: PageProps<"/orders/[orderId]">) {
           </div>
         ) : null}
 
+        {order.status === OrderStatus.REFUNDED ? (
+          <p className="bg-danger-bg text-danger-fg rounded-lg p-3 text-[13px]">
+            คืนเงินแล้ว{order.refundedAt ? `เมื่อ ${formatDateTime(order.refundedAt)}` : ""} — สิทธิ์เรียนคอร์สนี้สิ้นสุดแล้ว
+            เงินจะเข้าบัญชีตามรอบของธนาคาร/ผู้ออกบัตร
+          </p>
+        ) : null}
+
         {order.receiptNo ? (
           <Button asChild variant="outline" className="h-11 w-full">
             {/* route handler ตอบไฟล์ PDF — ใช้ <a> ธรรมดา ไม่ใช่ client navigation */}

@@ -13,13 +13,16 @@ import { CourseStatus, EnrollmentStatus, OrderStatus, Role } from "@/generated/p
 import {
   CHECKOUT_QUOTA,
   COUPON_QUOTA,
+  ORDER_STATUS_LABEL,
   ORDER_TTL_MINUTES,
   checkoutSchema,
   couponFormSchema,
   couponIdSchema,
   mockPaySchema,
   orderIdSchema,
+  refundSchema,
 } from "@/features/commerce/schemas";
+import { checkRefund } from "@/features/commerce/lib/refund-rules";
 import { courseOffer } from "@/features/commerce/lib/pricing";
 import { findCouponQuote } from "@/features/commerce/lib/coupon-store";
 import { announcePaid, grantPurchase, settleOrder } from "@/features/commerce/lib/settle";
@@ -321,4 +324,96 @@ export async function setCouponActive(formData: FormData): Promise<ActionResult>
   });
   revalidatePath("/admin/coupons");
   return { ok: true, message: active ? `เปิดใช้คูปอง ${coupon.code} แล้ว` : `ปิดใช้คูปอง ${coupon.code} แล้ว` };
+}
+
+/**
+ * FR-18.2 · Q6 — คืนเงินเต็มจำนวน (ผู้ดูแลระบบเท่านั้น · `/admin/orders`)
+ *
+ * 1. ตรวจนโยบาย 7 วัน/20% (`checkRefund()`) — นอกนโยบายต้องยืนยัน · ทุกกรณีต้องมีเหตุผล
+ * 2. จองคำขอด้วย `updateMany` ที่มีเงื่อนไข `refundReason = null` (กดซ้ำ/สองแท็บ → คืนครั้งเดียว) พร้อมบันทึกเหตุผล/ยอด
+ * 3. เรียก refund ที่ผู้ให้บริการ — ล้ม = ปลดการจองให้ลองใหม่ได้
+ * 4. `settleOrder()` ถามสถานะกลับ แล้วค่อยเปลี่ยนเป็น REFUNDED + ตัดสิทธิ์ + เพิกถอนใบประกาศ (webhook ที่ตามมาเข้าทางเดียวกัน)
+ */
+export async function refundOrder(formData: FormData): Promise<ActionResult> {
+  const user = await requireRole(Role.SUPER_ADMIN);
+  const parsed = refundSchema.safeParse({
+    orderId: formData.get("orderId"),
+    reason: formData.get("reason"),
+    override: formData.get("override"),
+  });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]!.message, fieldErrors: zodToFieldErrors(parsed.error) };
+  }
+  const { orderId, reason, override } = parsed.data;
+
+  const order = await db.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, userId: true, courseId: true, status: true, amount: true, paidAt: true, provider: true, providerRef: true, refundReason: true },
+  });
+  if (!order) return { ok: false, message: "ไม่พบคำสั่งซื้อ" };
+  const enrollment = await db.enrollment.findUnique({
+    where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
+    select: { progressPct: true },
+  });
+  const check = checkRefund(order, enrollment?.progressPct ?? 0, new Date());
+  if (check.kind === "blocked") return { ok: false, message: check.reason };
+  if (check.kind === "override" && !override) {
+    return { ok: false, message: `อยู่นอกนโยบายคืนเงิน: ${check.reasons.join(" · ")} — ติ๊กยืนยันเพื่อคืนเป็นกรณีพิเศษ` };
+  }
+  const provider = getPaymentProvider();
+  if (!provider || provider.name !== order.provider) return { ok: false, message: "ผู้ให้บริการชำระเงินของรายการนี้ไม่ได้เปิดใช้อยู่" };
+
+  const claimed = await db.order.updateMany({
+    where: { id: order.id, status: OrderStatus.PAID, refundReason: null },
+    data: { refundReason: reason, refundAmount: order.amount },
+  });
+  if (claimed.count === 0) return { ok: false, message: "รายการนี้กำลังคืนเงินหรือคืนไปแล้ว" };
+  await writeAudit({
+    actorId: user.id,
+    action: "order.refund_request",
+    entity: "Order",
+    entityId: order.id,
+    after: { amount: order.amount.toString(), reason, outsidePolicy: check.kind === "override" ? check.reasons : null },
+  });
+
+  try {
+    await provider.refund(order.providerRef!, toSatang(order.amount));
+  } catch (error) {
+    console.error("[commerce] คืนเงินไม่สำเร็จ", error);
+    await db.order.updateMany({
+      where: { id: order.id, status: OrderStatus.PAID, refundReason: reason },
+      data: { refundReason: null, refundAmount: null },
+    });
+    await writeAudit({ actorId: user.id, action: "order.refund_failed", entity: "Order", entityId: order.id, after: { reason } });
+    return { ok: false, message: "ผู้ให้บริการปฏิเสธการคืนเงิน กรุณาตรวจสอบที่แดชบอร์ดของผู้ให้บริการแล้วลองใหม่" };
+  }
+
+  const settled = await settleOrder(order.id);
+  revalidatePath("/admin/orders");
+  return settled?.status === OrderStatus.REFUNDED
+    ? { ok: true, message: "คืนเงินแล้ว — ตัดสิทธิ์เรียนและแจ้งผู้ซื้อแล้ว" }
+    : { ok: true, message: "ส่งคำขอคืนเงินแล้ว — ระบบจะปรับสถานะเมื่อผู้ให้บริการยืนยัน" };
+}
+
+/** ผู้ดูแลกด "ตรวจสอบกับผู้ให้บริการ" — จ่ายแล้วแต่ webhook หาย / คืนเงินค้างยืนยัน (phase-4-plan §7) */
+export async function recheckOrder(formData: FormData): Promise<ActionResult> {
+  const user = await requireRole(Role.SUPER_ADMIN);
+  const parsed = orderIdSchema.safeParse({ orderId: formData.get("orderId") });
+  if (!parsed.success) return { ok: false, message: "ไม่พบคำสั่งซื้อ" };
+  const before = await db.order.findUnique({ where: { id: parsed.data.orderId }, select: { status: true } });
+  if (!before) return { ok: false, message: "ไม่พบคำสั่งซื้อ" };
+
+  const settled = await settleOrder(parsed.data.orderId);
+  await writeAudit({
+    actorId: user.id,
+    action: "order.recheck",
+    entity: "Order",
+    entityId: parsed.data.orderId,
+    before: { status: before.status },
+    after: { status: settled?.status ?? before.status },
+  });
+  revalidatePath("/admin/orders");
+  return settled?.changed
+    ? { ok: true, message: `อัปเดตสถานะเป็น “${ORDER_STATUS_LABEL[settled.status]}” แล้ว` }
+    : { ok: true, message: "สถานะตรงกับผู้ให้บริการแล้ว ไม่มีอะไรเปลี่ยน" };
 }

@@ -115,6 +115,7 @@ test.describe("ผู้ดูแลระบบตรวจย้อนหล�
 
     await page.goto(`/admin/audit?${new URLSearchParams({ q: ACCOUNTS.student.email, action: "review.create" })}`);
     const review = page.locator('[data-audit-row="review.create"]').filter({ hasText: comment(info.project.name) });
+    await expect(review).toHaveCount(1, { timeout: 30_000 });
     await review.locator("summary").click();
     await expect(review.getByText(comment(info.project.name))).toBeVisible();
   });

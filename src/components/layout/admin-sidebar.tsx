@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   Lock,
   Megaphone,
+  Receipt,
   MessageSquareQuote,
   Ruler,
   ScrollText,
@@ -84,7 +85,10 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
   },
   {
     label: "การขาย",
-    items: [{ href: "/admin/coupons", label: "คูปองส่วนลด", icon: TicketPercent, roles: [Role.SUPER_ADMIN] }],
+    items: [
+      { href: "/admin/orders", label: "คำสั่งซื้อ / คืนเงิน", icon: Receipt, roles: [Role.SUPER_ADMIN] },
+      { href: "/admin/coupons", label: "คูปองส่วนลด", icon: TicketPercent, roles: [Role.SUPER_ADMIN] },
+    ],
   },
   {
     label: "ระบบ",
