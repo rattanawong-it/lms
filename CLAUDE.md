@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–5 เสร็จ (adapter · ราคา · ชำระเงินกับ mock · คูปอง · ใบเสร็จรับเงิน · คืนเงิน) · ✋ จุดตรวจที่ 1 รอ sandbox Omise (Q1/Q2 ข้ามไว้ก่อน — ข้อมูลสถาบันยังไม่พร้อม) · ถัดไปขั้น 6 รายงานยอดขาย + ปิดเฟส · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · **ขั้น 0–6 เสร็จกับผู้ให้บริการจำลอง** (adapter · ราคา · ชำระเงิน · คูปอง · ใบเสร็จ · คืนเงิน · รายงานยอดขาย) · ค้าง: ตัวเชื่อม Omise + ✋ จุดตรวจ 1–2 บน sandbox (Q1) · ใบกำกับภาษี/ใบลดหนี้ (Q2) — ข้อมูลสถาบันยังไม่พร้อม · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -186,6 +186,7 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **รายงาน (M16)** — ตัวเลขนับใน DB เท่านั้น (`count`/`groupBy`/`$queryRaw`) ไม่ดึงแถวมานับใน JS · สูตรอยู่ใน `features/reports/lib/report.ts`
 · ขอบเขตคณะของ DEPT_ADMIN บังคับใน query (`deptScope()`) ไม่ใช่แค่ซ่อนตัวเลือก · ไฟล์ส่งออกผ่าน `spreadsheetSafe()` ทุกช่องที่เป็นข้อความของผู้ใช้
 · Recharts ใช้เฉพาะ `/admin` ผ่าน `next/dynamic` — อย่า import ตรงในหน้าอื่น
+· ยอดขาย (M18) นับใน `salesByCourse()` เท่านั้น — คำสั่งซื้อ PAID + REFUNDED ตามวันที่ชำระ · เงินรวม/สุทธิคิดด้วย `sumSales()`/`netSales()` (สตางค์) · ผู้สอนเห็นแค่จำนวนผู้ซื้อ
 
 **Audit · ตั้งค่า · PDPA (M17)** — action ใหม่ที่เขียนข้อมูลสำคัญต้อง `writeAudit()` พร้อม `before`/`after` · อย่าใส่ค่าลับใน audit (ถูกซ่อนให้แต่ไม่ควรพึ่ง)
 · ชื่อระบบ/โลโก้อ่านด้วย `getBranding()` (server) หรือ `useBranding()` (client) — ห้ามเขียน "KRIRK LMS" ตายตัวในหัวเว็บใหม่

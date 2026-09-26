@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { assertCourseAccess, requireAtLeast, requireUser, type SessionUser } from "@/lib/rbac";
 import { Prisma } from "@/generated/prisma/client";
-import { CourseStatus, EnrollmentStatus, LessonType, Role } from "@/generated/prisma/enums";
+import { CourseStatus, EnrollmentStatus, LessonType, OrderStatus, Role } from "@/generated/prisma/enums";
 import { listTeachCourses } from "@/features/courses/queries";
 import {
   COUNTED_STATUSES,
@@ -10,11 +10,15 @@ import {
   REPORT_PAGE_SIZE,
   completionRate,
   fillMonths,
+  fillSalesMonths,
   lastMonths,
+  netSales,
   reportDateRange,
+  sumSales,
   type CourseReportRow,
   type LearnerReportRow,
   type ReportParams,
+  type SalesReportRow,
 } from "@/features/reports/lib/report";
 
 /**
@@ -102,7 +106,7 @@ export async function getTeachDashboard(query = "") {
   }
   const idList = Prisma.join(ids);
 
-  const [enrollments, submissions, attempts, threads] = await Promise.all([
+  const [enrollments, submissions, attempts, threads, buyers] = await Promise.all([
     db.enrollment.groupBy({
       by: ["courseId", "status"],
       where: { courseId: { in: ids }, status: { in: [...COUNTED_STATUSES] } },
@@ -130,11 +134,14 @@ export async function getTeachDashboard(query = "") {
       where: { courseId: { in: ids }, isHidden: false, isResolved: false, posts: { none: { isHidden: false } } },
       _count: { _all: true },
     }),
+    // M18 · Q3 — ผู้สอนเห็นจำนวนผู้ซื้อ (ชำระแล้วและยังไม่คืนเงิน) ไม่เห็นยอดเงิน
+    db.order.groupBy({ by: ["courseId"], where: { courseId: { in: ids }, status: OrderStatus.PAID }, _count: { _all: true } }),
   ]);
 
   const pendingSubmissions = countMap(submissions);
   const pendingAttempts = countMap(attempts);
   const openThreads = new Map(threads.map((t) => [t.courseId, t._count._all]));
+  const buyerCount = new Map(buyers.map((b) => [b.courseId, b._count._all]));
 
   const rows = courses.map((c) => {
     const mine = enrollments.filter((e) => e.courseId === c.id);
@@ -147,6 +154,7 @@ export async function getTeachDashboard(query = "") {
       pendingSubmissions: pendingSubmissions.get(c.id) ?? 0,
       pendingAttempts: pendingAttempts.get(c.id) ?? 0,
       openQuestions: openThreads.get(c.id) ?? 0,
+      buyers: buyerCount.get(c.id) ?? 0,
     };
   });
 
@@ -182,7 +190,7 @@ export async function getAdminDashboard(now: Date = new Date()) {
   const months = lastMonths(now, 12);
   const since = months[0]!.start;
 
-  const [users, newUsers, coursesByStatus, enrollByStatus, departments, usersByDept, coursesByDept, enrollByDept, trend] =
+  const [users, newUsers, coursesByStatus, enrollByStatus, departments, usersByDept, coursesByDept, enrollByDept, trend, sales] =
     await Promise.all([
       db.user.count({ where: userWhere }),
       db.user.count({ where: { ...userWhere, createdAt: { gte: new Date(now.getTime() - 30 * DAY_MS) } } }),
@@ -209,6 +217,8 @@ export async function getAdminDashboard(now: Date = new Date()) {
         FROM "Enrollment" e JOIN "Course" c ON c."id" = e."courseId"
         WHERE e."enrolledAt" >= (${since.toISOString()}::timestamptz AT TIME ZONE 'UTC') AND ${deptSql(deptId)}
         GROUP BY 1`,
+      // M18 — ยอดขายเดือนนี้ (ตามวันที่ชำระ เวลาไทย)
+      salesByCourse(deptId, null, { gte: months[months.length - 1]!.start }),
     ]);
 
   const count = <T extends { _count: { _all: number } }>(rows: T[], pick: (r: T) => boolean) =>
@@ -242,6 +252,7 @@ export async function getAdminDashboard(now: Date = new Date()) {
     completionRate: completionRate(completed, enrolled),
     departments: departmentRows.map((d) => ({ ...d, completionRate: completionRate(d.completed, d.enrolled) })),
     trend: fillMonths(months, new Map(trend.map((t) => [t.month, Number(t.count)]))),
+    salesThisMonth: sumSales(sales),
   };
 }
 
@@ -359,9 +370,82 @@ async function learnerReportRows(params: ReportParams, paging: { skip: number; t
   };
 }
 
+/**
+ * M18 · phase-4-plan ขั้น 6 — ยอดขายต่อคอร์ส นับใน DB (คำสั่งซื้อ PAID + REFUNDED ตามวันที่ชำระ)
+ * ขอบเขตคณะของ DEPT_ADMIN บังคับที่ `deptId` เสมอ · `courseId` กรองเพิ่มได้
+ */
+async function salesByCourse(
+  deptId: string | null,
+  courseId: string | null,
+  paidAt: { gte?: Date; lt?: Date },
+): Promise<SalesReportRow[]> {
+  const conds = [
+    Prisma.sql`o."status" IN ('PAID', 'REFUNDED')`,
+    deptSql(deptId),
+    courseId ? Prisma.sql`c."id" = ${courseId}` : Prisma.sql`TRUE`,
+    paidAt.gte ? Prisma.sql`o."paidAt" >= (${paidAt.gte.toISOString()}::timestamptz AT TIME ZONE 'UTC')` : Prisma.sql`TRUE`,
+    paidAt.lt ? Prisma.sql`o."paidAt" < (${paidAt.lt.toISOString()}::timestamptz AT TIME ZONE 'UTC')` : Prisma.sql`TRUE`,
+  ];
+  const rows = await db.$queryRaw<SalesReportRow[]>`
+    SELECT c."title", d."name" AS "departmentName",
+      COUNT(*)::int AS orders,
+      COALESCE(SUM(o."amount"), 0)::numeric(14, 2)::text AS gross,
+      COALESCE(SUM(o."discount"), 0)::numeric(14, 2)::text AS discount,
+      COUNT(*) FILTER (WHERE o."couponId" IS NOT NULL)::int AS coupons,
+      COUNT(*) FILTER (WHERE o."status" = 'REFUNDED')::int AS refunds,
+      COALESCE(SUM(o."refundAmount") FILTER (WHERE o."status" = 'REFUNDED'), 0)::numeric(14, 2)::text AS refunded
+    FROM "Order" o
+    JOIN "Course" c ON c."id" = o."courseId"
+    LEFT JOIN "Department" d ON d."id" = c."departmentId"
+    WHERE ${Prisma.join(conds, " AND ")}
+    GROUP BY c."id", c."title", d."name"
+    ORDER BY SUM(o."amount") DESC, c."title" ASC
+    LIMIT ${REPORT_EXPORT_MAX}`;
+  return rows.map((r) => ({ ...r, orders: Number(r.orders), coupons: Number(r.coupons), refunds: Number(r.refunds) }));
+}
+
+async function salesReportRows(params: ReportParams) {
+  const { deptId } = await reportScope(params);
+  const department = deptId ?? params.departmentId;
+  const rows = await salesByCourse(department, params.courseId, reportDateRange(params));
+  return { rows, total: rows.length };
+}
+
+/** ยอดขายรายเดือน 12 เดือนล่าสุด (ขอบเขตคณะ/คอร์สเดียวกับตาราง ไม่ใช้ช่วงวันที่) */
+export async function getSalesTrend(params: ReportParams, now: Date = new Date()) {
+  const { deptId } = await reportScope(params);
+  const department = deptId ?? params.departmentId;
+  const months = lastMonths(now, 12);
+  const rows = await db.$queryRaw<{ month: string; orders: number; gross: string; refunded: string }[]>`
+    SELECT to_char(date_trunc('month', (o."paidAt" AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Bangkok'), 'YYYY-MM') AS month,
+      COUNT(*)::int AS orders,
+      COALESCE(SUM(o."amount"), 0)::numeric(14, 2)::text AS gross,
+      COALESCE(SUM(o."refundAmount") FILTER (WHERE o."status" = 'REFUNDED'), 0)::numeric(14, 2)::text AS refunded
+    FROM "Order" o JOIN "Course" c ON c."id" = o."courseId"
+    WHERE o."status" IN ('PAID', 'REFUNDED')
+      AND o."paidAt" >= (${months[0]!.start.toISOString()}::timestamptz AT TIME ZONE 'UTC')
+      AND ${deptSql(department)}
+      AND ${params.courseId ? Prisma.sql`c."id" = ${params.courseId}` : Prisma.sql`TRUE`}
+    GROUP BY 1`;
+  return fillSalesMonths(
+    months,
+    rows.map((r) => ({ ...r, orders: Number(r.orders) })),
+  );
+}
+
 /** `/admin/reports` — หน้าละ 50 แถว */
 export async function getReport(params: ReportParams) {
   const paging = { skip: (params.page - 1) * REPORT_PAGE_SIZE, take: REPORT_PAGE_SIZE };
+  if (params.view === "sales") {
+    const { rows, total } = await salesReportRows(params);
+    return {
+      view: "sales" as const,
+      rows: rows.slice(paging.skip, paging.skip + paging.take),
+      total,
+      summary: { ...sumSales(rows), net: netSales(sumSales(rows)) },
+      pageCount: Math.max(1, Math.ceil(total / REPORT_PAGE_SIZE)),
+    };
+  }
   const result =
     params.view === "course"
       ? { view: "course" as const, ...(await courseReportRows(params, paging)) }
@@ -372,6 +456,7 @@ export async function getReport(params: ReportParams) {
 /** ข้อมูลทั้งหมดสำหรับส่งออก (ไม่เกิน `REPORT_EXPORT_MAX` แถว) */
 export async function getReportForExport(params: ReportParams) {
   const paging = { skip: 0, take: REPORT_EXPORT_MAX };
+  if (params.view === "sales") return { view: "sales" as const, ...(await salesReportRows(params)) };
   return params.view === "course"
     ? { view: "course" as const, ...(await courseReportRows(params, paging)) }
     : { view: "learner" as const, ...(await learnerReportRows(params, paging)) };

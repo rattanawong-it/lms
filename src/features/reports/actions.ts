@@ -9,6 +9,8 @@ import {
   courseReportTable,
   learnerReportTable,
   parseReportParams,
+  salesReportTable,
+  type ReportView,
 } from "@/features/reports/lib/report";
 import { getCourseProgressForExport, getReportForExport } from "@/features/reports/queries";
 
@@ -19,6 +21,9 @@ import { getCourseProgressForExport, getReportForExport } from "@/features/repor
 
 export type ExportFile = { filename: string; mime: string; base64: string };
 type Format = "csv" | "xlsx";
+
+const EXPORT_NAME: Record<ReportView, string> = { course: "รายงานรายคอร์ส", learner: "รายงานรายผู้เรียน", sales: "รายงานยอดขาย" };
+const EXPORT_SHEET: Record<ReportView, string> = { course: "รายคอร์ส", learner: "รายผู้เรียน", sales: "ยอดขาย" };
 
 const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
@@ -35,7 +40,12 @@ export async function exportReport(filters: Record<string, string>, format: Form
   const actor = await requireAtLeast(Role.DEPT_ADMIN);
   const params = parseReportParams(filters);
   const data = await getReportForExport(params);
-  const table = data.view === "course" ? courseReportTable(data.rows) : learnerReportTable(data.rows);
+  const table =
+    data.view === "course"
+      ? courseReportTable(data.rows)
+      : data.view === "sales"
+        ? salesReportTable(data.rows)
+        : learnerReportTable(data.rows);
 
   await writeAudit({
     actorId: actor.id,
@@ -44,10 +54,7 @@ export async function exportReport(filters: Record<string, string>, format: Form
     after: { view: params.view, format, rows: data.rows.length, filters: { ...params, page: undefined } },
   });
   const stamp = new Date().toISOString().slice(0, 10);
-  return toFile(
-    data.view === "course" ? `รายงานรายคอร์ส ${stamp}` : `รายงานรายผู้เรียน ${stamp}`,
-    data.view === "course" ? "รายคอร์ส" : "รายผู้เรียน",
-    table,
+  return toFile(`${EXPORT_NAME[data.view]} ${stamp}`, EXPORT_SHEET[data.view], table,
     format === "xlsx" ? "xlsx" : "csv",
   );
 }

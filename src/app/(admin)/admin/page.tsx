@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, FileBarChart, GraduationCap, UserPlus, Users } from "lucide-react";
+import { Banknote, BookOpen, FileBarChart, GraduationCap, UserPlus, Users } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { Button } from "@/components/ui/button";
 import { ROLE_LABEL } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/enums";
 import { getAdminDashboard } from "@/features/reports/queries";
-import { formatRate } from "@/features/reports/lib/report";
+import { formatRate, netSales } from "@/features/reports/lib/report";
+import { formatBaht } from "@/lib/payment/money";
 import { EnrollmentTrend } from "@/features/reports/components/enrollment-trend";
 
 export const metadata: Metadata = { title: "แดชบอร์ดผู้ดูแล" };
@@ -41,7 +42,7 @@ export default async function AdminDashboardPage() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard label="ผู้ใช้ทั้งหมด" value={data.users} icon={<Users className="size-[18px]" />} hint={isSuper ? "ทุกคณะในระบบ" : "เฉพาะคณะที่คุณดูแล"} />
         <StatCard label="ผู้ใช้ใหม่ 30 วัน" value={data.newUsers} tone="success" icon={<UserPlus className="size-[18px]" />} hint="สมัครหรือถูกนำเข้าใน 30 วันล่าสุด" />
         <StatCard
@@ -58,6 +59,15 @@ export default async function AdminDashboardPage() {
           icon={<GraduationCap className="size-[18px]" />}
           hint={`จบ ${data.enrollments.completed.toLocaleString("th-TH")} จาก ${data.enrollments.enrolled.toLocaleString("th-TH")} การลงทะเบียน`}
         />
+        <Link href="/admin/reports?view=sales" className="focus-visible:ring-ring rounded-xl focus-visible:ring-2 focus-visible:outline-none" data-sales-this-month>
+          <StatCard
+            label="ยอดขายเดือนนี้ (สุทธิ)"
+            value={formatBaht(netSales(data.salesThisMonth))}
+            tone="success"
+            icon={<Banknote className="size-[18px]" />}
+            hint={`${data.salesThisMonth.orders.toLocaleString("th-TH")} คำสั่งซื้อ · คืนเงิน ${formatBaht(data.salesThisMonth.refunded)}`}
+          />
+        </Link>
       </div>
 
       <div className="mt-5">

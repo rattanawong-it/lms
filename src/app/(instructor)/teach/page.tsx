@@ -148,7 +148,14 @@ export default async function TeachPage(props: PageProps<"/teach">) {
                       </Badge>
                     </td>
                     <td className="num px-4 py-3 text-right">{course.lessonCount}</td>
-                    <td className="num px-4 py-3 text-right">{course.learners.toLocaleString("th-TH")}</td>
+                    <td className="num px-4 py-3 text-right">
+                      {course.learners.toLocaleString("th-TH")}
+                      {course.buyers > 0 ? (
+                        <span className="text-muted-foreground block text-[11.5px]" data-buyers>
+                          ผู้ซื้อ {course.buyers.toLocaleString("th-TH")}
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="num px-4 py-3 text-right" data-completion>{formatRate(course.completionRate)}</td>
                     <td className="num px-4 py-3 text-right">
                       {course.pendingSubmissions + course.pendingAttempts > 0 ? (

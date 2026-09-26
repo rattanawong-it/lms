@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Pager } from "@/components/shared/pager";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { getReport, getReportFilterOptions } from "@/features/reports/queries";
+import { getReport, getReportFilterOptions, getSalesTrend } from "@/features/reports/queries";
 import {
   COURSE_REPORT_HEADER,
   LEARNER_REPORT_HEADER,
@@ -21,10 +21,13 @@ import {
   type ReportView,
 } from "@/features/reports/lib/report";
 import { ExportButtons } from "@/features/reports/components/export-buttons";
+import { SalesReport } from "@/features/reports/components/sales-report";
 
 export const metadata: Metadata = { title: "รายงาน" };
 
-const VIEW_LABEL: Record<ReportView, string> = { course: "รายคอร์ส", learner: "รายผู้เรียน" };
+const VIEW_LABEL: Record<ReportView, string> = { course: "รายคอร์ส", learner: "รายผู้เรียน", sales: "ยอดขาย" };
+
+const TOTAL_UNIT: Record<ReportView, string> = { course: "คอร์ส", learner: "การลงทะเบียน", sales: "คอร์สที่มียอดขาย" };
 
 const selectClass =
   "border-input bg-card focus-visible:ring-ring h-11 w-full rounded-[9px] border px-3 text-[14px] outline-none focus-visible:ring-2";
@@ -32,18 +35,22 @@ const selectClass =
 /**
  * M16 · FR-16.4 — รายงานความคืบหน้ารายคอร์ส/รายผู้เรียน + ส่งออก CSV/XLSX
  * ตัวกรองอยู่ใน URL (ฟอร์ม GET) · ผู้ดูแลคณะเห็นเฉพาะคณะตัวเอง (บังคับใน query ไม่ใช่แค่ซ่อนตัวเลือก)
- * ช่วงวันที่กรองตามวันที่ลงทะเบียน (เวลาไทย)
+ * ช่วงวันที่กรองตามวันที่ลงทะเบียน (เวลาไทย) · มุมมองยอดขาย (M18) กรองตามวันที่ชำระ
  */
 export default async function AdminReportsPage(props: PageProps<"/admin/reports">) {
   const params = parseReportParams(await props.searchParams);
-  const [options, report] = await Promise.all([getReportFilterOptions(), getReport(params)]);
+  const [options, report, salesTrend] = await Promise.all([
+    getReportFilterOptions(),
+    getReport(params),
+    params.view === "sales" ? getSalesTrend(params) : null,
+  ]);
   const query = reportQuery(params);
 
   return (
     <>
       <PageHeader
         title="รายงาน"
-        description={`ความคืบหน้าและการเรียนจบ · ส่งออกได้สูงสุด ${REPORT_EXPORT_MAX.toLocaleString("th-TH")} แถวต่อครั้ง`}
+        description={`ความคืบหน้า การเรียนจบ และยอดขาย · ส่งออกได้สูงสุด ${REPORT_EXPORT_MAX.toLocaleString("th-TH")} แถวต่อครั้ง`}
         actions={<ExportButtons target={{ kind: "report", filters: query }} />}
       />
 
@@ -97,7 +104,9 @@ export default async function AdminReportsPage(props: PageProps<"/admin/reports"
           </select>
         </div>
         <div className="space-y-1">
-          <label htmlFor="report-from" className="text-[12.5px] font-medium">ลงทะเบียนตั้งแต่</label>
+          <label htmlFor="report-from" className="text-[12.5px] font-medium">
+            {params.view === "sales" ? "ชำระตั้งแต่" : "ลงทะเบียนตั้งแต่"}
+          </label>
           <input id="report-from" type="date" name="from" defaultValue={params.from ?? ""} className={selectClass} />
         </div>
         <div className="space-y-1">
@@ -115,10 +124,12 @@ export default async function AdminReportsPage(props: PageProps<"/admin/reports"
       </form>
 
       <p className="text-muted-foreground mb-2 text-[12.5px]" data-report-total>
-        พบ {report.total.toLocaleString("th-TH")} {params.view === "course" ? "คอร์ส" : "การลงทะเบียน"}
+        พบ {report.total.toLocaleString("th-TH")} {TOTAL_UNIT[params.view]}
       </p>
 
-      {report.total === 0 ? (
+      {report.view === "sales" ? (
+        <SalesReport rows={report.rows} summary={report.summary} months={salesTrend ?? []} />
+      ) : report.total === 0 ? (
         <EmptyState
           icon={<FileBarChart className="size-5" />}
           title="ไม่มีข้อมูลตามตัวกรองนี้"

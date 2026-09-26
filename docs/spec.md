@@ -98,7 +98,7 @@
 | **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
 | **M16 Reports & Dashboard** | ✅ เสร็จ | Phase 3 ขั้น 6 | `features/reports` · `/dashboard` `/teach` `/admin` · `/admin/reports` ส่งออก CSV/XLSX · กราฟ Recharts (lazy) เฉพาะ `/admin` |
 | **M17 Audit & Settings** | ✅ เสร็จ | Phase 3 ขั้น 7 | `features/{audit,settings,privacy}` · `/admin/{audit,settings,deletion-requests}` · `/settings/privacy` · `/api/privacy/export` · anonymize ตาม Q9 (CHANGELOG #37) |
-| M18 | 🔸 กำลังทำ | Phase 4 ขั้น 0–5 | ราคา · ชำระเงิน (ผู้ให้บริการจำลอง — Omise รอ sandbox) · คูปอง `/admin/coupons` · ใบเสร็จรับเงิน PDF (ยังไม่มีใบกำกับภาษี — รอ Q2) · คืนเงิน `/admin/orders` · ค้าง: รายงานยอดขาย + ปิดเฟส — [`phase-4-plan.md`](./phase-4-plan.md) |
+| M18 | 🔸 เสร็จกับผู้ให้บริการจำลอง | Phase 4 ขั้น 0–6 | ราคา · ชำระเงิน · คูปอง `/admin/coupons` · ใบเสร็จรับเงิน PDF · คืนเงิน `/admin/orders` · รายงานยอดขาย `/admin/reports?view=sales` · **ค้าง:** ตัวเชื่อม Omise + ✋ จุดตรวจ 1–2 บน sandbox (Q1) · ใบกำกับภาษี/ใบลดหนี้ (Q2) — [`phase-4-plan.md`](./phase-4-plan.md) |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
@@ -390,8 +390,10 @@
 | FR-18.1 | ชำระเงินคอร์ส PUBLIC ผ่าน payment gateway (ตัวเลือก: Omise/Opn หรือ Stripe, รองรับ PromptPay) |
 | FR-18.2 | คูปองส่วนลด, ใบเสร็จ/ใบกำกับภาษี, คืนเงิน |
 
-- [ ] เฟส 1: schema `Order`/`Coupon` และ `Course.price` ต้องสร้างไว้แล้ว
-- [ ] เฟส 2: ทำ FR-18.1 และ FR-18.2
+- [x] เฟส 1: schema `Order`/`Coupon` และ `Course.price` ต้องสร้างไว้แล้ว
+- [x] FR-18.1 กับผู้ให้บริการจำลอง (Phase 4 ขั้น 0–2) · [ ] ตัวเชื่อม Omise + ทดสอบ sandbox (รอ Q1)
+- [x] FR-18.2 คูปอง (ขั้น 3) · ใบเสร็จรับเงิน (ขั้น 4) · คืนเงิน (ขั้น 5) · [ ] ใบกำกับภาษี/ใบลดหนี้ (รอ Q2)
+- [x] รายงานยอดขาย + DoD ขั้น 6 — e2e `phase-4.spec` ครบ flow · [ ] จุดตรวจที่ 2 บน Chrome กับ sandbox (รอ Q1)
 
 ---
 
@@ -432,7 +434,7 @@
 | **Phase 1 – MVP** | M03, M04, M05, M06, M15, M11 (in-app) | สร้างคอร์ส เรียน และป้องกันเนื้อหาได้ | ✅ เสร็จ 2026-09-23 |
 | **Phase 2 – Assessment** | M07, M08, M09, M10 | สอบ ส่งงาน ให้คะแนน ออกใบประกาศ | ✅ เสร็จ 2026-09-24 (7 ขั้น + จุดตรวจ 1–2) ([`phase-2-plan.md`](./phase-2-plan.md)) |
 | **Phase 3 – Engagement** | M11 (email), M12, M13, M14, M16, M17 | สื่อสาร รายงาน และธรรมาภิบาล | ✅ ปิดเฟส 2026-09-25 ([`phase-3-plan.md`](./phase-3-plan.md)) |
-| **Phase 4 – Commerce** | M18 (DRM ไม่ทำในเฟสนี้ — Q8) | ขายคอร์ส | 🔸 อนุมัติแผน 2026-09-25 ([`phase-4-plan.md`](./phase-4-plan.md)) |
+| **Phase 4 – Commerce** | M18 (DRM ไม่ทำในเฟสนี้ — Q8) | ขายคอร์ส | 🔸 ขั้น 0–6 เสร็จกับผู้ให้บริการจำลอง 2026-09-26 · รอ sandbox Omise (Q1) + คำตอบภาษี (Q2) เพื่อผ่านจุดตรวจ 1–2 ([`phase-4-plan.md`](./phase-4-plan.md)) |
 
 ---
 

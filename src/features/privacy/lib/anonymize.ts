@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { deleteObject } from "@/lib/storage";
 import { Prisma } from "@/generated/prisma/client";
-import { scrubStrings } from "@/features/audit/lib/json";
+import { SCRUBBED, scrubStrings } from "@/features/audit/lib/json";
 import { DELETED_USER_NAME, deletedEmail } from "@/features/privacy/schemas";
 
 /**
@@ -16,6 +16,7 @@ import { DELETED_USER_NAME, deletedEmail } from "@/features/privacy/schemas";
  * | PDF ใบประกาศใน storage | ลบไฟล์ + `pdfKey = null` | ฝังชื่อจริงไว้ — สร้างใหม่ด้วยชื่อ "ผู้ใช้ที่ลบบัญชีแล้ว" เมื่อมีคนขอ |
  * | `AuditLog.before/after` · `AuditLog.ip` ของการกระทำ | แทนชื่อ/อีเมล/เบอร์/รหัสด้วย `[ลบแล้ว]` · ล้าง IP | log ยังบอกได้ว่าเกิดอะไร แต่ไม่บอกว่าใคร |
  * | การลงทะเบียน · ความคืบหน้า · คะแนน · งานที่ส่ง · กระทู้ · รีวิว · ใบประกาศ | คงไว้ | สถิติของคอร์สและใบประกาศที่ตรวจสอบได้ (Q9) — ชื่อที่แสดงกลายเป็น "ผู้ใช้ที่ลบบัญชีแล้ว" เอง |
+ * | คำสั่งซื้อ · ใบเสร็จ (M18) | คงไว้ · ล้างอีเมลใน snapshot ใบเสร็จ (`Order.billing.buyer.email`) | เอกสารทางบัญชีต้องเก็บตามกฎหมาย — ชื่อผู้ชำระบนใบเสร็จที่ออกแล้วคงไว้ อีเมลไม่จำเป็น (phase-4-plan ขั้น 6) |
  *
  * ผู้เรียกต้องตรวจสิทธิ์และสถานะคำขอมาก่อน · คืนจำนวนแถว audit ที่ถูกแก้ (ไว้ลง audit ของการอนุมัติ)
  */
@@ -40,6 +41,9 @@ export async function anonymizeUser(userId: string): Promise<{ auditScrubbed: nu
     await tx.notification.deleteMany({ where: { userId } });
     await tx.screenEventLog.deleteMany({ where: { userId } });
     await tx.certificate.updateMany({ where: { userId }, data: { pdfKey: null } });
+    await tx.$executeRaw`
+      UPDATE "Order" SET "billing" = jsonb_set("billing", '{buyer,email}', to_jsonb(${SCRUBBED}::text))
+      WHERE "userId" = ${userId} AND "billing" ? 'buyer'`;
 
     await tx.user.update({
       where: { id: userId },

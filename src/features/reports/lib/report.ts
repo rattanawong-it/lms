@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { EnrollmentStatus } from "@/generated/prisma/enums";
 import { ENROLLMENT_STATUS_LABEL } from "@/features/enrollment/lib/labels";
+import { fromSatang, toSatang } from "@/lib/payment/money";
 
 /**
  * M16 · FR-16.1–16.4 — สูตรและรูปแบบรายงาน (pure ทั้งไฟล์ — ใช้ทั้ง server, หน้าจอ และ unit test)
@@ -53,7 +54,7 @@ export function fillMonths(
 
 // ───────────── ตัวกรองรายงาน (/admin/reports) ─────────────
 
-export const REPORT_VIEWS = ["course", "learner"] as const;
+export const REPORT_VIEWS = ["course", "learner", "sales"] as const;
 export type ReportView = (typeof REPORT_VIEWS)[number];
 export const REPORT_PAGE_SIZE = 50;
 /** เพดานแถวของไฟล์ส่งออก — กันคำขอเดียวดึงทั้งฐานข้อมูล */
@@ -83,7 +84,7 @@ export function parseReportParams(input: Record<string, string | string[] | unde
   if (to && Number.isNaN(Date.parse(to))) to = null;
   if (from && to && from > to) [from, to] = [to, from];
   return {
-    view: one(input.view) === "learner" ? "learner" : "course",
+    view: (REPORT_VIEWS as readonly string[]).includes(one(input.view) ?? "") ? (one(input.view) as ReportView) : "course",
     departmentId: pick(one(input.department), id),
     courseId: pick(one(input.course), id),
     from,
@@ -208,4 +209,81 @@ export function learnerReportTable(rows: readonly LearnerReportRow[], withCourse
       return cells;
     }),
   ];
+}
+
+// ───────────── ยอดขาย (M18 · phase-4-plan ขั้น 6) ─────────────
+
+/**
+ * ยอดขายต่อคอร์สจาก SQL (จำนวนเงินเป็นสตริงบาท) · นับเฉพาะคำสั่งซื้อที่เคยชำระ (PAID + REFUNDED) ตามวันที่ชำระ
+ * ยอดขาย = ยอดที่เก็บจริง (หลังส่วนลด) · สุทธิ = ยอดขาย − คืนเงิน
+ */
+export type SalesReportRow = {
+  title: string;
+  departmentName: string | null;
+  orders: number;
+  gross: string;
+  discount: string;
+  coupons: number;
+  refunds: number;
+  refunded: string;
+};
+
+/** สุทธิหลังคืนเงิน — คิดเป็นสตางค์ (ไม่ผ่าน float) */
+export function netSales(row: Pick<SalesReportRow, "gross" | "refunded">): string {
+  return fromSatang(Math.max(0, toSatang(row.gross) - toSatang(row.refunded)));
+}
+
+/** รวมหลายแถวเป็นยอดเดียว (การ์ดสรุป) */
+export function sumSales(rows: readonly SalesReportRow[]): Omit<SalesReportRow, "title" | "departmentName"> {
+  const add = (pick: (r: SalesReportRow) => string) => fromSatang(rows.reduce((s, r) => s + toSatang(pick(r)), 0));
+  return {
+    orders: rows.reduce((s, r) => s + r.orders, 0),
+    gross: add((r) => r.gross),
+    discount: add((r) => r.discount),
+    coupons: rows.reduce((s, r) => s + r.coupons, 0),
+    refunds: rows.reduce((s, r) => s + r.refunds, 0),
+    refunded: add((r) => r.refunded),
+  };
+}
+
+export const SALES_REPORT_HEADER = [
+  "คอร์ส",
+  "คณะ",
+  "คำสั่งซื้อที่ชำระ",
+  "ยอดขาย (บาท)",
+  "ส่วนลด (บาท)",
+  "ใช้คูปอง",
+  "คืนเงิน (รายการ)",
+  "คืนเงิน (บาท)",
+  "สุทธิ (บาท)",
+];
+
+export function salesReportTable(rows: readonly SalesReportRow[]): (string | number)[][] {
+  return [
+    SALES_REPORT_HEADER,
+    ...rows.map((r) => [
+      spreadsheetSafe(r.title),
+      spreadsheetSafe(r.departmentName ?? ""),
+      r.orders,
+      Number(r.gross),
+      Number(r.discount),
+      r.coupons,
+      r.refunds,
+      Number(r.refunded),
+      Number(netSales(r)),
+    ]),
+  ];
+}
+
+/** เติมเดือนที่ไม่มียอดขายเป็น 0 (ตารางรายเดือน 12 เดือน) */
+export function fillSalesMonths(
+  months: readonly { key: string; label: string }[],
+  rows: readonly { month: string; orders: number; gross: string; refunded: string }[],
+): { key: string; label: string; orders: number; gross: string; refunded: string; net: string }[] {
+  return months.map((m) => {
+    const r = rows.find((x) => x.month === m.key);
+    const gross = r?.gross ?? "0.00";
+    const refunded = r?.refunded ?? "0.00";
+    return { key: m.key, label: m.label, orders: r?.orders ?? 0, gross, refunded, net: netSales({ gross, refunded }) };
+  });
 }

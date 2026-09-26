@@ -56,6 +56,19 @@ const actions = {
     const cert = await db.certificate.create({
       data: { code: randomCode(), userId: approve.id, courseId: course.id },
     });
+    // M18 — คำสั่งซื้อที่มีใบเสร็จ: ต้องคงไว้ (เอกสารบัญชี) แต่อีเมลใน snapshot ถูกล้าง
+    await db.order.create({
+      data: {
+        userId: approve.id,
+        courseId: course.id,
+        subtotal: "500.00",
+        amount: "500.00",
+        status: "PAID",
+        paidAt: new Date(),
+        receiptNo: `RC-E2E-${a.tag}`,
+        billing: { seller: { name: "ผู้ขายทดสอบ", taxId: null, address: null, phone: null }, buyer: { name: approve.name, email: approve.email } },
+      },
+    });
     // log ที่ผู้สอนเขียนอีเมลของผู้ใช้ไว้ — ต้องถูกล้างเมื่อ anonymize
     await db.auditLog.create({
       data: { actorId: instructor.id, action: "course.addInstructor", entity: "Course", entityId: course.id, after: { email: approve.email } },
@@ -68,7 +81,7 @@ const actions = {
   },
 
   async inspect(f: PrivacyFixture) {
-    const [approved, rejected, sessions, accounts, mentions] = await Promise.all([
+    const [approved, rejected, sessions, accounts, mentions, order] = await Promise.all([
       db.user.findUniqueOrThrow({
         where: { id: f.approve.id },
         select: { name: true, email: true, phone: true, externalId: true, deletedAt: true, banned: true },
@@ -77,6 +90,7 @@ const actions = {
       db.session.count({ where: { userId: f.approve.id } }),
       db.account.count({ where: { userId: f.approve.id } }),
       db.$queryRaw<{ n: bigint }[]>`SELECT count(*) AS n FROM "AuditLog" WHERE after::text ILIKE ${`%${f.approve.email}%`} OR before::text ILIKE ${`%${f.approve.email}%`}`,
+      db.order.findFirst({ where: { userId: f.approve.id }, select: { receiptNo: true, billing: true } }),
     ]);
     return {
       approved: { ...approved, deletedAt: approved.deletedAt?.toISOString() ?? null },
@@ -84,6 +98,7 @@ const actions = {
       sessions,
       accounts,
       auditMentions: Number(mentions[0]!.n),
+      order: order && { receiptNo: order.receiptNo, buyer: (order.billing as { buyer: { name: string; email: string } }).buyer },
     };
   },
 
@@ -96,6 +111,7 @@ const actions = {
   async cleanup(f: PrivacyFixture) {
     // ใบประกาศอ้างคอร์สแบบไม่ cascade — ลบก่อนคอร์ส
     await db.certificate.deleteMany({ where: { userId: { in: [f.approve.id, f.reject.id] } } });
+    await db.order.deleteMany({ where: { courseId: f.courseId } });
     await db.course.deleteMany({ where: { id: f.courseId } });
     await db.auditLog.deleteMany({ where: { OR: [{ entityId: { in: [f.approve.id, f.reject.id, f.courseId] } }, { actorId: { in: [f.approve.id, f.reject.id] } }] } });
     await db.user.deleteMany({ where: { id: { in: [f.approve.id, f.reject.id] } } });

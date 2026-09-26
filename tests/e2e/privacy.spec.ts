@@ -117,6 +117,7 @@ test.describe("ผู้ดูแลระบบ", () => {
       sessions: number;
       accounts: number;
       auditMentions: number;
+      order: { receiptNo: string; buyer: { name: string; email: string } } | null;
     }>("privacy-fixture.ts", "inspect", f);
     expect(state.approved).toMatchObject({
       name: "ผู้ใช้ที่ลบบัญชีแล้ว",
@@ -129,6 +130,8 @@ test.describe("ผู้ดูแลระบบ", () => {
     expect(state.sessions).toBe(0);
     expect(state.accounts).toBe(0);
     expect(state.auditMentions).toBe(0);
+    // M18 — คำสั่งซื้อ/ใบเสร็จคงไว้ตามกฎหมายบัญชี · อีเมลใน snapshot ถูกล้าง · ชื่อผู้ชำระบนใบเดิมคงไว้
+    expect(state.order).toEqual({ receiptNo: expect.stringMatching(/^RC-E2E-/), buyer: { name: f.approve.name, email: "[ลบแล้ว]" } });
 
     // หน้าตรวจสอบใบประกาศสาธารณะ
     const guest = await browser.newContext({ storageState: ANONYMOUS });
