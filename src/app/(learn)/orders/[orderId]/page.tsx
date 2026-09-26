@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/dates";
-import { formatBaht } from "@/lib/payment/money";
+import { formatBaht, toSatang } from "@/lib/payment/money";
 import { OrderStatus } from "@/generated/prisma/enums";
 import { OrderStatusWatcher } from "@/features/commerce/components/order-status-watcher";
 import { getMyOrder } from "@/features/commerce/queries";
@@ -61,6 +61,20 @@ export default async function OrderPage(props: PageProps<"/orders/[orderId]">) {
             <dt className="text-muted-foreground">เลขที่คำสั่งซื้อ</dt>
             <dd className="num font-mono break-all">{order.id}</dd>
           </div>
+          {toSatang(order.discount) > 0 ? (
+            <>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">ราคาคอร์ส</dt>
+                <dd className="num">{formatBaht(order.subtotal)}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">ส่วนลด{order.couponCode ? ` (คูปอง ${order.couponCode})` : ""}</dt>
+                <dd className="num" data-order-discount>
+                  −{formatBaht(order.discount)}
+                </dd>
+              </div>
+            </>
+          ) : null}
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">สร้างเมื่อ</dt>
             <dd className="num">{formatDateTime(order.createdAt)}</dd>

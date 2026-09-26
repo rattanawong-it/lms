@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–2 เสร็จ (adapter · ราคา · ชำระเงินกับ mock) · ✋ จุดตรวจที่ 1 รอ sandbox Omise · ขั้น 3 คูปองเริ่มได้ · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–3 เสร็จ (adapter · ราคา · ชำระเงินกับ mock · คูปอง) · ✋ จุดตรวจที่ 1 รอ sandbox Omise (Q1/Q2 ข้ามไว้ก่อน — ข้อมูลสถาบันยังไม่พร้อม) · ถัดไปขั้น 4 ใบเสร็จ · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -194,8 +194,11 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **ขายคอร์ส (M18)** — "คอร์สนี้ต้องซื้อไหม" ถาม `isPaidCourse()` จาก `features/commerce/lib/pricing.ts` เท่านั้น (PUBLIC + ราคา > 0 · INTERNAL ฟรีเสมอ)
 · เงินคำนวณเป็นสตางค์ด้วย `toSatang()`/`fromSatang()` (`lib/payment/money.ts`) ห้ามคูณ float · แสดงผลด้วย `formatBaht()`
 · ทางเข้าคอร์สที่มีราคามีแค่ชำระสำเร็จหรือผู้ดูแลเพิ่มให้ — `enroll()` ปฏิเสธเสมอ · ผู้สอนแก้ราคาได้เฉพาะคอร์สร่าง (`canEditPrice()`)
-· **คำสั่งซื้อเป็น PAID ได้ที่ `settleOrder()` (`features/commerce/lib/settle.ts`) จุดเดียว** — ถามสถานะจากผู้ให้บริการเสมอ ห้ามเชื่อ payload/query string · idempotent
+· **คำสั่งซื้อที่ผ่าน gateway เป็น PAID ได้ที่ `settleOrder()` (`features/commerce/lib/settle.ts`) จุดเดียว** — ถามสถานะจากผู้ให้บริการเสมอ ห้ามเชื่อ payload/query string · idempotent
+  (ข้อยกเว้นเดียว: คูปองลดเหลือ 0 บาท `startCheckout()` สร้างคำสั่งซื้อเป็น PAID ในทรานแซกชันเดียวกับการตรวจคูปอง)
 · webhook เข้าทาง `handlePaymentWebhook()` (บันทึก `PaymentEvent` กันซ้ำ) · หน้าจำลอง `/checkout/mock` ใช้ทางเดียวกัน · cron `orders` ปิดคำสั่งซื้อหมดอายุ
+· ทุกทางที่ทำให้คำสั่งซื้อเป็น PAID เปิดสิทธิ์ด้วย `grantPurchase()` (นับ `Coupon.usedCount` ด้วย) แล้วตามด้วย `announcePaid()` — คูปองลด 100% ใช้ทางนี้โดยไม่ผ่าน gateway
+· คูปองตรวจด้วย `quoteCoupon()` (pure) ผ่าน `findCouponQuote()` เท่านั้น · สิทธิ์คงเหลือ = `maxUses − usedCount − คำสั่งซื้อ PENDING ที่ยังไม่หมดอายุ` · ตอนสร้างคำสั่งซื้อต้อง `lock: true` ในทรานแซกชันเดียวกัน
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ

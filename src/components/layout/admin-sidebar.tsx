@@ -15,6 +15,7 @@ import {
   Ruler,
   ScrollText,
   Settings,
+  TicketPercent,
   UploadCloud,
   Users,
   UserX,
@@ -80,6 +81,10 @@ const NAV_GROUPS: { label: string; items: AdminNavItem[] }[] = [
       { href: "/admin/reviews", label: "รีวิวคอร์ส", icon: MessageSquareQuote },
       { href: "/admin/score-curve", label: "เกณฑ์คะแนน", icon: Ruler },
     ],
+  },
+  {
+    label: "การขาย",
+    items: [{ href: "/admin/coupons", label: "คูปองส่วนลด", icon: TicketPercent, roles: [Role.SUPER_ADMIN] }],
   },
   {
     label: "ระบบ",

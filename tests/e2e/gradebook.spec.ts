@@ -77,7 +77,7 @@ test.describe("เตรียมคอร์สที่มีงาน", () =>
     await editor.pressSequentially("ส่งรายงานเป็นข้อความ");
     await page.getByLabel("คะแนนเต็ม").fill("10");
     await page.getByRole("button", { name: "สร้างงาน" }).click();
-    await expect(page.getByText("สร้างงานแล้ว")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText("สร้างงานแล้ว", { exact: true })).toBeVisible({ timeout: 15_000 });
 
     await page.goto(coursePath);
     await page.getByRole("button", { name: "ส่งให้คณะอนุมัติ" }).click();

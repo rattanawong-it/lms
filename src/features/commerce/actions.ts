@@ -1,17 +1,28 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/rbac";
+import { requireRole, requireUser } from "@/lib/rbac";
 import { writeAudit } from "@/lib/audit";
 import { env, hasPayment } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import { getPaymentProvider, toSatang } from "@/lib/payment";
 import { MOCK_SIGNATURE_HEADER, completeMockCharge } from "@/lib/payment/providers/mock";
-import type { ActionResult } from "@/lib/action-result";
-import { CourseStatus, EnrollmentStatus, OrderStatus } from "@/generated/prisma/enums";
-import { CHECKOUT_QUOTA, ORDER_TTL_MINUTES, checkoutSchema, mockPaySchema, orderIdSchema } from "@/features/commerce/schemas";
+import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
+import { CourseStatus, EnrollmentStatus, OrderStatus, Role } from "@/generated/prisma/enums";
+import {
+  CHECKOUT_QUOTA,
+  COUPON_QUOTA,
+  ORDER_TTL_MINUTES,
+  checkoutSchema,
+  couponFormSchema,
+  couponIdSchema,
+  mockPaySchema,
+  orderIdSchema,
+} from "@/features/commerce/schemas";
 import { courseOffer } from "@/features/commerce/lib/pricing";
-import { settleOrder } from "@/features/commerce/lib/settle";
+import { findCouponQuote } from "@/features/commerce/lib/coupon-store";
+import { announcePaid, grantPurchase, settleOrder } from "@/features/commerce/lib/settle";
 import { handlePaymentWebhook } from "@/features/commerce/lib/webhook";
 
 /**
@@ -20,12 +31,17 @@ import { handlePaymentWebhook } from "@/features/commerce/lib/webhook";
  * ราคามาจาก DB ตอนนี้เสมอ (ไม่รับยอดจาก client) · สร้าง `Order` PENDING อายุ 30 นาทีแล้วขอหน้าชำระจากผู้ให้บริการ
  * คำสั่งซื้อ PENDING เดิมของคอร์สเดียวกัน: ถามผลก่อน (อาจจ่ายไปแล้วแต่ webhook ยังไม่มา) ถ้ายังไม่จ่ายปิดเป็น FAILED แล้วสร้างใหม่
  * — charge เก่ายังผูกกับคำสั่งซื้อเดิม ถ้าผู้ซื้อจ่ายตามมาภายหลัง webhook ก็ยังเปิดสิทธิ์ให้ได้ (FAILED → PAID)
+ *
+ * คูปอง (FR-18.2): ตรวจใหม่ทุกครั้งและล็อกแถวคูปองใน transaction เดียวกับการสร้างคำสั่งซื้อ (จองสิทธิ์ตาม Q7)
+ * ลดจนเหลือ 0 บาท → คำสั่งซื้อเป็น PAID และเปิดสิทธิ์ทันทีโดยไม่ผ่าน gateway
  */
 export async function startCheckout(formData: FormData): Promise<ActionResult & { redirectUrl?: string }> {
   const user = await requireUser();
-  const parsed = checkoutSchema.safeParse({ courseId: formData.get("courseId") });
-  if (!parsed.success) return { ok: false, message: "ไม่พบคอร์ส" };
-  const { courseId } = parsed.data;
+  const parsed = checkoutSchema.safeParse({ courseId: formData.get("courseId"), couponCode: formData.get("couponCode") });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]!.message, fieldErrors: zodToFieldErrors(parsed.error) };
+  }
+  const { courseId, couponCode } = parsed.data;
 
   if (!rateLimit(`checkout:${user.id}`, CHECKOUT_QUOTA).ok) {
     return { ok: false, message: "ทำรายการบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่" };
@@ -33,7 +49,7 @@ export async function startCheckout(formData: FormData): Promise<ActionResult & 
 
   const course = await db.course.findUnique({
     where: { id: courseId },
-    select: { id: true, title: true, status: true, visibility: true, price: true, enrollPolicy: true },
+    select: { id: true, slug: true, title: true, status: true, visibility: true, price: true, enrollPolicy: true },
   });
   if (!course || course.status !== CourseStatus.PUBLISHED) return { ok: false, message: "ไม่พบคอร์ส หรือคอร์สยังไม่เปิดขาย" };
 
@@ -71,34 +87,62 @@ export async function startCheckout(formData: FormData): Promise<ActionResult & 
   }
 
   const expiresAt = new Date(Date.now() + ORDER_TTL_MINUTES * 60_000);
-  let orderId: string;
+  let created: { id: string; amount: string; discount: string; free: boolean };
   try {
-    const created = await db.order.create({
-      data: {
-        userId: user.id,
-        courseId,
-        subtotal: offer.price,
-        discount: "0",
-        amount: offer.price,
-        provider: provider.name,
-        expiresAt,
-      },
-      select: { id: true },
+    created = await db.$transaction(async (tx) => {
+      let pricing = { subtotal: offer.price, discount: "0", amount: offer.price, couponId: null as string | null };
+      if (couponCode) {
+        const quote = await findCouponQuote(tx, couponCode, { courseId, subtotal: offer.price, lock: true });
+        if (!quote.ok) throw new CouponRejected(quote.message);
+        pricing = { subtotal: quote.subtotal, discount: quote.discount, amount: quote.amount, couponId: quote.couponId! };
+      }
+      const free = toSatang(pricing.amount) === 0;
+      const order = await tx.order.create({
+        data: {
+          userId: user.id,
+          courseId,
+          ...pricing,
+          couponCode: couponCode || null,
+          ...(free ? { status: OrderStatus.PAID, method: "coupon", paidAt: new Date() } : { provider: provider.name, expiresAt }),
+        },
+        select: { id: true },
+      });
+      if (free) await grantPurchase(tx, { userId: user.id, courseId, couponId: pricing.couponId });
+      return { id: order.id, amount: pricing.amount, discount: pricing.discount, free };
     });
-    orderId = created.id;
   } catch (error) {
+    if (error instanceof CouponRejected) return { ok: false, message: error.message, fieldErrors: { couponCode: error.message } };
     // สองแท็บกดพร้อมกัน — partial unique index (S2) ให้ผ่านได้คำสั่งซื้อเดียว
     if ((error as { code?: string }).code === "P2002") {
       return { ok: false, message: "มีคำสั่งซื้อของคอร์สนี้กำลังดำเนินการอยู่ กรุณาลองใหม่อีกครั้ง" };
     }
     throw error;
   }
+  const orderId = created.id;
+
+  if (created.free) {
+    await announcePaid(
+      { id: orderId, userId: user.id, courseId, course: { title: course.title, slug: course.slug } },
+      {
+        actorId: user.id,
+        after: {
+          status: OrderStatus.PAID,
+          method: "coupon",
+          amount: created.amount,
+          discount: created.discount,
+          couponCode,
+          supersedes: previous?.id ?? null,
+        },
+      },
+    );
+    return { ok: true, message: "ใช้คูปองสำเร็จ เริ่มเรียนได้ทันที", redirectUrl: `/orders/${orderId}` };
+  }
 
   let redirectUrl: string;
   try {
     const session = await provider.createCheckout({
       orderId,
-      amountSatang: toSatang(offer.price),
+      amountSatang: toSatang(created.amount),
       description: course.title,
       customerEmail: user.email,
       returnUrl: `${env.NEXT_PUBLIC_APP_URL}/orders/${orderId}`,
@@ -120,7 +164,14 @@ export async function startCheckout(formData: FormData): Promise<ActionResult & 
     action: "order.create",
     entity: "Order",
     entityId: orderId,
-    after: { courseId, amount: offer.price, provider: provider.name, supersedes: previous?.id ?? null },
+    after: {
+      courseId,
+      amount: created.amount,
+      discount: created.discount,
+      couponCode: couponCode || null,
+      provider: provider.name,
+      supersedes: previous?.id ?? null,
+    },
   });
   return { ok: true, message: "กำลังไปหน้าชำระเงิน", redirectUrl };
 }
@@ -165,4 +216,106 @@ export async function payWithMock(formData: FormData): Promise<ActionResult & { 
   const result = await handlePaymentWebhook("mock", hook.body, new Headers({ [MOCK_SIGNATURE_HEADER]: hook.signature }));
   if (result.status !== 200) return { ok: false, message: "ประมวลผลการชำระเงินไม่สำเร็จ" };
   return { ok: true, message: "ส่งผลการชำระเงินแล้ว", redirectUrl: `/orders/${order.id}` };
+}
+
+class CouponRejected extends Error {}
+
+/**
+ * FR-18.2 — หน้า checkout กด "ใช้คูปอง" เพื่อดูยอดก่อน · ไม่จองสิทธิ์ (จองตอนสร้างคำสั่งซื้อ)
+ * ยอดที่เก็บเงินจริงคำนวณใหม่ใน `startCheckout()` เสมอ
+ */
+export async function previewCoupon(
+  formData: FormData,
+): Promise<ActionResult & { quote?: { subtotal: string; discount: string; amount: string } }> {
+  const user = await requireUser();
+  const parsed = checkoutSchema.safeParse({ courseId: formData.get("courseId"), couponCode: formData.get("couponCode") });
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]!.message, fieldErrors: zodToFieldErrors(parsed.error) };
+  }
+  const { courseId, couponCode } = parsed.data;
+  if (!couponCode) return { ok: false, message: "กรุณากรอกรหัสคูปอง", fieldErrors: { couponCode: "กรุณากรอกรหัสคูปอง" } };
+  // กันเดารหัสคูปองรัว ๆ
+  if (!rateLimit(`coupon:${user.id}`, COUPON_QUOTA).ok) {
+    return { ok: false, message: "ลองรหัสบ่อยเกินไป กรุณารอสักครู่แล้วลองใหม่" };
+  }
+
+  const course = await db.course.findUnique({
+    where: { id: courseId },
+    select: { status: true, visibility: true, price: true, enrollPolicy: true },
+  });
+  if (!course || course.status !== CourseStatus.PUBLISHED) return { ok: false, message: "ไม่พบคอร์ส" };
+  const offer = courseOffer(course, hasPayment);
+  if (offer.kind !== "buy") return { ok: false, message: "คอร์สนี้ยังซื้อไม่ได้" };
+
+  const quote = await findCouponQuote(db, couponCode, { courseId, subtotal: offer.price });
+  if (!quote.ok) return { ok: false, message: quote.message, fieldErrors: { couponCode: quote.message } };
+  return { ok: true, message: "ใช้คูปองได้", quote: { subtotal: quote.subtotal, discount: quote.discount, amount: quote.amount } };
+}
+
+/** FR-18.2 · Q3 — สร้างคูปอง (ผู้ดูแลระบบเท่านั้น) */
+export async function createCoupon(formData: FormData): Promise<ActionResult> {
+  const user = await requireRole(Role.SUPER_ADMIN);
+  const parsed = couponFormSchema.safeParse({
+    code: formData.get("code"),
+    kind: formData.get("kind"),
+    value: formData.get("value"),
+    maxUses: formData.get("maxUses"),
+    validFrom: formData.get("validFrom"),
+    validUntil: formData.get("validUntil"),
+    courseId: formData.get("courseId"),
+  });
+  if (!parsed.success) {
+    return { ok: false, message: "กรุณาตรวจสอบข้อมูลคูปอง", fieldErrors: zodToFieldErrors(parsed.error) };
+  }
+  const data = parsed.data;
+
+  if (data.courseId) {
+    const course = await db.course.findUnique({ where: { id: data.courseId }, select: { id: true } });
+    if (!course) return { ok: false, message: "ไม่พบคอร์ส", fieldErrors: { courseId: "ไม่พบคอร์ส" } };
+  }
+
+  let couponId: string;
+  try {
+    const created = await db.coupon.create({ data: { ...data, createdById: user.id }, select: { id: true } });
+    couponId = created.id;
+  } catch (error) {
+    if ((error as { code?: string }).code === "P2002") {
+      return { ok: false, message: "รหัสคูปองนี้มีอยู่แล้ว", fieldErrors: { code: "รหัสคูปองนี้มีอยู่แล้ว" } };
+    }
+    throw error;
+  }
+
+  await writeAudit({
+    actorId: user.id,
+    action: "coupon.create",
+    entity: "Coupon",
+    entityId: couponId,
+    after: { ...data, validFrom: data.validFrom?.toISOString() ?? null, validUntil: data.validUntil?.toISOString() ?? null },
+  });
+  revalidatePath("/admin/coupons");
+  return { ok: true, message: `สร้างคูปอง ${data.code} แล้ว` };
+}
+
+/** FR-18.2 — เปิด/ปิดใช้คูปอง · ไม่มีการลบ (คำสั่งซื้อเก่าอ้างถึงอยู่) · คำสั่งซื้อที่จองไว้แล้วยังจ่ายได้ตามยอดเดิม (Q7) */
+export async function setCouponActive(formData: FormData): Promise<ActionResult> {
+  const user = await requireRole(Role.SUPER_ADMIN);
+  const id = couponIdSchema.safeParse(formData.get("couponId"));
+  if (!id.success) return { ok: false, message: "ไม่พบคูปอง" };
+  const active = formData.get("active") === "true";
+
+  const coupon = await db.coupon.findUnique({ where: { id: id.data }, select: { code: true, active: true } });
+  if (!coupon) return { ok: false, message: "ไม่พบคูปอง" };
+  if (coupon.active === active) return { ok: true, message: active ? "คูปองเปิดใช้อยู่แล้ว" : "คูปองปิดใช้อยู่แล้ว" };
+
+  await db.coupon.update({ where: { id: id.data }, data: { active } });
+  await writeAudit({
+    actorId: user.id,
+    action: active ? "coupon.activate" : "coupon.deactivate",
+    entity: "Coupon",
+    entityId: id.data,
+    before: { code: coupon.code, active: coupon.active },
+    after: { code: coupon.code, active },
+  });
+  revalidatePath("/admin/coupons");
+  return { ok: true, message: active ? `เปิดใช้คูปอง ${coupon.code} แล้ว` : `ปิดใช้คูปอง ${coupon.code} แล้ว` };
 }

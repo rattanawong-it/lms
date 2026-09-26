@@ -5,6 +5,7 @@ import { writeAudit } from "@/lib/audit";
 import { notify } from "@/lib/notify";
 import { getPaymentProvider, toSatang } from "@/lib/payment";
 import { EnrollmentSource, EnrollmentStatus, NotificationType, OrderStatus } from "@/generated/prisma/enums";
+import type { Prisma } from "@/generated/prisma/client";
 
 /**
  * M18 · FR-18.1 — ตัดสินผลการชำระของคำสั่งซื้อ **จากสถานะที่ถามผู้ให้บริการเอง** (ไม่เชื่อ webhook payload/หน้า return)
@@ -25,6 +26,7 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
       id: true,
       userId: true,
       courseId: true,
+      couponId: true,
       status: true,
       amount: true,
       provider: true,
@@ -69,21 +71,7 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
       data: { status: OrderStatus.PAID, paidAt, method: charge.method, failureReason: null },
     });
     if (updated.count === 0) return null;
-
-    // เปิดสิทธิ์เรียน — มีแถวเดิม (ถอน/หมดอายุ/รออนุมัติ) เปิดใหม่โดยคงความคืบหน้า · ซื้อแล้วเรียนได้ตลอด (Q5)
-    const enrollment = await tx.enrollment.upsert({
-      where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
-      create: { userId: order.userId, courseId: order.courseId, status: EnrollmentStatus.ACTIVE, source: EnrollmentSource.PURCHASE },
-      update: { expiresAt: null },
-      select: { id: true, status: true },
-    });
-    if (enrollment.status !== EnrollmentStatus.ACTIVE && enrollment.status !== EnrollmentStatus.COMPLETED) {
-      await tx.enrollment.update({
-        where: { id: enrollment.id },
-        data: { status: EnrollmentStatus.ACTIVE, source: EnrollmentSource.PURCHASE, enrolledAt: new Date() },
-      });
-    }
-    return enrollment.id;
+    return grantPurchase(tx, order);
   });
 
   if (!enrollmentId) {
@@ -91,14 +79,47 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
     return { status: now.status, changed: false };
   }
 
-  await writeAudit({
-    actorId: null,
-    action: "order.paid",
-    entity: "Order",
-    entityId: order.id,
+  await announcePaid(order, {
     before: { status: order.status },
     after: { status: OrderStatus.PAID, method: charge.method, amount: order.amount.toString(), enrollmentId },
   });
+  return { status: OrderStatus.PAID, changed: true };
+}
+
+/**
+ * ใน transaction เดียวกับที่คำสั่งซื้อกลายเป็น PAID — เปิดสิทธิ์เรียน (`PURCHASE`) และนับการใช้คูปอง
+ * คูปองนับเพิ่มโดยไม่เช็คเพดานอีกรอบ: สิทธิ์ถูกจองไว้ตอนสร้างคำสั่งซื้อแล้ว (Q7) และเงินเข้าแล้วต้องได้สิทธิ์เรียนเสมอ
+ * (กรณีจ่ายหลังคำสั่งซื้อหมดอายุ usedCount อาจเกิน maxUses ได้ 1 — ยอมรับ)
+ */
+export async function grantPurchase(
+  tx: Prisma.TransactionClient,
+  order: { userId: string; courseId: string; couponId: string | null },
+): Promise<string> {
+  if (order.couponId) {
+    await tx.coupon.update({ where: { id: order.couponId }, data: { usedCount: { increment: 1 } } });
+  }
+  // มีแถวเดิม (ถอน/หมดอายุ/รออนุมัติ) เปิดใหม่โดยคงความคืบหน้า · ซื้อแล้วเรียนได้ตลอด (Q5)
+  const enrollment = await tx.enrollment.upsert({
+    where: { userId_courseId: { userId: order.userId, courseId: order.courseId } },
+    create: { userId: order.userId, courseId: order.courseId, status: EnrollmentStatus.ACTIVE, source: EnrollmentSource.PURCHASE },
+    update: { expiresAt: null },
+    select: { id: true, status: true },
+  });
+  if (enrollment.status !== EnrollmentStatus.ACTIVE && enrollment.status !== EnrollmentStatus.COMPLETED) {
+    await tx.enrollment.update({
+      where: { id: enrollment.id },
+      data: { status: EnrollmentStatus.ACTIVE, source: EnrollmentSource.PURCHASE, enrolledAt: new Date() },
+    });
+  }
+  return enrollment.id;
+}
+
+/** หลัง commit — audit · แจ้งผู้ซื้อ · revalidate หน้าที่เกี่ยวข้อง */
+export async function announcePaid(
+  order: { id: string; userId: string; courseId: string; course: { title: string; slug: string } },
+  audit: { actorId?: string | null; before?: Prisma.InputJsonValue; after: Prisma.InputJsonValue },
+): Promise<void> {
+  await writeAudit({ actorId: null, action: "order.paid", entity: "Order", entityId: order.id, ...audit });
   await notify({
     userIds: [order.userId],
     type: NotificationType.ENROLLED,
@@ -112,5 +133,4 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
   revalidatePath("/dashboard");
   revalidatePath(`/courses/${order.course.slug}`);
   revalidatePath(`/teach/courses/${order.courseId}/students`);
-  return { status: OrderStatus.PAID, changed: true };
 }

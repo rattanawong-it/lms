@@ -98,7 +98,7 @@
 | **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
 | **M16 Reports & Dashboard** | ✅ เสร็จ | Phase 3 ขั้น 6 | `features/reports` · `/dashboard` `/teach` `/admin` · `/admin/reports` ส่งออก CSV/XLSX · กราฟ Recharts (lazy) เฉพาะ `/admin` |
 | **M17 Audit & Settings** | ✅ เสร็จ | Phase 3 ขั้น 7 | `features/{audit,settings,privacy}` · `/admin/{audit,settings,deletion-requests}` · `/settings/privacy` · `/api/privacy/export` · anonymize ตาม Q9 (CHANGELOG #37) |
-| M18 | 🔸 วางแผนแล้ว | Phase 4 | ลำดับงานใน [`phase-4-plan.md`](./phase-4-plan.md) · branch `phase-4` |
+| M18 | 🔸 กำลังทำ | Phase 4 ขั้น 0–3 | ราคา · ชำระเงิน (ผู้ให้บริการจำลอง — Omise รอ sandbox) · คูปอง `/admin/coupons` · ค้าง: ใบเสร็จ (Q2) · คืนเงิน · รายงานยอดขาย — [`phase-4-plan.md`](./phase-4-plan.md) |
 
 **Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
 (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`

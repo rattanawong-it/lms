@@ -2,14 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/page-header";
 import { Button } from "@/components/ui/button";
-import { formatBaht } from "@/lib/payment/money";
 import { CheckoutButton } from "@/features/commerce/components/checkout-button";
 import { getCheckout } from "@/features/commerce/queries";
 import { ORDER_TTL_MINUTES } from "@/features/commerce/schemas";
 
 export const metadata: Metadata = { title: "ชำระเงิน" };
 
-/** M18 · FR-18.1 — สรุปรายการก่อนไปหน้าชำระเงิน (คูปองเพิ่มในขั้น 3 · ข้อมูลใบเสร็จขั้น 4) */
+/** M18 · FR-18.1 — สรุปรายการก่อนไปหน้าชำระเงิน + คูปอง (ข้อมูลใบเสร็จขั้น 4) */
 export default async function CheckoutPage(props: PageProps<"/checkout/[courseId]">) {
   const { courseId } = await props.params;
   const view = await getCheckout(courseId);
@@ -35,20 +34,8 @@ export default async function CheckoutPage(props: PageProps<"/checkout/[courseId
           </div>
         ) : view.offer.kind === "buy" ? (
           <>
-            <dl className="border-line mt-5 space-y-2 border-t pt-4 text-[14px]">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">ราคา</dt>
-                <dd className="num">{formatBaht(view.offer.price)}</dd>
-              </div>
-              <div className="flex justify-between gap-3 text-[16px] font-bold">
-                <dt>ยอดชำระ</dt>
-                <dd className="num" data-checkout-total>
-                  {formatBaht(view.offer.price)}
-                </dd>
-              </div>
-            </dl>
             <div className="mt-5">
-              <CheckoutButton courseId={view.course.id} label={`ไปหน้าชำระเงิน ${formatBaht(view.offer.price)}`} />
+              <CheckoutButton courseId={view.course.id} price={view.offer.price} />
             </div>
             <p className="text-muted-foreground mt-3 text-[11.5px] leading-relaxed">
               คำสั่งซื้อมีอายุ {ORDER_TTL_MINUTES} นาที · ชำระสำเร็จแล้วเริ่มเรียนได้ทันทีและเรียนได้ตลอด ·

@@ -512,6 +512,15 @@ async function main() {
     }
   }
 
+  // M18 (Phase 4 ขั้น 3) — คูปองสาธิต: ลด 20% ทุกคอร์ส · ลด 100% เฉพาะ excel-for-work (ได้สิทธิ์ทันทีไม่ผ่าน gateway)
+  const excel = await db.course.findUniqueOrThrow({ where: { slug: "excel-for-work" }, select: { id: true } });
+  for (const coupon of [
+    { code: "WELCOME20", percentOff: 20, courseId: null },
+    { code: "EXCELFREE", percentOff: 100, courseId: excel.id, maxUses: 5 },
+  ]) {
+    await db.coupon.upsert({ where: { code: coupon.code }, update: {}, create: { ...coupon, createdById: admin.id } });
+  }
+
   // ── คอร์สตัวอย่างการประเมินผล (Phase 2 · phase-2-plan §3) ──
   // แยกจาก intro-to-lms เพราะผูกแบบทดสอบแล้วบทนั้นนับว่าจบเมื่อสอบผ่าน — เทสต์เดิมที่ใช้คอร์สนั้นจะเปลี่ยนพฤติกรรม
   const demo = await db.course.upsert({
