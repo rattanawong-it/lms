@@ -11,8 +11,8 @@ import { rateLimit } from "@/lib/rate-limit";
 import { zodToFieldErrors, type ActionResult } from "@/lib/action-result";
 import { AssetKind, Role } from "@/generated/prisma/enums";
 import { findReadyAsset } from "@/features/uploads/service";
-import { BRANDING_SETTING_KEY, brandingSchema } from "@/features/settings/schemas";
-import { getBranding } from "@/features/settings/queries";
+import { BRANDING_SETTING_KEY, SELLER_SETTING_KEY, brandingSchema, sellerSchema } from "@/features/settings/schemas";
+import { getBranding, getSeller } from "@/features/settings/queries";
 
 /** M17 · FR-17.3 — ตั้งค่าระบบ (SUPER_ADMIN เท่านั้น) */
 
@@ -59,6 +59,43 @@ export async function saveBranding(formData: FormData): Promise<ActionResult> {
   // ชื่อและโลโก้อยู่บนทุกหน้า
   revalidatePath("/", "layout");
   return { ok: true, message: "บันทึกชื่อระบบและโลโก้แล้ว" };
+}
+
+/** M18 · FR-18.2 — ผู้ขายบนใบเสร็จ · ใบที่ออกไปแล้วไม่เปลี่ยน (snapshot ใน Order.billing) */
+export async function saveSeller(formData: FormData): Promise<ActionResult> {
+  const user = await requireAtLeast(Role.SUPER_ADMIN);
+  const parsed = sellerSchema.safeParse({
+    name: formData.get("name"),
+    taxId: formData.get("taxId"),
+    address: formData.get("address"),
+    phone: formData.get("phone"),
+  });
+  if (!parsed.success) {
+    return { ok: false, message: "กรุณาตรวจสอบข้อมูลที่กรอก", fieldErrors: zodToFieldErrors(parsed.error) };
+  }
+
+  const before = await getSeller();
+  const value = {
+    name: parsed.data.name,
+    taxId: parsed.data.taxId ?? null,
+    address: parsed.data.address ?? null,
+    phone: parsed.data.phone ?? null,
+  };
+  await db.systemSetting.upsert({
+    where: { key: SELLER_SETTING_KEY },
+    update: { value },
+    create: { key: SELLER_SETTING_KEY, value },
+  });
+  await writeAudit({
+    actorId: user.id,
+    action: "settings.seller",
+    entity: "SystemSetting",
+    entityId: SELLER_SETTING_KEY,
+    before,
+    after: value,
+  });
+  revalidatePath("/admin/settings");
+  return { ok: true, message: "บันทึกข้อมูลผู้ขายแล้ว — มีผลกับใบเสร็จที่ออกหลังจากนี้" };
 }
 
 export async function sendTestEmail(): Promise<ActionResult> {

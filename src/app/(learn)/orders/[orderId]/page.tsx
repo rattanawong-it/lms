@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { FileText } from "lucide-react";
 import { PageHeader } from "@/components/shared/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,15 @@ export default async function OrderPage(props: PageProps<"/orders/[orderId]">) {
               <Link href={`/learn/${order.courseId}`}>เริ่มเรียน</Link>
             </Button>
           </div>
+        ) : null}
+
+        {order.receiptNo ? (
+          <Button asChild variant="outline" className="h-11 w-full">
+            {/* route handler ตอบไฟล์ PDF — ใช้ <a> ธรรมดา ไม่ใช่ client navigation */}
+            <a href={`/api/receipt/${order.id}`} download>
+              <FileText className="size-4" /> ดาวน์โหลดใบเสร็จ {order.receiptNo}
+            </a>
+          </Button>
         ) : null}
 
         {order.status === OrderStatus.FAILED ? (

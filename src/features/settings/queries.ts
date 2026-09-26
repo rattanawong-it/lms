@@ -4,7 +4,15 @@ import { db } from "@/lib/db";
 import { env, hasLine, hasPayment } from "@/lib/env";
 import { requireAtLeast } from "@/lib/rbac";
 import { Role } from "@/generated/prisma/enums";
-import { BRANDING_SETTING_KEY, DEFAULT_BRANDING, parseBranding, type Branding } from "@/features/settings/schemas";
+import {
+  BRANDING_SETTING_KEY,
+  DEFAULT_BRANDING,
+  SELLER_SETTING_KEY,
+  parseBranding,
+  parseSeller,
+  type Branding,
+  type Seller,
+} from "@/features/settings/schemas";
 
 /**
  * FR-17.3 — ชื่อระบบและโลโก้ · ทุกหน้าใช้ (รวมผู้ที่ไม่ login) จึงไม่ตรวจสิทธิ์
@@ -46,6 +54,16 @@ export async function getIntegrationStatus(): Promise<IntegrationStatus> {
     payment: { provider: env.PAYMENT_PROVIDER ?? null, configured: hasPayment },
     selfLineLinked: Boolean(selfLink),
   };
+}
+
+/** M18 — ผู้ขายบนใบเสร็จสำหรับฟอร์ม `/admin/settings` (ยังไม่ตั้ง = ชื่อระบบ) */
+export async function getSeller(): Promise<Seller> {
+  await requireAtLeast(Role.SUPER_ADMIN);
+  const [row, branding] = await Promise.all([
+    db.systemSetting.findUnique({ where: { key: SELLER_SETTING_KEY }, select: { value: true } }),
+    getBranding(),
+  ]);
+  return parseSeller(row?.value ?? null, branding.name);
 }
 
 /** โลโก้ปัจจุบันสำหรับฟอร์ม (ชื่อไฟล์ + ขนาด) */

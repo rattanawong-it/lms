@@ -7,7 +7,8 @@ import { ProtectionSwitch } from "@/features/protection/components/protection-sw
 import { isProtectionEnabledSystemWide } from "@/features/protection/queries";
 import { BrandingForm } from "@/features/settings/components/branding-form";
 import { TestSendButton } from "@/features/settings/components/test-send-button";
-import { getBrandingEditor, getIntegrationStatus } from "@/features/settings/queries";
+import { SellerForm } from "@/features/settings/components/seller-form";
+import { getBrandingEditor, getIntegrationStatus, getSeller } from "@/features/settings/queries";
 import { formatBytes } from "@/lib/upload-limits";
 
 export const metadata: Metadata = { title: "ตั้งค่าระบบ" };
@@ -26,10 +27,11 @@ function Status({ ok, label }: { ok: boolean; label: string }) {
  * หน้านี้บอกได้แค่ว่าตั้งค่าไว้หรือยัง และให้ส่งทดสอบหาตัวเอง
  */
 export default async function SettingsPage() {
-  const [{ branding, logo }, status, protection] = await Promise.all([
+  const [{ branding, logo }, status, protection, seller] = await Promise.all([
     getBrandingEditor(),
     getIntegrationStatus(),
     isProtectionEnabledSystemWide(),
+    getSeller(),
   ]);
 
   return (
@@ -52,6 +54,16 @@ export default async function SettingsPage() {
         </section>
 
         <ProtectionSwitch enabled={protection} />
+
+        <section aria-labelledby="seller" className="bg-card border-border min-w-0 rounded-xl border p-4">
+          <h2 id="seller" className="text-[15px] font-semibold">
+            ผู้ขายบนใบเสร็จรับเงิน
+          </h2>
+          <p className="text-muted-foreground mt-1 mb-4 text-[12.5px]">
+            พิมพ์ที่หัวใบเสร็จของคอร์สที่ขาย · แก้แล้วมีผลกับใบที่ออกหลังจากนี้ ใบเดิมคงข้อมูลตอนออก
+          </p>
+          <SellerForm seller={seller} />
+        </section>
 
         <section aria-labelledby="channels" className="bg-card border-border min-w-0 rounded-xl border p-4">
           <h2 id="channels" className="text-[15px] font-semibold">

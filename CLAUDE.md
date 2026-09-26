@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–3 เสร็จ (adapter · ราคา · ชำระเงินกับ mock · คูปอง) · ✋ จุดตรวจที่ 1 รอ sandbox Omise (Q1/Q2 ข้ามไว้ก่อน — ข้อมูลสถาบันยังไม่พร้อม) · ถัดไปขั้น 4 ใบเสร็จ · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–4 เสร็จ (adapter · ราคา · ชำระเงินกับ mock · คูปอง · ใบเสร็จรับเงิน) · ✋ จุดตรวจที่ 1 รอ sandbox Omise (Q1/Q2 ข้ามไว้ก่อน — ข้อมูลสถาบันยังไม่พร้อม) · ถัดไปขั้น 5 คืนเงิน · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -88,6 +88,7 @@ src/
   app/(learn)/learn/[courseId]/qa[/threadId]          ถาม-ตอบ (M13) · กล่องคำถามผู้สอน `/teach/courses/[id]/qa`
   app/(learn)/settings/privacy · api/privacy/export   PDPA ของผู้ใช้ (M17) · ผู้ดูแล `/admin/{audit,settings,deletion-requests}`
   app/(learn)/{checkout,orders} · api/payment/webhook  ซื้อคอร์ส (M18) — webhook พิสูจน์ตัวด้วยลายเซ็นเท่านั้น ไม่มี session
+  app/api/receipt/[orderId] · (admin)/admin/coupons     PDF ใบเสร็จ (เจ้าของ/SUPER_ADMIN) · คูปอง (M18)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -198,6 +199,7 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
   (ข้อยกเว้นเดียว: คูปองลดเหลือ 0 บาท `startCheckout()` สร้างคำสั่งซื้อเป็น PAID ในทรานแซกชันเดียวกับการตรวจคูปอง)
 · webhook เข้าทาง `handlePaymentWebhook()` (บันทึก `PaymentEvent` กันซ้ำ) · หน้าจำลอง `/checkout/mock` ใช้ทางเดียวกัน · cron `orders` ปิดคำสั่งซื้อหมดอายุ
 · ทุกทางที่ทำให้คำสั่งซื้อเป็น PAID เปิดสิทธิ์ด้วย `grantPurchase()` (นับ `Coupon.usedCount` ด้วย) แล้วตามด้วย `announcePaid()` — คูปองลด 100% ใช้ทางนี้โดยไม่ผ่าน gateway
+· ใบเสร็จออกใน `grantPurchase()` → `issueReceipt()` เท่านั้น (เลขจาก `DocumentCounter` ในทรานแซกชันเดียวกับ PAID + snapshot ผู้ขาย/ผู้ซื้อใน `Order.billing`) · PDF สร้างจาก snapshot ทุกครั้งผ่าน `buildReceiptModel()` ห้ามอ่านผู้ขายปัจจุบันตอนดาวน์โหลด
 · คูปองตรวจด้วย `quoteCoupon()` (pure) ผ่าน `findCouponQuote()` เท่านั้น · สิทธิ์คงเหลือ = `maxUses − usedCount − คำสั่งซื้อ PENDING ที่ยังไม่หมดอายุ` · ตอนสร้างคำสั่งซื้อต้อง `lock: true` ในทรานแซกชันเดียวกัน
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
@@ -251,6 +253,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
 - **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`
   ไม่งั้นสองโปรเจกต์จะแย่งสถานะของกันเอง (ดู `tests/e2e/enrollment.spec.ts`)
+- **โควตาสร้างคำสั่งซื้อ (`CHECKOUT_QUOTA` 30 ครั้ง/10 นาที/ผู้ใช้) ใช้ร่วมทั้งชุด e2e** — ทุกไฟล์ซื้อด้วยบัญชีผู้เรียนเดียวกัน เกินโควตาแล้วปุ่มถัดไปไม่มา (timeout ที่หน้า checkout) · เพิ่มเทสต์ซื้อเมื่อไรให้นับรวมด้วย
 - **โปรเจกต์ mobile ของ Playwright เห็น DOM เก่ากับใหม่พร้อมกันชั่วครู่หลัง `goto`/`reload`** — locator ที่คาดว่ามีตัวเดียวเจอ 2 ตัว (strict mode)
   แบบสุ่ม · ให้ `await expect(locator).toHaveCount(1)` ก่อนใช้งาน (ยังจับกรณีมีซ้ำจริงได้) · เจอที่ `score-curve.spec`, `privacy.spec`
 - **`PAYMENT_PROVIDER=mock` ใน production ทำให้ระบบไม่ยอมเริ่ม** — Playwright ใช้ `next start` (production) จึงต้องตั้ง `ALLOW_MOCK_PAYMENT=true` บนเครื่องทดสอบด้วย
@@ -270,7 +273,8 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้
 - **react-pdf กับภาษาไทย** — ตัดบรรทัดได้แค่ที่ช่องว่าง และถ้าให้จุดตัดผ่าน `registerHyphenationCallback` จะเติม "-" ทุกจุด
   ฟอนต์ Anuphan ไม่มี glyph ของ zero-width space · วิธีที่ใช้: คำละ `<Text>` ใน `<View>` flex-wrap (`pdfWords()`)
-  · ดูผลจริงด้วย `CERT_PDF_OUT=ไฟล์.pdf npx vitest run tests/unit/certificate.test.ts` แล้วเปิดไฟล์
+  · ดูผลจริงด้วย `CERT_PDF_OUT=ไฟล์.pdf npx vitest run tests/unit/certificate.test.ts` แล้วเปิดไฟล์ (ใบเสร็จ: `RECEIPT_PDF_OUT` กับ `receipt.test.ts`)
+  · **unit test ที่ render PDF ต้องขึ้นต้นไฟล์ด้วย `// @vitest-environment node`** — ใน jsdom react-pdf ได้ PDF หน้าว่าง (ไม่มีข้อความ) แต่เทสต์ `%PDF-` ยังผ่าน
 - **อ่าน `e.currentTarget.value` ก่อนเรียก `setState(updater)` เสมอ** — updater ทำงานทีหลัง ตอนนั้น `currentTarget` เป็น null แล้ว
   หน้าพังทั้งหน้า ("This page couldn't load") ตอนพิมพ์ครั้งแรก
 - **ห้าม import ค่าคงที่ (ไม่ใช่ component) จากไฟล์ `"use client"` เข้า Server Component** — ได้ client reference ไม่ใช่ค่าจริง ให้วางไว้ใน `schemas.ts`/`lib/`

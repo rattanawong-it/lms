@@ -10,8 +10,11 @@ import { MAX_PRICE_SATANG } from "@/features/commerce/lib/pricing";
 /** คำสั่งซื้อ PENDING หมดอายุหลัง 30 นาที (QR PromptPay · Q7 ล็อกยอด/คูปองไว้เท่านี้) */
 export const ORDER_TTL_MINUTES = 30;
 
-/** สร้างคำสั่งซื้อได้ไม่เกิน 10 ครั้ง/10 นาที ต่อผู้ใช้ — กันยิงสร้าง charge รัว ๆ ที่ gateway */
-export const CHECKOUT_QUOTA = { windowSec: 10 * 60, max: 10 };
+/**
+ * สร้างคำสั่งซื้อได้ไม่เกิน 30 ครั้ง/10 นาที ต่อผู้ใช้ — กันยิงสร้าง charge รัว ๆ ที่ gateway
+ * (e2e ทุกไฟล์ซื้อด้วยบัญชีผู้เรียนเดียวกันทั้ง desktop/mobile — 10 ครั้งไม่พอตั้งแต่ขั้น 4)
+ */
+export const CHECKOUT_QUOTA = { windowSec: 10 * 60, max: 30 };
 
 /** ลองรหัสคูปองได้ไม่เกิน 20 ครั้ง/10 นาที ต่อผู้ใช้ — กันเดารหัส */
 export const COUPON_QUOTA = { windowSec: 10 * 60, max: 20 };

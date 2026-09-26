@@ -113,11 +113,13 @@ export async function listMyOrders(): Promise<OrderRow[]> {
 /** `/orders/[id]` — ไม่ใช่ของตัวเอง = ไม่พบ (ไม่บอกว่ามีอยู่) */
 export async function getMyOrder(
   orderId: string,
-): Promise<OrderRow & { failureReason: string | null; subtotal: string; discount: string; couponCode: string | null }> {
+): Promise<
+  OrderRow & { failureReason: string | null; subtotal: string; discount: string; couponCode: string | null; receiptNo: string | null }
+> {
   const user = await requireUser(`/orders/${orderId}`);
   const order = await db.order.findFirst({
     where: { id: orderId, userId: user.id },
-    select: { ...orderSelect, failureReason: true, subtotal: true, discount: true, couponCode: true },
+    select: { ...orderSelect, failureReason: true, subtotal: true, discount: true, couponCode: true, receiptNo: true },
   });
   if (!order) notFound();
   return {
@@ -126,6 +128,7 @@ export async function getMyOrder(
     subtotal: order.subtotal.toString(),
     discount: order.discount.toString(),
     couponCode: order.couponCode,
+    receiptNo: order.receiptNo,
   };
 }
 

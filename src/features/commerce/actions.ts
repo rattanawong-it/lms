@@ -86,7 +86,8 @@ export async function startCheckout(formData: FormData): Promise<ActionResult & 
     });
   }
 
-  const expiresAt = new Date(Date.now() + ORDER_TTL_MINUTES * 60_000);
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + ORDER_TTL_MINUTES * 60_000);
   let created: { id: string; amount: string; discount: string; free: boolean };
   try {
     created = await db.$transaction(async (tx) => {
@@ -103,11 +104,13 @@ export async function startCheckout(formData: FormData): Promise<ActionResult & 
           courseId,
           ...pricing,
           couponCode: couponCode || null,
-          ...(free ? { status: OrderStatus.PAID, method: "coupon", paidAt: new Date() } : { provider: provider.name, expiresAt }),
+          ...(free ? { status: OrderStatus.PAID, method: "coupon", paidAt: now } : { provider: provider.name, expiresAt }),
         },
         select: { id: true },
       });
-      if (free) await grantPurchase(tx, { userId: user.id, courseId, couponId: pricing.couponId });
+      if (free) {
+        await grantPurchase(tx, { id: order.id, userId: user.id, courseId, couponId: pricing.couponId, amount: pricing.amount }, now);
+      }
       return { id: order.id, amount: pricing.amount, discount: pricing.discount, free };
     });
   } catch (error) {

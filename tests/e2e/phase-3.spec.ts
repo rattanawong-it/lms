@@ -12,7 +12,7 @@ const RUN_ID = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 
 const courseTitle = (p: string) => `คอร์สปิดเฟส 3 ${p} ${RUN_ID}`;
 const QUESTION = `ขอตัวอย่างเพิ่มเติม ${RUN_ID}`;
 const ANSWER = "ดูตัวอย่างที่ 3 ในบทนำได้เลยครับ";
-const COMMENT = `ผู้สอนตอบคำถามเร็วมาก ${RUN_ID}`;
+const comment = (p: string) => `ผู้สอนตอบคำถามเร็วมาก ${p} ${RUN_ID}`;
 
 test.describe.configure({ mode: "serial" });
 test.slow();
@@ -95,7 +95,7 @@ test.describe("ผู้เรียนรีวิว", () => {
     await page.goto(`/courses/${f.slug}`);
     const form = page.getByRole("form", { name: "รีวิวของฉัน" });
     await form.getByLabel("5 ดาว — ดีมาก").check({ force: true });
-    await form.getByLabel("ความคิดเห็น (ไม่บังคับ)").fill(COMMENT);
+    await form.getByLabel("ความคิดเห็น (ไม่บังคับ)").fill(comment(info.project.name));
     await form.getByRole("button", { name: "ส่งรีวิว" }).click();
     await expect(page.getByText("คุณให้ 5 ดาว กับคอร์สนี้แล้ว", { exact: false })).toBeVisible({ timeout: 15_000 });
   });
@@ -114,8 +114,8 @@ test.describe("ผู้ดูแลระบบตรวจย้อนหล�
     await expect(thread.getByText(QUESTION)).toBeVisible();
 
     await page.goto(`/admin/audit?${new URLSearchParams({ q: ACCOUNTS.student.email, action: "review.create" })}`);
-    const review = page.locator('[data-audit-row="review.create"]').filter({ hasText: COMMENT });
+    const review = page.locator('[data-audit-row="review.create"]').filter({ hasText: comment(info.project.name) });
     await review.locator("summary").click();
-    await expect(review.getByText(COMMENT)).toBeVisible();
+    await expect(review.getByText(comment(info.project.name))).toBeVisible();
   });
 });

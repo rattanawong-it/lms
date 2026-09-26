@@ -6,6 +6,7 @@ import { notify } from "@/lib/notify";
 import { getPaymentProvider, toSatang } from "@/lib/payment";
 import { EnrollmentSource, EnrollmentStatus, NotificationType, OrderStatus } from "@/generated/prisma/enums";
 import type { Prisma } from "@/generated/prisma/client";
+import { issueReceipt } from "@/features/commerce/lib/receipt";
 
 /**
  * M18 · FR-18.1 — ตัดสินผลการชำระของคำสั่งซื้อ **จากสถานะที่ถามผู้ให้บริการเอง** (ไม่เชื่อ webhook payload/หน้า return)
@@ -71,7 +72,7 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
       data: { status: OrderStatus.PAID, paidAt, method: charge.method, failureReason: null },
     });
     if (updated.count === 0) return null;
-    return grantPurchase(tx, order);
+    return grantPurchase(tx, order, paidAt);
   });
 
   if (!enrollmentId) {
@@ -87,14 +88,16 @@ export async function settleOrder(orderId: string): Promise<SettleResult | null>
 }
 
 /**
- * ใน transaction เดียวกับที่คำสั่งซื้อกลายเป็น PAID — เปิดสิทธิ์เรียน (`PURCHASE`) และนับการใช้คูปอง
+ * ใน transaction เดียวกับที่คำสั่งซื้อกลายเป็น PAID — เปิดสิทธิ์เรียน (`PURCHASE`) นับการใช้คูปอง และออกเลขใบเสร็จ (ยอด > 0)
  * คูปองนับเพิ่มโดยไม่เช็คเพดานอีกรอบ: สิทธิ์ถูกจองไว้ตอนสร้างคำสั่งซื้อแล้ว (Q7) และเงินเข้าแล้วต้องได้สิทธิ์เรียนเสมอ
  * (กรณีจ่ายหลังคำสั่งซื้อหมดอายุ usedCount อาจเกิน maxUses ได้ 1 — ยอมรับ)
  */
 export async function grantPurchase(
   tx: Prisma.TransactionClient,
-  order: { userId: string; courseId: string; couponId: string | null },
+  order: { id: string; userId: string; courseId: string; couponId: string | null; amount: { toString(): string } },
+  paidAt: Date,
 ): Promise<string> {
+  await issueReceipt(tx, order, paidAt);
   if (order.couponId) {
     await tx.coupon.update({ where: { id: order.couponId }, data: { usedCount: { increment: 1 } } });
   }
@@ -124,7 +127,8 @@ export async function announcePaid(
     userIds: [order.userId],
     type: NotificationType.ENROLLED,
     title: `ชำระเงินสำเร็จ — เริ่มเรียน “${order.course.title}” ได้เลย`,
-    link: `/learn/${order.courseId}`,
+    // หน้าคำสั่งซื้อมีทั้งปุ่มเริ่มเรียนและดาวน์โหลดใบเสร็จ (อีเมลแจ้งเตือนใช้ลิงก์นี้)
+    link: `/orders/${order.id}`,
   });
 
   revalidatePath("/orders");
