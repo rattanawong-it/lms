@@ -197,7 +197,7 @@ async function main() {
   // ── คณะ / หน่วยงานตัวอย่าง (M02) ──
   const departments = await Promise.all(
     [
-      { code: "SCI", name: "คณะวิทยาศาสตร์และเทคโนโลยี" },
+      { code: "SEI", name: "คณะนวัตกรรมวิทยาศาสตร์และวิศวกรรม" },
       { code: "BUS", name: "คณะบริหารธุรกิจ" },
       { code: "HR", name: "ฝ่ายทรัพยากรบุคคล" },
     ].map((d) =>

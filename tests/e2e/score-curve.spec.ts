@@ -73,7 +73,7 @@ test.describe("ผู้ดูแลคณะ (FR-09.7)", () => {
 
   test("เห็นเฉพาะคณะของตัวเอง · เปิดเกณฑ์ทั้งระบบไม่ได้", async ({ page }) => {
     await page.goto("/admin/score-curve");
-    await expect(page.getByRole("heading", { name: "เกณฑ์ของคณะวิทยาศาสตร์และเทคโนโลยี" })).toBeVisible({
+    await expect(page.getByRole("heading", { name: "เกณฑ์ของคณะนวัตกรรมวิทยาศาสตร์และวิศวกรรม" })).toBeVisible({
       timeout: 30_000,
     });
     // มีขอบเขตเดียว จึงไม่มีตัวเลือกขอบเขต
