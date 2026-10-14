@@ -21,6 +21,11 @@ const nextConfig: NextConfig = {
     // เปิด forbidden() / unauthorized() สำหรับ Data Access Layer (§4.2)
     authInterrupts: true,
   },
+  // ใบประกาศ/ใบเสร็จ PDF อ่านฟอนต์ด้วย path.join(process.cwd(), …) ซึ่ง file tracing ตามไม่เจอ
+  // บน Vercel ไฟล์ที่ไม่ถูก trace จะไม่ไปกับ function — ออกได้จากหลาย action จึงรวมให้ทุก route (~300 KB)
+  outputFileTracingIncludes: {
+    "/**": ["./assets/fonts/anuphan/*.ttf"],
+  },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

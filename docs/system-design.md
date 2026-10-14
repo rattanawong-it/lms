@@ -1306,6 +1306,10 @@ flowchart LR
 > แล้วสลับเป็น **Cloudflare R2** ตอน deploy โดยเปลี่ยนเฉพาะ `S3_*` ใน env — โค้ดฝั่งแอปคุยผ่าน S3 API
 > ตัวเดียวกัน จึงต้องไม่มีที่ไหนอ้าง endpoint หรือ bucket ของ MinIO ตรง ๆ นอกจาก `src/lib/storage.ts`
 >
+> **ตั้งค่า R2 (2026-10-14 · CHANGELOG #45):** bucket ไม่เปิด public · API token แบบ Object Read & Write เฉพาะ bucket ·
+> CORS (dashboard) origin = `NEXT_PUBLIC_APP_URL`, method GET/PUT/HEAD, expose `ETag` · lifecycle ล้าง multipart ค้าง 1 วัน ·
+> env `S3_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com`, `S3_FORCE_PATH_STYLE=true` · ตรวจด้วย `pnpm storage:check [ไฟล์ env] [origin]`
+>
 > **D-04 (2026-09-20):** Phase 1 เสิร์ฟวิดีโอเป็น **MP4 ไฟล์เดียว** ผ่าน signed URL (progressive + HTTP range)
 > ยังไม่ทำ transcode/HLS — ค่อยพิจารณาเมื่อพบปัญหาแบนด์วิดท์จริง `Asset` มีช่องเก็บ metadata พอสำหรับ
 > เพิ่ม rendition ภายหลังโดยไม่ต้อง migrate ใหญ่
@@ -1321,12 +1325,26 @@ flowchart LR
 
 ทั้งสองแบบใช้โค้ดชุดเดียวกัน ต่างกันแค่ env ส่วน dev ใช้ `docker-compose.yml` (postgres + minio + mailpit)
 
+**ตัวเลือก A บน Vercel แผน Hobby (2026-10-14 · CHANGELOG #46):**
+
+| เรื่อง | ทำอย่างไร |
+|---|---|
+| Prisma client | `postinstall: prisma generate` — `src/generated/prisma` ไม่อยู่ใน git |
+| ฟอนต์ PDF | `outputFileTracingIncludes` ใน `next.config.ts` รวม `assets/fonts/anuphan/*.ttf` ทุก route (อ่านด้วย `process.cwd()` ซึ่ง trace ไม่เจอ) |
+| Cron | Hobby รันได้วันละครั้ง → `vercel.json` มีแค่ `cleanup` (20:00 UTC = 03:00 น.) · `reminders` (ทุกชั่วโมง) · `live` / `orders` (ทุก 15 นาที) ใช้ตัวเรียกภายนอก เช่น cron-job.org ส่ง `Authorization: Bearer <CRON_SECRET>` |
+| Rate limit | Better Auth และ `lib/rate-limit.ts` เก็บในหน่วยความจำ — บน serverless นับแยกต่อ instance จึงหลวมกว่า FR-01.7 · **ยอมรับข้อจำกัดไปก่อน** (เจ้าของระบบ 2026-10-14) ทางแก้ภายหลัง: Better Auth `storage: "database"` (เพิ่มตาราง) |
+| Region | ตั้ง Function Region ให้ใกล้ Neon (เช่น `sin1`) |
+| ข้อควรรู้ | ข้อตกลงของ Vercel ให้ Hobby ใช้เฉพาะงานส่วนตัว/ไม่เชิงพาณิชย์ — ก่อนเปิดใช้จริงกับการขายคอร์สควรย้ายไป Pro (cron ย้ายกลับเข้า `vercel.json` ได้ทั้งหมด) |
+
 ### 10.1 Environment Variables
 ```bash
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Database
 DATABASE_URL=postgresql://lms:lms@localhost:5432/lms
+# Neon (ตัวเลือก A): DATABASE_URL = ค่า pooled ให้ตัวแอป · DATABASE_URL_UNPOOLED = ค่า direct ให้ prisma CLI (migrate)
+# ไม่ตั้ง DATABASE_URL_UNPOOLED = CLI ใช้ DATABASE_URL (เครื่องพัฒนา / self-host)
+DATABASE_URL_UNPOOLED=
 # Better Auth
 BETTER_AUTH_SECRET=
 BETTER_AUTH_URL=http://localhost:3000
@@ -1338,6 +1356,7 @@ S3_REGION=auto
 S3_BUCKET=lms
 S3_ACCESS_KEY_ID=
 S3_SECRET_ACCESS_KEY=
+S3_FORCE_PATH_STYLE=true       # ทั้ง MinIO และ R2 (CSP อนุญาตเฉพาะ origin ของ S3_ENDPOINT)
 # Email
 EMAIL_PROVIDER=smtp            # smtp | resend
 SMTP_URL=smtp://localhost:1025
@@ -1392,7 +1411,7 @@ LMS/
 │  │                          csv.ts, xlsx.ts (server), decimal.ts
 │  └─ generated/prisma/        (gitignored)
 ├─ assets/fonts/anuphan/       TTF ของใบประกาศ PDF (ตัว render ฝั่ง server ใช้ next/font ไม่ได้) + OFL.txt
-├─ proxy.ts
+├─ src/proxy.ts                ต้องอยู่ระดับเดียวกับ app/ (ใน src/) — วางที่ root แล้ว Next ไม่เรียก (CHANGELOG #45)
 ├─ tests/
 │  ├─ unit/                    Vitest — roles, csv, safe-next (และ grading/progress ในเฟสถัดไป)
 │  └─ e2e/                     Playwright — viewport 375 และ 1280

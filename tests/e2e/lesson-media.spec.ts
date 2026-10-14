@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { runFixture } from "./helpers";
 
 /**
  * M05 ฝั่งผู้เรียน — วิดีโอ, PDF, คาบเรียนสด และไฟล์ประกอบ
@@ -86,9 +87,11 @@ test.describe("ผู้เรียนเปิดเนื้อหาบท�
   });
 
   test("คาบเรียนสดเปิดปุ่มตามเวลา และบอกกติกา 15 นาที (FR-05.5)", async ({ page }) => {
+    // seed นับ "อีก 7 วัน" จากวันที่ seed — เลื่อนให้เป็นอีก 7 วันจากตอนนี้ ไม่งั้นคาบเลยไปแล้ว
+    runFixture("lesson-media-fixture.ts", "pushLiveForward", { courseSlug: COURSE_SLUG, title: LESSON.live });
     await openLesson(page, LESSON.live);
 
-    // คาบใน seed อยู่อีก 7 วัน จึงต้องยังกดไม่ได้
+    // คาบอยู่อีก 7 วัน จึงต้องยังกดไม่ได้
     await expect(page.getByRole("button", { name: "ยังไม่ถึงเวลาเข้าห้อง" })).toBeDisabled();
     await expect(page.getByText(/ก่อนเวลาเริ่ม 15 นาที/)).toBeVisible();
   });

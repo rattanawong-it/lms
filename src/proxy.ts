@@ -32,8 +32,10 @@ const GUEST_ONLY = ["/login", "/register", "/forgot-password"];
 const EMBED_FRAME_SRC = ["https://www.youtube-nocookie.com", "https://player.vimeo.com"];
 
 /**
- * วิดีโอบทเรียนเล่นจาก signed URL ของ storage โดยตรง (FR-15.7) จึงต้องอนุญาต `media-src`
- * ให้โดเมนนั้นด้วย — อ่านจาก env เดียวกับที่ `lib/storage.ts` ใช้ เพื่อให้ย้าย MinIO → R2
+ * วิดีโอบทเรียนเล่นจาก signed URL ของ storage โดยตรง (FR-15.7) และอัปโหลดตรงไปที่เดียวกัน
+ * จึงต้องอนุญาต `media-src`/`connect-src` ให้โดเมนนั้นด้วย
+ * signed URL ต้องเป็นแบบ path-style (`S3_FORCE_PATH_STYLE=true` ทั้ง MinIO และ R2)
+ * ไม่งั้น bucket ไปอยู่ใน subdomain แล้วไม่ตรงกับ origin นี้ — อ่านจาก env เดียวกับที่ `lib/storage.ts` ใช้ เพื่อให้ย้าย MinIO → R2
  * แล้ว CSP ตามไปเองโดยไม่ต้องแก้โค้ด (D-01)
  *
  * ไม่ import `lib/env.ts` เพราะไฟล์นั้นตรวจ env ของฝั่ง server ทั้งชุด ซึ่งหนักเกินจำเป็นตรงนี้
@@ -66,7 +68,8 @@ function buildCsp(nonce: string): string {
     // pdf.js สร้าง worker จากไฟล์ใน /_next/static และบางกรณีตกไปใช้ blob
     "worker-src 'self' blob:",
     `media-src 'self' blob:${storage ? ` ${storage}` : ""}`,
-    "connect-src 'self'",
+    // เบราว์เซอร์อัปโหลดไฟล์ตรงไปที่ storage ด้วย signed PUT (XHR) — ต้องอนุญาตโดเมนเดียวกัน
+    `connect-src 'self'${storage ? ` ${storage}` : ""}`,
     `frame-src ${EMBED_FRAME_SRC.join(" ")}`,
     "object-src 'none'",
     "base-uri 'self'",

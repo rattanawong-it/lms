@@ -26,7 +26,7 @@ function createClient(): S3Client {
   return new S3Client({
     region: env.S3_REGION,
     endpoint: env.S3_ENDPOINT,
-    // MinIO ใช้ http://host/bucket/key ส่วน R2 ใช้ virtual-host
+    // http://host/bucket/key ทั้ง MinIO และ R2 — ให้ตรงกับ origin ที่ CSP อนุญาต (src/proxy.ts)
     forcePathStyle: env.S3_FORCE_PATH_STYLE,
     credentials: {
       accessKeyId: env.S3_ACCESS_KEY_ID,

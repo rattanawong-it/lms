@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "prepare": "node scripts/install-git-hooks.mjs",
+    "postinstall": "prisma generate",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
@@ -21,6 +22,7 @@
     "db:studio": "prisma studio",
     "db:seed": "prisma db seed",
     "storage:init": "tsx scripts/storage-init.ts",
+    "storage:check": "tsx scripts/storage-check.ts",
     "cron": "tsx scripts/cron.ts",
     "db:reset": "prisma migrate reset"
   },

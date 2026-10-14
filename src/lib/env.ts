@@ -20,7 +20,8 @@ const serverEnvSchema = z.object({
   S3_BUCKET: z.string().min(1, "ต้องกำหนด S3_BUCKET"),
   S3_ACCESS_KEY_ID: z.string().min(1, "ต้องกำหนด S3_ACCESS_KEY_ID"),
   S3_SECRET_ACCESS_KEY: z.string().min(1, "ต้องกำหนด S3_SECRET_ACCESS_KEY"),
-  // MinIO ต้องใช้ path-style (http://host/bucket/key) ส่วน R2 ใช้ virtual-host
+  // path-style (http://host/bucket/key) ทั้ง MinIO และ R2 — signed URL ต้องอยู่ที่ origin ของ
+  // S3_ENDPOINT ตรง ๆ เพราะ CSP ใน proxy.ts อนุญาตแค่ origin นั้น (virtual-host = subdomain ไม่ตรง)
   S3_FORCE_PATH_STYLE: z.stringbool().default(true),
 
   EMAIL_PROVIDER: z.enum(["smtp", "resend"]).default("smtp"),

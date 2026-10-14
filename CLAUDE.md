@@ -17,7 +17,7 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · **ขั้น 0–6 เสร็จกับผู้ให้บริการจำลอง** (adapter · ราคา · ชำระเงิน · คูปอง · ใบเสร็จ · คืนเงิน · รายงานยอดขาย) · ค้าง: ตัวเชื่อม Omise + ✋ จุดตรวจ 1–2 บน sandbox (Q1) · ใบกำกับภาษี/ใบลดหนี้ (Q2) — ข้อมูลสถาบันยังไม่พร้อม · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–2 เสร็จ (adapter · ราคา · ชำระเงินกับ mock) · ✋ จุดตรวจที่ 1 รอ sandbox Omise · ขั้น 3 คูปองเริ่มได้ · Phase 3 ปิดครบแล้ว |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -39,6 +39,7 @@
 ```bash
 pnpm db:up          # docker compose: postgres + minio + mailpit
 pnpm storage:init   # สร้าง bucket ใน MinIO (รันครั้งแรก / หลัง db:reset)
+pnpm storage:check [ไฟล์ env] [origin]   # ตรวจ bucket/CORS/Range/multipart ของ MinIO หรือ R2 โดยไม่แก้การตั้งค่า
 pnpm dev            # next dev (Turbopack)
 
 pnpm lint           # eslint
@@ -70,7 +71,7 @@ pnpm db:studio
 - **Better Auth** (Google OAuth + Email/Password) · cookie prefix `krirk-lms` · route `/api/auth/[...all]`
 - **Tailwind v4 + shadcn/ui** (`src/components/ui`) · ฟอนต์ **Anuphan** (ไทย) + **Inter** (อังกฤษ/ตัวเลข) + **JetBrains Mono** (โค้ด) ประกาศเป็น `--font-sans` / `--font-mono` ใน `globals.css`
 - **S3-compatible storage** — MinIO ตอนพัฒนา, Cloudflare R2 ตอน deploy โดยเปลี่ยนแค่ env `S3_*` (D-01)
-- **ตรวจสิทธิ์ 2 ชั้น:** `proxy.ts` เช็คแค่ว่ามี session cookie (optimistic, ไม่ query DB) → สิทธิ์จริงตรวจซ้ำใน Data Access Layer ทุกครั้ง (NFR-04 deny by default)
+- **ตรวจสิทธิ์ 2 ชั้น:** `src/proxy.ts` เช็คแค่ว่ามี session cookie (optimistic, ไม่ query DB) → สิทธิ์จริงตรวจซ้ำใน Data Access Layer ทุกครั้ง (NFR-04 deny by default)
 - **CSP อยู่ใน `proxy.ts`** (nonce ใหม่ทุก request ตามคู่มือ Next 16) ส่วน security header คงที่อยู่ใน `next.config.ts`
   จะฝัง iframe, โหลดสคริปต์ หรือเสิร์ฟสื่อจากโดเมนใหม่ **ต้องแก้ `buildCsp()` ด้วยเสมอ** ไม่งั้นเบราว์เซอร์บล็อกเงียบ ๆ
 
@@ -88,7 +89,6 @@ src/
   app/(learn)/learn/[courseId]/qa[/threadId]          ถาม-ตอบ (M13) · กล่องคำถามผู้สอน `/teach/courses/[id]/qa`
   app/(learn)/settings/privacy · api/privacy/export   PDPA ของผู้ใช้ (M17) · ผู้ดูแล `/admin/{audit,settings,deletion-requests}`
   app/(learn)/{checkout,orders} · api/payment/webhook  ซื้อคอร์ส (M18) — webhook พิสูจน์ตัวด้วยลายเซ็นเท่านั้น ไม่มี session
-  app/api/receipt/[orderId] · (admin)/admin/{coupons,orders}  PDF ใบเสร็จ (เจ้าของ/SUPER_ADMIN) · คูปอง · คำสั่งซื้อ/คืนเงิน (M18)
   components/protected-viewer/                       M15 — กล่องครอบเนื้อหา + ลายน้ำ + ตัวดักเหตุการณ์
   features/<feature>/  queries.ts · actions.ts · schemas.ts · components/ · lib/
   components/  ui (shadcn) · shared · layout · editor · brand
@@ -186,7 +186,6 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **รายงาน (M16)** — ตัวเลขนับใน DB เท่านั้น (`count`/`groupBy`/`$queryRaw`) ไม่ดึงแถวมานับใน JS · สูตรอยู่ใน `features/reports/lib/report.ts`
 · ขอบเขตคณะของ DEPT_ADMIN บังคับใน query (`deptScope()`) ไม่ใช่แค่ซ่อนตัวเลือก · ไฟล์ส่งออกผ่าน `spreadsheetSafe()` ทุกช่องที่เป็นข้อความของผู้ใช้
 · Recharts ใช้เฉพาะ `/admin` ผ่าน `next/dynamic` — อย่า import ตรงในหน้าอื่น
-· ยอดขาย (M18) นับใน `salesByCourse()` เท่านั้น — คำสั่งซื้อ PAID + REFUNDED ตามวันที่ชำระ · เงินรวม/สุทธิคิดด้วย `sumSales()`/`netSales()` (สตางค์) · ผู้สอนเห็นแค่จำนวนผู้ซื้อ
 
 **Audit · ตั้งค่า · PDPA (M17)** — action ใหม่ที่เขียนข้อมูลสำคัญต้อง `writeAudit()` พร้อม `before`/`after` · อย่าใส่ค่าลับใน audit (ถูกซ่อนให้แต่ไม่ควรพึ่ง)
 · ชื่อระบบ/โลโก้อ่านด้วย `getBranding()` (server) หรือ `useBranding()` (client) — ห้ามเขียน "KRIRK LMS" ตายตัวในหัวเว็บใหม่
@@ -196,13 +195,8 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **ขายคอร์ส (M18)** — "คอร์สนี้ต้องซื้อไหม" ถาม `isPaidCourse()` จาก `features/commerce/lib/pricing.ts` เท่านั้น (PUBLIC + ราคา > 0 · INTERNAL ฟรีเสมอ)
 · เงินคำนวณเป็นสตางค์ด้วย `toSatang()`/`fromSatang()` (`lib/payment/money.ts`) ห้ามคูณ float · แสดงผลด้วย `formatBaht()`
 · ทางเข้าคอร์สที่มีราคามีแค่ชำระสำเร็จหรือผู้ดูแลเพิ่มให้ — `enroll()` ปฏิเสธเสมอ · ผู้สอนแก้ราคาได้เฉพาะคอร์สร่าง (`canEditPrice()`)
-· **คำสั่งซื้อที่ผ่าน gateway เป็น PAID ได้ที่ `settleOrder()` (`features/commerce/lib/settle.ts`) จุดเดียว** — ถามสถานะจากผู้ให้บริการเสมอ ห้ามเชื่อ payload/query string · idempotent
-  (ข้อยกเว้นเดียว: คูปองลดเหลือ 0 บาท `startCheckout()` สร้างคำสั่งซื้อเป็น PAID ในทรานแซกชันเดียวกับการตรวจคูปอง)
+· **คำสั่งซื้อเป็น PAID ได้ที่ `settleOrder()` (`features/commerce/lib/settle.ts`) จุดเดียว** — ถามสถานะจากผู้ให้บริการเสมอ ห้ามเชื่อ payload/query string · idempotent
 · webhook เข้าทาง `handlePaymentWebhook()` (บันทึก `PaymentEvent` กันซ้ำ) · หน้าจำลอง `/checkout/mock` ใช้ทางเดียวกัน · cron `orders` ปิดคำสั่งซื้อหมดอายุ
-· ทุกทางที่ทำให้คำสั่งซื้อเป็น PAID เปิดสิทธิ์ด้วย `grantPurchase()` (นับ `Coupon.usedCount` ด้วย) แล้วตามด้วย `announcePaid()` — คูปองลด 100% ใช้ทางนี้โดยไม่ผ่าน gateway
-· ใบเสร็จออกใน `grantPurchase()` → `issueReceipt()` เท่านั้น (เลขจาก `DocumentCounter` ในทรานแซกชันเดียวกับ PAID + snapshot ผู้ขาย/ผู้ซื้อใน `Order.billing`) · PDF สร้างจาก snapshot ทุกครั้งผ่าน `buildReceiptModel()` ห้ามอ่านผู้ขายปัจจุบันตอนดาวน์โหลด
-· คืนเงิน: นโยบาย 7 วัน/20% อยู่ใน `checkRefund()` (pure) · `refundOrder()` จองคำขอ (`refundReason`) → `provider.refund()` → `settleOrder()` · **PAID → REFUNDED เกิดที่ `finalizeRefund()` ใน `settle.ts` จุดเดียว** (ตัดสิทธิ์ DROPPED + เพิกถอนใบประกาศในทรานแซกชันเดียวกัน) · PAID ที่มี `refundReason` = รอผู้ให้บริการยืนยัน
-· คูปองตรวจด้วย `quoteCoupon()` (pure) ผ่าน `findCouponQuote()` เท่านั้น · สิทธิ์คงเหลือ = `maxUses − usedCount − คำสั่งซื้อ PENDING ที่ยังไม่หมดอายุ` · ตอนสร้างคำสั่งซื้อต้อง `lock: true` ในทรานแซกชันเดียวกัน
 
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
@@ -235,7 +229,10 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   ระหว่างพัฒนาใช้ `pnpm test:e2e --no-deps` เพื่อใช้ session ที่เก็บไว้ใน `tests/e2e/.auth`
   · setup ล็อกอิน 4 บัญชี (student/instructor/admin/deptAdmin) + เทสต์ล็อกอินจริง 1 = **เต็มโควตาพอดี** เพิ่มบัญชีทดสอบอีกไม่ได้
   · เทสต์ที่เปิดหลายหน้าต่อกันใส่ `test.slow()` — งบ 30 วินาทีตั้งต้นไม่พอเมื่อเครื่องหน่วยความจำตึง
-- **MinIO ต้องใช้ path-style** (`S3_FORCE_PATH_STYLE=true`) ส่วน R2 ไม่ต้อง — ต่างกันแค่ env
+- **path-style ทั้ง MinIO และ R2** (`S3_FORCE_PATH_STYLE=true`) — CSP อนุญาตแค่ origin ของ `S3_ENDPOINT` ถ้าเป็น virtual-host bucket จะไปอยู่ใน subdomain แล้ววิดีโอ/อัปโหลดถูกบล็อก
+- **`proxy.ts` ต้องอยู่ใน `src/`** (ระดับเดียวกับ `app/`) — เคยวางที่ root แล้ว Next ไม่เรียกเลย ไม่มี CSP และไม่มี redirect โดยไม่มี error ใด ๆ (#45)
+  ตรวจได้ด้วย `curl -sI http://localhost:3000/login` ต้องมี `content-security-policy`
+- **Vercel Hobby** — cron ใน `vercel.json` ได้แค่วันละครั้ง (`reminders`/`live`/`orders` ใช้ตัวเรียกภายนอก) · rate limit ในหน่วยความจำนับแยกต่อ instance · ฟอนต์ PDF ต้องอยู่ใน `outputFileTracingIncludes` (system-design §10)
 - **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
 - **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว
 - **`/api/media/[assetId]` รับเฉพาะรูปภาพ** — วิดีโอ/PDF ของบทเรียนไปตามตารางใน §5 ไม่ใช่เส้นทางนี้
@@ -255,7 +252,6 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   รันชุดเต็มด้วย `pnpm test:e2e --workers=2`
 - **desktop กับ mobile ใช้บัญชีเดียวกันและรันพร้อมกัน** — เทสต์ที่เขียนข้อมูลต้องแยกคอร์ส/ข้อมูลตาม `testInfo.project.name`
   ไม่งั้นสองโปรเจกต์จะแย่งสถานะของกันเอง (ดู `tests/e2e/enrollment.spec.ts`)
-- **โควตาสร้างคำสั่งซื้อ (`CHECKOUT_QUOTA` 30 ครั้ง/10 นาที/ผู้ใช้) ใช้ร่วมทั้งชุด e2e** — ทุกไฟล์ซื้อด้วยบัญชีผู้เรียนเดียวกัน เกินโควตาแล้วปุ่มถัดไปไม่มา (timeout ที่หน้า checkout) · เพิ่มเทสต์ซื้อเมื่อไรให้นับรวมด้วย
 - **โปรเจกต์ mobile ของ Playwright เห็น DOM เก่ากับใหม่พร้อมกันชั่วครู่หลัง `goto`/`reload`** — locator ที่คาดว่ามีตัวเดียวเจอ 2 ตัว (strict mode)
   แบบสุ่ม · ให้ `await expect(locator).toHaveCount(1)` ก่อนใช้งาน (ยังจับกรณีมีซ้ำจริงได้) · เจอที่ `score-curve.spec`, `privacy.spec`
 - **`PAYMENT_PROVIDER=mock` ใน production ทำให้ระบบไม่ยอมเริ่ม** — Playwright ใช้ `next start` (production) จึงต้องตั้ง `ALLOW_MOCK_PAYMENT=true` บนเครื่องทดสอบด้วย
@@ -275,8 +271,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
   หน้าที่ต้องการสถานะจริง (เช่น `/quiz/[attemptId]`) จึงไม่มี loading · การตรวจใน layout ไม่โดนผลนี้
 - **react-pdf กับภาษาไทย** — ตัดบรรทัดได้แค่ที่ช่องว่าง และถ้าให้จุดตัดผ่าน `registerHyphenationCallback` จะเติม "-" ทุกจุด
   ฟอนต์ Anuphan ไม่มี glyph ของ zero-width space · วิธีที่ใช้: คำละ `<Text>` ใน `<View>` flex-wrap (`pdfWords()`)
-  · ดูผลจริงด้วย `CERT_PDF_OUT=ไฟล์.pdf npx vitest run tests/unit/certificate.test.ts` แล้วเปิดไฟล์ (ใบเสร็จ: `RECEIPT_PDF_OUT` กับ `receipt.test.ts`)
-  · **unit test ที่ render PDF ต้องขึ้นต้นไฟล์ด้วย `// @vitest-environment node`** — ใน jsdom react-pdf ได้ PDF หน้าว่าง (ไม่มีข้อความ) แต่เทสต์ `%PDF-` ยังผ่าน
+  · ดูผลจริงด้วย `CERT_PDF_OUT=ไฟล์.pdf npx vitest run tests/unit/certificate.test.ts` แล้วเปิดไฟล์
 - **อ่าน `e.currentTarget.value` ก่อนเรียก `setState(updater)` เสมอ** — updater ทำงานทีหลัง ตอนนั้น `currentTarget` เป็น null แล้ว
   หน้าพังทั้งหน้า ("This page couldn't load") ตอนพิมพ์ครั้งแรก
 - **ห้าม import ค่าคงที่ (ไม่ใช่ component) จากไฟล์ `"use client"` เข้า Server Component** — ได้ client reference ไม่ใช่ค่าจริง ให้วางไว้ใน `schemas.ts`/`lib/`
