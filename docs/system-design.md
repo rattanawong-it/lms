@@ -1333,7 +1333,7 @@ flowchart LR
 | ฟอนต์ PDF | `outputFileTracingIncludes` ใน `next.config.ts` รวม `assets/fonts/anuphan/*.ttf` ทุก route (อ่านด้วย `process.cwd()` ซึ่ง trace ไม่เจอ) |
 | Cron | Hobby รันได้วันละครั้ง → `vercel.json` มีแค่ `cleanup` (20:00 UTC = 03:00 น.) · `reminders` (ทุกชั่วโมง) · `live` / `orders` (ทุก 15 นาที) ใช้ตัวเรียกภายนอก เช่น cron-job.org ส่ง `Authorization: Bearer <CRON_SECRET>` |
 | Rate limit | Better Auth และ `lib/rate-limit.ts` เก็บในหน่วยความจำ — บน serverless นับแยกต่อ instance จึงหลวมกว่า FR-01.7 · **ยอมรับข้อจำกัดไปก่อน** (เจ้าของระบบ 2026-10-14) ทางแก้ภายหลัง: Better Auth `storage: "database"` (เพิ่มตาราง) |
-| Region | ตั้ง Function Region ให้ใกล้ Neon (เช่น `sin1`) |
+| Region | `vercel.json` → `"regions": ["sin1"]` (Singapore) ให้ตรงกับ Neon `ap-southeast-1` — function ไกลจาก DB ทุก query ช้า |
 | ข้อควรรู้ | ข้อตกลงของ Vercel ให้ Hobby ใช้เฉพาะงานส่วนตัว/ไม่เชิงพาณิชย์ — ก่อนเปิดใช้จริงกับการขายคอร์สควรย้ายไป Pro (cron ย้ายกลับเข้า `vercel.json` ได้ทั้งหมด) |
 
 ### 10.1 Environment Variables
