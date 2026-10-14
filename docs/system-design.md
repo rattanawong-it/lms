@@ -1015,6 +1015,14 @@ sequenceDiagram
   B->>B: redirect ไป next หรือ /dashboard
 ```
 
+**เปลี่ยน/ตั้งรหัสผ่าน (FR-01.9)** — หน้า `/settings/password` เรียก server action ใน `features/account/actions.ts`
+(ไม่ใช่ `authClient` ตรง ๆ เพื่อให้ตรวจ Zod · จำกัดความถี่ · audit ที่เดียว)
+- มีแถว `Account(credential)` แล้ว → `auth.api.changePassword` (ต้องมีรหัสเดิม) · ติ๊ก "ออกจากอุปกรณ์อื่น" = `revokeOtherSessions: true` (Better Auth ลบทุก session แล้วออกใหม่ให้เครื่องนี้)
+- เข้าด้วย Google อย่างเดียว (ไม่มีแถว credential) → `auth.api.setPassword` (server-only) สร้าง `Account(credential)` ผูกกับผู้ใช้เดิม → เข้าได้ทั้ง Google และอีเมล+รหัสผ่าน · ติ๊กแล้วเรียก `revokeOtherSessions`
+- เรียกจาก server ไม่ผ่าน rate limit ของ Better Auth → จำกัดเองด้วย `rateLimit("password:<userId>")` 5 ครั้ง/15 นาที (กันเดารหัสเดิม)
+- audit: `user.password.change` มาจาก hook `account.update` ใน `lib/auth.ts` เดิม · การตั้งครั้งแรกสร้างแถวใหม่ (hook ไม่ทำงาน) จึงบันทึก `user.password.set` ใน action · ไม่เก็บค่ารหัสผ่าน
+- ไม่เปลี่ยน schema
+
 ### 5.2 Login ด้วย Email/Password (+ ยืนยันอีเมล)
 ```mermaid
 sequenceDiagram

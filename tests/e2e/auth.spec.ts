@@ -28,7 +28,7 @@ test.describe("ผู้ที่ยังไม่ล็อกอิน", () =>
     await page.goto("/login");
     await page.getByLabel("อีเมล", { exact: true }).fill(ACCOUNTS.student.email);
     await page.getByLabel("รหัสผ่าน", { exact: true }).fill(ACCOUNTS.student.password);
-    await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
+    await page.getByRole("button", { name: "เข้าสู่ระบบ", exact: true }).click();
     await expect(page).toHaveURL(/\/dashboard/, { timeout: 30_000 });
   });
 });

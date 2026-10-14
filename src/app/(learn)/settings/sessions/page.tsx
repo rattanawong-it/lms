@@ -15,7 +15,7 @@ export default async function SessionsPage() {
     <section>
       <p className="text-muted-foreground mb-4 text-[13px] leading-relaxed">
         FR-01.6 · หากพบอุปกรณ์ที่ไม่ใช่ของคุณ ให้กดยกเลิกทันที
-        แล้วเปลี่ยนรหัสผ่านผ่านเมนูลืมรหัสผ่าน
+        แล้วเปลี่ยนรหัสผ่านที่แท็บรหัสผ่าน
       </p>
       <SessionList sessions={sessions} describe={describe} />
     </section>

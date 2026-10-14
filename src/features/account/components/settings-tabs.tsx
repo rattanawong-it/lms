@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/settings/profile", label: "โปรไฟล์" },
+  { href: "/settings/password", label: "รหัสผ่าน" },
   { href: "/settings/sessions", label: "อุปกรณ์ที่เข้าสู่ระบบ" },
   { href: "/settings/notifications", label: "การแจ้งเตือน" },
   { href: "/settings/line", label: "LINE" },

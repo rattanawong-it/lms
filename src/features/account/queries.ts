@@ -26,6 +26,16 @@ export async function getMyProfile() {
   return profile;
 }
 
+/** FR-01.9 — มีรหัสผ่านแล้วหรือยัง (บัญชีที่เข้าด้วย Google อย่างเดียวยังไม่มี) */
+export async function hasPassword(): Promise<boolean> {
+  const user = await requireUser();
+  const credential = await db.account.findFirst({
+    where: { userId: user.id, providerId: "credential", password: { not: null } },
+    select: { id: true },
+  });
+  return credential !== null;
+}
+
 export type DeviceSession = {
   token: string;
   createdAt: Date;

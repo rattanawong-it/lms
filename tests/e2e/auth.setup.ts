@@ -16,7 +16,7 @@ for (const name of Object.keys(ACCOUNTS) as AccountName[]) {
     await page.goto("/login");
     await page.getByLabel("อีเมล", { exact: true }).fill(account.email);
     await page.getByLabel("รหัสผ่าน", { exact: true }).fill(account.password);
-    await page.getByRole("button", { name: "เข้าสู่ระบบ" }).click();
+    await page.getByRole("button", { name: "เข้าสู่ระบบ", exact: true }).click();
 
     await expect(page).toHaveURL(account.home, { timeout: 30_000 });
     await page.context().storageState({ path: STATE_FILE[name] });

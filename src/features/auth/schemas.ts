@@ -76,6 +76,44 @@ export const profileSchema = z.object({
 });
 export type ProfileInput = z.input<typeof profileSchema>;
 
+/** ช่อง checkbox ส่ง "on" มาเมื่อติ๊ก และไม่ส่งอะไรมาเลยเมื่อไม่ติ๊ก */
+const checkbox = z
+  .union([z.literal("on"), z.literal("true"), z.literal("false")])
+  .nullish()
+  .transform((v) => v === "on" || v === "true");
+
+/** FR-01.9 · ตั้งรหัสผ่านครั้งแรก (บัญชีที่เข้าด้วย Google อย่างเดียว) */
+export const setPasswordSchema = z
+  .object({
+    password,
+    confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน"),
+    revokeOtherSessions: checkbox,
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "รหัสผ่านทั้งสองช่องไม่ตรงกัน",
+  });
+
+/** FR-01.9 · เปลี่ยนรหัสผ่าน — ต้องยืนยันด้วยรหัสเดิม */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "กรุณากรอกรหัสผ่านปัจจุบัน"),
+    password,
+    confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน"),
+    revokeOtherSessions: checkbox,
+  })
+  .refine((v) => v.password === v.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "รหัสผ่านทั้งสองช่องไม่ตรงกัน",
+  })
+  .refine((v) => v.password !== v.currentPassword, {
+    path: ["password"],
+    message: "รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านปัจจุบัน",
+  });
+
+/** FR-01.9 · เปลี่ยน/ตั้งรหัสผ่านได้ 5 ครั้งต่อ 15 นาทีต่อผู้ใช้ (กันเดารหัสเดิม) */
+export const PASSWORD_CHANGE_QUOTA = { windowSec: 15 * 60, max: 5 };
+
 /** เกณฑ์ความแข็งแรงของรหัสผ่าน — ใช้แสดงผลอย่างเดียว ไม่บังคับ (ตาม FR-01.1) */
 export const PASSWORD_RULES = [
   { id: "len", label: "ยาวอย่างน้อย 8 ตัวอักษร", test: (v: string) => v.length >= 8 },
