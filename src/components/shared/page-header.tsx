@@ -15,17 +15,18 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between",
+        // ปุ่มเยอะจนวางคู่ชื่อไม่พอ → ปุ่มขึ้นแถวใหม่ แทนที่จะบีบชื่อเหลือคอลัมน์แคบ
+        "mb-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between",
         className,
       )}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 grow">
         <h1 className="text-[24px] font-bold tracking-[-0.018em]">{title}</h1>
         {description ? (
           <p className="text-muted-foreground mt-1 text-[13px] leading-relaxed">{description}</p>
         ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap gap-2">{actions}</div> : null}
+      {actions ? <div className="flex min-w-0 flex-wrap gap-2">{actions}</div> : null}
     </div>
   );
 }
