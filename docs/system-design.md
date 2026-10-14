@@ -1329,7 +1329,7 @@ flowchart LR
 
 | เรื่อง | ทำอย่างไร |
 |---|---|
-| Prisma client | `postinstall: prisma generate` — `src/generated/prisma` ไม่อยู่ใน git |
+| Prisma client | `build: prisma generate && next build` (+ `postinstall` สำหรับเครื่องพัฒนา) — `src/generated/prisma` ไม่อยู่ใน git และเมื่อ Vercel ใช้ build cache pnpm ข้าม `postinstall` (Turbopack panic ตอนแสดง error ภาษาไทย ไม่เห็นสาเหตุจริง) |
 | ฟอนต์ PDF | `outputFileTracingIncludes` ใน `next.config.ts` รวม `assets/fonts/anuphan/*.ttf` ทุก route (อ่านด้วย `process.cwd()` ซึ่ง trace ไม่เจอ) |
 | Cron | Hobby รันได้วันละครั้ง → `vercel.json` มีแค่ `cleanup` (20:00 UTC = 03:00 น.) · `reminders` (ทุกชั่วโมง) · `live` / `orders` (ทุก 15 นาที) ใช้ตัวเรียกภายนอก เช่น cron-job.org ส่ง `Authorization: Bearer <CRON_SECRET>` |
 | Rate limit | Better Auth และ `lib/rate-limit.ts` เก็บในหน่วยความจำ — บน serverless นับแยกต่อ instance จึงหลวมกว่า FR-01.7 · **ยอมรับข้อจำกัดไปก่อน** (เจ้าของระบบ 2026-10-14) ทางแก้ภายหลัง: Better Auth `storage: "database"` (เพิ่มตาราง) |

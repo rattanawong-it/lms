@@ -232,6 +232,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **path-style ทั้ง MinIO และ R2** (`S3_FORCE_PATH_STYLE=true`) — CSP อนุญาตแค่ origin ของ `S3_ENDPOINT` ถ้าเป็น virtual-host bucket จะไปอยู่ใน subdomain แล้ววิดีโอ/อัปโหลดถูกบล็อก
 - **`proxy.ts` ต้องอยู่ใน `src/`** (ระดับเดียวกับ `app/`) — เคยวางที่ root แล้ว Next ไม่เรียกเลย ไม่มี CSP และไม่มี redirect โดยไม่มี error ใด ๆ (#45)
   ตรวจได้ด้วย `curl -sI http://localhost:3000/login` ต้องมี `content-security-policy`
+- **Vercel ใช้ build cache แล้ว pnpm ข้าม `postinstall`** → ไม่มี Prisma client และ Turbopack panic (`not a char boundary` ในภาษาไทย) แทน error จริง · `build` จึงรัน `prisma generate` เอง
 - **Vercel Hobby** — cron ใน `vercel.json` ได้แค่วันละครั้ง (`reminders`/`live`/`orders` ใช้ตัวเรียกภายนอก) · rate limit ในหน่วยความจำนับแยกต่อ instance · ฟอนต์ PDF ต้องอยู่ใน `outputFileTracingIncludes` (system-design §10)
 - **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
 - **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว
