@@ -17,7 +17,8 @@
 | | |
 |---|---|
 | บทบาทผู้ใช้ | `SUPER_ADMIN` · `DEPT_ADMIN` · `INSTRUCTOR` · `STUDENT` (+ ผู้เยี่ยมชมที่ไม่ login) |
-| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · ขั้น 0–2 เสร็จ (adapter · ราคา · ชำระเงินกับ mock) · ✋ จุดตรวจที่ 1 รอ sandbox Omise · ขั้น 3 คูปองเริ่มได้ · Phase 3 ปิดครบแล้ว |
+| สถานะปัจจุบัน | Phase 4 (Commerce: M18 ขายคอร์ส · DRM ไม่ทำ) บน branch `phase-4` — แผนอนุมัติ 2026-09-25 ([`docs/phase-4-plan.md`](./docs/phase-4-plan.md)) · โค้ดขั้น 0–6 เสร็จกับผู้ให้บริการจำลอง (ราคา · ชำระเงิน · คูปอง · ใบเสร็จ · คืนเงิน · รายงานยอดขาย) · **ค้าง:** ตัวเชื่อม Omise + ✋ จุดตรวจ 1–2 (รอ sandbox Q1) · ใบกำกับภาษี/ใบลดหนี้ (รอ Q2) · Phase 0–3 ปิดครบแล้ว · `main` = `phase-4` |
+| Production | ขึ้นแล้ว 2026-10-14 — Vercel (`lms-krirk`, region `sin1`) + Neon + R2 · deploy อัตโนมัติเมื่อ push `main` · ปิดการขาย (ไม่ตั้ง `PAYMENT_PROVIDER`) · **ค้าง:** อีเมล (ยังไม่ตั้ง SMTP/Resend → สมัครด้วยอีเมล/รีเซ็ตรหัสผ่านไม่ได้) · cron ภายนอก `reminders`/`live`/`orders` · บัญชี seed บน Neon |
 | ภาษา UI | **ภาษาไทยทั้งหมด** รวมข้อความ error และ validation · วันที่แสดงเป็น พ.ศ. (เก็บ UTC แสดง Asia/Bangkok) |
 | จุดขายที่ห้ามพลาด | การป้องกันการ capture เนื้อหา (M15) — watermark, signed URL อายุสั้น, ไม่มีปุ่มดาวน์โหลดวิดีโอ/PDF |
 
@@ -27,7 +28,7 @@
 |---|---|
 | [`docs/spec.md`](./docs/spec.md) | ต้องทำอะไร (FR/NFR, checklist รายโมดูล, สถานะงาน §3.0.1, roadmap) |
 | [`docs/system-design.md`](./docs/system-design.md) | ทำอย่างไร (สถาปัตยกรรม, data model, authorization, flow, โครงสร้างโฟลเดอร์ §11) |
-| [`docs/phase-3-plan.md`](./docs/phase-3-plan.md) | ลำดับงานของเฟสปัจจุบัน (Phase 3 — อนุมัติแล้ว 2026-09-24) + จุดหยุดตรวจ · แผนเฟสก่อนหน้าอยู่ `phase-1-plan.md` / `phase-2-plan.md` |
+| [`docs/phase-4-plan.md`](./docs/phase-4-plan.md) | ลำดับงานของเฟสปัจจุบัน (Phase 4 — อนุมัติแล้ว 2026-09-25) + จุดหยุดตรวจ · แผนเฟสก่อนหน้าอยู่ `phase-1-plan.md` / `phase-2-plan.md` / `phase-3-plan.md` |
 | [`docs/CHANGELOG-REQUIREMENTS.md`](./docs/CHANGELOG-REQUIREMENTS.md) | อะไรเปลี่ยนไปจาก baseline เพราะอะไร |
 
 **กฎการเปลี่ยนแปลง:** แก้ requirement, Prisma schema, โครงสร้างโฟลเดอร์ หรือ tech stack

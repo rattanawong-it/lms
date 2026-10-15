@@ -5,7 +5,7 @@
 | เวอร์ชันเอกสาร | 1.0 (Baseline) |
 | วันที่ | 2026-09-19 |
 | สถานะ | รอผู้ใช้ตรวจ (Draft for review) |
-| อัปเดตสถานะงานล่าสุด | 2026-09-22 — จบ Phase 1 ขั้น 6 (M05 ฝั่งผู้เรียน + M15 Content Protection) ดู §3.0.1 |
+| อัปเดตสถานะงานล่าสุด | 2026-10-15 — Phase 0–3 ปิดครบ · Phase 4 (M18) โค้ดเสร็จกับผู้ให้บริการจำลอง · production ขึ้นแล้ว 2026-10-14 ดู §3.0.1 |
 | เอกสารที่เกี่ยวข้อง | [`system-design.md`](./system-design.md), [`system-overview.html`](./system-overview.html), [`CHANGELOG-REQUIREMENTS.md`](./CHANGELOG-REQUIREMENTS.md) |
 
 > **กฎการเปลี่ยนแปลง (Change Control)**
@@ -76,12 +76,12 @@
 
 รหัสสถานะ: `[ ]` ยังไม่เริ่ม · `[~]` กำลังทำ · `[x]` เสร็จ · Priority: **P0** = ต้องมีใน MVP, **P1** = เฟส 1, **P2** = เฟสถัดไป
 
-### 3.0.1 สถานะการพัฒนา (อัปเดต 2026-09-23)
+### 3.0.1 สถานะการพัฒนา (อัปเดต 2026-10-15)
 
 | โมดูล | สถานะ | ทำที่ | หมายเหตุ |
 |---|---|---|---|
 | **M00 Project Docs** | ✅ เสร็จ | Phase 0 → ปรับ 2026-09-21 | `CLAUDE.md` (สมองโปรเจกต์) เขียนแล้ว · FR-00.5 ผูกพันต่อเนื่อง: convention เปลี่ยนเมื่อไร อัปเดตไฟล์นี้ด้วย |
-| M01 Authentication | 🔸 เกือบครบ | Phase 0 · `38e6963` | ขาดอัปโหลดรูปโปรไฟล์ (FR-01.5) ที่เหลือเสร็จหมด |
+| M01 Authentication | 🔸 เกือบครบ | Phase 0 · `38e6963` · FR-01.9 `9f059f5` | ขาดอัปโหลดรูปโปรไฟล์ (FR-01.5) ที่เหลือเสร็จหมด · Google OAuth ใช้ได้บน production · อีเมลยืนยัน/รีเซ็ตรหัสผ่านบน production รอตั้งผู้ให้บริการอีเมล |
 | M02 RBAC & Users | ✅ เสร็จ | Phase 0 · `38e6963` | คณะแบบลำดับชั้น, จัดการผู้ใช้, นำเข้า CSV, ตรวจสิทธิ์ทั้ง proxy และ DAL |
 | M03 Catalog | ✅ เสร็จ | Phase 1 ขั้น 2 · `78d35b9` | ค้าง: หน้า `/privacy` (เนื้อหาเชิงนโยบาย รอเจ้าของระบบเขียน) |
 | M04 Course Builder | ✅ เสร็จ | Phase 1 ขั้น 3 · `36aacd4` | จุดตรวจที่ 1 ผ่านแล้ว |
@@ -89,10 +89,10 @@
 | **M06 Enrollment & Progress** | ✅ เสร็จ | Phase 1 ขั้น 5 | `src/features/enrollment/` · ต่อเข้ากับตัวเล่นวิดีโอแล้วในขั้น 6a |
 | **M15 Content Protection** | ✅ เสร็จ | Phase 1 ขั้น 6b | `<ProtectedViewer>` + ลายน้ำ + `ScreenEventLog` · CSP แบบ nonce อยู่ใน `proxy.ts` |
 | **M11 Announcement & Notification** | ✅ เสร็จ | Phase 1 ขั้น 7 + Phase 3 ขั้น 1 | `features/announcements` + `features/notifications` · `lib/notify` เป็นจุดเดียวที่ยิงแจ้งเตือน · อีเมล (FR-11.3) + ตั้งค่าช่องทาง `/settings/notifications` (FR-11.4) |
-| **M07 Quiz / Exam** | ✅ เสร็จ (รอจุดตรวจที่ 1) | Phase 2 ขั้น 1–3 | คลังข้อสอบ · แบบทดสอบ/ทำข้อสอบ · ตรวจอัตนัย + ผลสอบของผู้สอน · `features/questions`, `features/quiz` |
+| **M07 Quiz / Exam** | ✅ เสร็จ | Phase 2 ขั้น 1–3 | คลังข้อสอบ · แบบทดสอบ/ทำข้อสอบ · ตรวจอัตนัย + ผลสอบของผู้สอน · `features/questions`, `features/quiz` |
 | **M08 Assignment** | ✅ เสร็จ | Phase 2 ขั้น 4 | `features/assignments` · ผู้เรียนอัปโหลดได้เฉพาะในบริบทของงาน · `/api/submission-file/[assetId]` |
 | **M09 Gradebook** | ✅ เสร็จ | Phase 2 ขั้น 5 | `features/gradebook` · Q6 ได้เกณฑ์จริงแล้ว → Score Curve (FR-09.6–09.9) เสร็จ 2026-09-24 · `features/score-curve` · `/admin/score-curve` |
-| **M10 Certificate** | ✅ เสร็จ (รอจุดตรวจที่ 2) | Phase 2 ขั้น 6 | `features/certificates` · PDF ด้วย `@react-pdf/renderer` + Anuphan · `/verify/[code]` สาธารณะ |
+| **M10 Certificate** | ✅ เสร็จ | Phase 2 ขั้น 6 | `features/certificates` · PDF ด้วย `@react-pdf/renderer` + Anuphan · `/verify/[code]` สาธารณะ |
 | **M12 LINE** | ✅ เสร็จ (webhook จำลอง) | Phase 3 ขั้น 2–3 | `features/line` + cron แจ้งล่วงหน้า `/api/cron/*` · ทดสอบกับ LINE จริงเมื่อสถาบันมี Official Account |
 | **M13 Q&A** | ✅ เสร็จ | Phase 3 ขั้น 4 | `features/qa` · `/learn/[courseId]/qa` · กล่องคำถามผู้สอน `/teach/courses/[id]/qa` · ข้อความล้วน (Q5) |
 | **M14 Review & Rating** | ✅ เสร็จ | Phase 3 ขั้น 5 | `features/reviews` · ส่วนรีวิวในหน้าคอร์ส · `/admin/reviews` · ค่าเฉลี่ยเก็บบน `Course.ratingAvg/ratingCount` |
@@ -100,8 +100,13 @@
 | **M17 Audit & Settings** | ✅ เสร็จ | Phase 3 ขั้น 7 | `features/{audit,settings,privacy}` · `/admin/{audit,settings,deletion-requests}` · `/settings/privacy` · `/api/privacy/export` · anonymize ตาม Q9 (CHANGELOG #37) |
 | M18 | 🔸 เสร็จกับผู้ให้บริการจำลอง | Phase 4 ขั้น 0–6 | ราคา · ชำระเงิน · คูปอง `/admin/coupons` · ใบเสร็จรับเงิน PDF · คืนเงิน `/admin/orders` · รายงานยอดขาย `/admin/reports?view=sales` · **ค้าง:** ตัวเชื่อม Omise + ✋ จุดตรวจ 1–2 บน sandbox (Q1) · ใบกำกับภาษี/ใบลดหนี้ (Q2) — [`phase-4-plan.md`](./phase-4-plan.md) |
 
-**Phase 1 จบครบ 7 ขั้นแล้ว (2026-09-23)** — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
-(สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ) · งานถัดไปคือ Phase 2 บน branch `phase-2`
+**ภาพรวมรายเฟส**
+- **Phase 1** จบครบ 7 ขั้น (2026-09-23) — e2e ปิดเฟสอยู่ที่ `tests/e2e/phase-1.spec.ts`
+  (สร้างคอร์ส → อนุมัติ → ลงทะเบียน → แจ้งเตือน → เรียน → ความคืบหน้า → ลายน้ำ)
+- **Phase 2** ปิดครบ 2026-09-24 (จุดตรวจ 1–2 ผ่าน) · **Phase 3** ปิดครบ 2026-09-25 (`763268d`)
+- **Phase 4** โค้ดขั้น 0–6 เสร็จ 2026-09-26 กับผู้ให้บริการจำลอง — รอ sandbox Omise (Q1) และคำตอบเรื่องภาษี (Q2) · ขั้น 7 DRM ไม่ทำ
+- **Production** ขึ้นแล้ว 2026-10-14 (Vercel + Neon + R2 · `main` deploy อัตโนมัติ) — ค้าง: ผู้ให้บริการอีเมล · ตัวเรียก cron ภายนอก
+  (`reminders`/`live`/`orders` — Vercel Hobby รัน cron ได้วันละครั้ง) · ล้างบัญชี seed บน Neon · หน้า `/privacy` รอเนื้อหา
 
 **สิ่งที่ยกมาจากขั้น 7 และต้องจำไว้ในเฟสถัดไป**
 - ทุกฟีเจอร์ต้องแจ้งเตือนผ่าน `notify()` ใน `src/lib/notify/index.ts` เท่านั้น — เฟส 3 จะเติม adapter อีเมล/LINE ที่จุดนี้
