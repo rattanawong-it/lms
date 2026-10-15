@@ -56,8 +56,9 @@ export type ReadyAsset = {
  */
 export async function findReadyAsset(
   assetId: string,
-  kind: AssetKind,
+  kind: AssetKind | readonly AssetKind[],
 ): Promise<ReadyAsset | null> {
+  const kinds: readonly AssetKind[] = typeof kind === "string" ? [kind] : kind;
   const asset = await db.asset.findUnique({
     where: { id: assetId },
     select: {
@@ -71,7 +72,7 @@ export async function findReadyAsset(
       uploadedById: true,
     },
   });
-  if (!asset || asset.kind !== kind || asset.status !== "READY") return null;
+  if (!asset || !kinds.includes(asset.kind) || asset.status !== "READY") return null;
 
   return {
     id: asset.id,

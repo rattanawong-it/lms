@@ -23,6 +23,9 @@ const PNG = Buffer.from(
 /** เอกสารข้อความสั้น ๆ สำหรับทดสอบไฟล์ประกอบ (FR-05.7) */
 const WORKSHEET = Buffer.from("ใบงานทดสอบอัตโนมัติ", "utf8");
 
+/** ไฟล์ .docx จำลอง — server ตรวจแค่ลายเซ็น ZIP (PK 03 04) ซึ่ง docx ทุกไฟล์มี (FR-05.8) */
+const DOCX = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.alloc(60)]);
+
 async function gotoSettings(page: Page) {
   await page.goto(teachSearch(TITLE));
   await page.getByRole("link", { name: TITLE }).click();
@@ -81,12 +84,12 @@ test.describe("ผู้สอนใส่เนื้อหาให้คอ�
     await page.getByRole("button", { name: "เพิ่มบทเรียนในบทนี้" }).click();
     await page.getByLabel("ชื่อบทเรียน", { exact: true }).fill("เอกสารประกอบ");
     await page.getByRole("combobox", { name: "ชนิดบทเรียน" }).click();
-    await page.getByRole("option", { name: "เอกสาร PDF" }).click();
+    await page.getByRole("option", { name: "เอกสาร", exact: true }).click();
     await expect(page.getByLabel("ไฟล์เอกสาร", { exact: true })).toBeAttached();
 
     // ยังไม่แนบไฟล์ → ต้องถูกปฏิเสธ
     await page.getByRole("button", { name: "เพิ่มบทเรียน", exact: true }).click();
-    await expect(page.getByText("อัปโหลดไฟล์ PDF ก่อน")).toBeVisible();
+    await expect(page.getByText("อัปโหลดไฟล์เอกสารก่อน")).toBeVisible();
 
     await page
       .getByLabel("ไฟล์เอกสาร", { exact: true })
@@ -95,6 +98,47 @@ test.describe("ผู้สอนใส่เนื้อหาให้คอ�
 
     await page.getByRole("button", { name: "เพิ่มบทเรียน", exact: true }).click();
     await expect(page.getByText("เอกสารประกอบ", { exact: true })).toBeVisible();
+  });
+
+  test("บทเรียนเอกสาร Word ให้ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)", async ({ page }) => {
+    test.slow();
+    await gotoSettings(page);
+    await page.getByRole("link", { name: "จัดสารบัญ" }).click();
+    await expect(page).toHaveURL(/\/teach\/courses\/[a-z0-9]+\/curriculum/);
+    const courseId = page.url().match(/\/teach\/courses\/([a-z0-9]+)\//)![1];
+
+    await page.getByRole("button", { name: "เพิ่มบทเรียนในบทนี้" }).click();
+    await page.getByLabel("ชื่อบทเรียน", { exact: true }).fill("ใบความรู้ Word");
+    await page.getByRole("combobox", { name: "ชนิดบทเรียน" }).click();
+    await page.getByRole("option", { name: "เอกสาร", exact: true }).click();
+
+    // mimeType ว่างเหมือนเครื่องที่ไม่รู้จัก .docx — ระบบต้องตัดสินจากนามสกุลเอง
+    await page
+      .getByLabel("ไฟล์เอกสาร", { exact: true })
+      .setInputFiles({ name: "ใบความรู้.docx", mimeType: "", buffer: DOCX });
+    await expect(page.getByRole("button", { name: "เปลี่ยน" })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: "เพิ่มบทเรียน", exact: true }).click();
+    await expect(page.getByText("ใบความรู้ Word", { exact: true })).toBeVisible();
+
+    // ผู้สอนเปิดหน้าเรียนในโหมดดูตัวอย่างได้ — เห็นการ์ดดาวน์โหลดแทนตัวอ่าน PDF
+    await page.goto(`/learn/${courseId}`);
+    const drawer = page.getByRole("button", { name: /สารบัญบทเรียน/ });
+    if (await drawer.isVisible()) await drawer.click();
+    await page.getByRole("link", { name: "ใบความรู้ Word" }).click();
+    await expect(page.getByRole("heading", { name: "ใบความรู้ Word", level: 1 })).toBeVisible({
+      timeout: 30_000,
+    });
+    await expect(page.getByText("ใบความรู้.docx")).toBeVisible();
+    await expect(page.locator("canvas")).toHaveCount(0);
+
+    const link = page.getByRole("link", { name: "ดาวน์โหลดเอกสาร" });
+    const href = (await link.getAttribute("href"))!;
+    expect(href).toMatch(/^\/api\/lesson-media\//);
+    const response = await page.request.get(href, { maxRedirects: 0 });
+    expect(response.status()).toBe(302);
+    const location = response.headers()["location"];
+    expect(location).toContain("X-Amz-Signature=");
+    expect(decodeURIComponent(location)).toContain("attachment");
   });
 
   test("แนบไฟล์ประกอบและเปิดสิทธิ์ดาวน์โหลดได้ (FR-05.7)", async ({ page }) => {

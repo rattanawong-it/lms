@@ -29,7 +29,7 @@ export const ENROLL_POLICY_LABEL: Record<EnrollPolicy, string> = {
 
 export const LESSON_TYPE_LABEL: Record<LessonType, string> = {
   VIDEO: "วิดีโอ",
-  PDF: "เอกสาร PDF",
+  PDF: "เอกสาร",
   TEXT: "บทความ",
   LIVE: "เรียนสด",
   QUIZ: "แบบทดสอบ",

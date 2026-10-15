@@ -1,7 +1,7 @@
 import { forbidden, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireApiUser } from "@/lib/rbac";
-import { getObjectStream } from "@/lib/storage";
+import { getObjectStream, presignGet } from "@/lib/storage";
 import { getLessonAccess } from "@/features/enrollment/queries";
 import { AssetKind, AssetStatus, LessonType } from "@/generated/prisma/enums";
 import { UPLOAD_RULES } from "@/lib/upload-limits";
@@ -16,6 +16,10 @@ import { UPLOAD_RULES } from "@/lib/upload-limits";
  * - PDF เพดาน 50 MB จึงไม่หนักเท่าวิดีโอ (เพดาน 2 GB) ที่ต้องเลี่ยงการวิ่งผ่านเซิร์ฟเวอร์
  *
  * รองรับ `Range` ต่อให้ storage โดยตรง เพราะ pdf.js ทยอยขอทีละช่วงเมื่อไฟล์ใหญ่
+ *
+ * FR-05.8 — บทเรียนเอกสารที่เป็นไฟล์ Office/รูป/ข้อความ (Asset `FILE`) ไม่มีตัวแสดงผลในเว็บ
+ * ผู้สอนเลือกให้ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ → redirect ไป signed URL อายุ 5 นาที
+ * แบบเดียวกับไฟล์ประกอบ (`/api/lesson-file`) หลังตรวจสิทธิ์ชุดเดียวกัน
  */
 export async function GET(
   request: Request,
@@ -31,10 +35,21 @@ export async function GET(
 
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
-    select: { asset: { select: { key: true, kind: true, mime: true, status: true } } },
+    select: {
+      asset: { select: { key: true, kind: true, mime: true, status: true, originalName: true } },
+    },
   });
 
   const asset = lesson?.asset;
+  if (
+    asset?.kind === AssetKind.FILE &&
+    asset.status === AssetStatus.READY &&
+    UPLOAD_RULES.FILE.mimes.includes(asset.mime)
+  ) {
+    const url = await presignGet(asset.key, { downloadName: asset.originalName });
+    return Response.redirect(url, 302);
+  }
+
   if (
     !asset ||
     asset.kind !== AssetKind.PDF ||

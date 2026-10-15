@@ -18,11 +18,12 @@ import { LessonCompleteButton } from "@/features/enrollment/components/lesson-ac
 import { LessonOutline } from "@/features/enrollment/components/lesson-outline";
 import { OutlineDrawer } from "@/features/enrollment/components/outline-drawer";
 import { getLearnLesson, getLearnOutline } from "@/features/enrollment/queries";
+import { DocumentDownload } from "@/features/lesson-media/components/document-download";
 import { LivePanel } from "@/features/lesson-media/components/live-panel";
 import { PdfCanvasViewer } from "@/features/lesson-media/components/pdf-viewer";
 import { VideoPlayer } from "@/features/lesson-media/components/video-player";
 import { toEmbedUrl } from "@/features/lesson-media/lib/embed";
-import { LessonType, VideoSource } from "@/generated/prisma/enums";
+import { AssetKind, LessonType, VideoSource } from "@/generated/prisma/enums";
 import { getProtectionState } from "@/features/protection/queries";
 import { QuizPanel } from "@/features/quiz/components/quiz-panel";
 import { AssignmentPanel } from "@/features/assignments/components/assignment-panel";
@@ -284,6 +285,10 @@ function LessonBody({
     }
 
     case LessonType.PDF:
+      // FR-05.8 — ไฟล์ Office/รูป/ข้อความ ให้ดาวน์โหลดต้นฉบับ · PDF อ่านในเว็บอย่างเดียว (FR-05.3)
+      if (lesson.asset?.kind === AssetKind.FILE) {
+        return <DocumentDownload lessonId={lesson.id} file={lesson.asset} />;
+      }
       return (
         <PdfCanvasViewer src={`/api/lesson-media/${lesson.id}`} title={lesson.title} />
       );

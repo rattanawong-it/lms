@@ -18,6 +18,7 @@ import {
   type Visibility,
 } from "@/generated/prisma/enums";
 import { canEditPrice, parsePriceInput } from "@/features/commerce/lib/pricing";
+import { LESSON_DOCUMENT_KINDS } from "@/lib/upload-limits";
 import {
   attachmentRemoveSchema,
   attachmentSchema,
@@ -379,7 +380,8 @@ function readLessonForm(formData: FormData) {
 type LessonData = ReturnType<typeof lessonSchema.parse>;
 
 /**
- * FR-05.1 — ไฟล์ที่ผูกกับบทเรียน: วิดีโอที่อัปโหลดเอง (VIDEO+UPLOAD) และเอกสาร PDF
+ * FR-05.1 — ไฟล์ที่ผูกกับบทเรียน: วิดีโอที่อัปโหลดเอง (VIDEO+UPLOAD) และเอกสาร
+ * (PDF หรือไฟล์ Office/รูป/ข้อความ — `LESSON_DOCUMENT_KINDS` · FR-05.8)
  * ใช้กติกาสิทธิ์ชุดเดียวกับภาพปก — ต้องเป็นคนอัปโหลดเอง หรือไฟล์นั้นผูกกับบทเรียนนี้อยู่แล้ว
  */
 async function resolveLessonAsset(
@@ -387,17 +389,17 @@ async function resolveLessonAsset(
   userId: string,
   currentAssetId: string | null,
 ): Promise<{ ok: true; assetId: string | null } | { ok: false; message: string }> {
-  const kind =
+  const kinds: readonly AssetKind[] | null =
     data.type === LessonType.PDF
-      ? AssetKind.PDF
+      ? LESSON_DOCUMENT_KINDS
       : data.type === LessonType.VIDEO && data.videoSource === VideoSource.UPLOAD
-        ? AssetKind.VIDEO
+        ? [AssetKind.VIDEO]
         : null;
 
   // ชนิดบทเรียนที่ไม่ต้องใช้ไฟล์ → ตัดการอ้างอิงเดิมทิ้ง ไม่ให้เหลือไฟล์ค้างที่ไม่มีใครเห็น
-  if (!kind || !data.assetId) return { ok: true, assetId: null };
+  if (!kinds || !data.assetId) return { ok: true, assetId: null };
 
-  const asset = await findReadyAsset(data.assetId, kind);
+  const asset = await findReadyAsset(data.assetId, kinds);
   if (!asset) return { ok: false, message: "ไม่พบไฟล์ที่อัปโหลดไว้ กรุณาอัปโหลดใหม่" };
   if (asset.uploadedById !== userId && asset.id !== currentAssetId) {
     return { ok: false, message: "ไม่มีสิทธิ์ใช้ไฟล์นี้" };

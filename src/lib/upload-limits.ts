@@ -54,6 +54,56 @@ export const UPLOAD_RULES: Record<AssetKind, UploadRule> = {
   },
 };
 
+/**
+ * บทเรียนชนิดเอกสาร (`LessonType.PDF`) รับไฟล์ได้สองกลุ่ม (CHANGELOG #48)
+ * - PDF → Asset `PDF` แสดงใน pdf.js แบบอ่านอย่างเดียว (FR-05.3)
+ * - Word/Excel/PowerPoint/รูป/ข้อความ/ZIP → Asset `FILE` ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)
+ * ลำดับสำคัญ: PDF ต้องมาก่อน FILE เพราะ FILE ก็รับ `application/pdf` ด้วย
+ */
+export const LESSON_DOCUMENT_KINDS = [AssetKind.PDF, AssetKind.FILE] as const;
+
+/**
+ * MIME จากนามสกุลไฟล์ — ใช้แทน `file.type` ที่เบราว์เซอร์เดา
+ * (Windows รายงาน .csv เป็น `application/vnd.ms-excel` และบางเครื่องไม่รู้จัก .docx เลย)
+ * เนื้อไฟล์จริงถูกตรวจซ้ำด้วย magic bytes ตอนอัปโหลดเสร็จเหมือนเดิม
+ */
+const EXTENSION_MIME: Record<string, string> = {
+  pdf: "application/pdf",
+  doc: "application/msword",
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xls: "application/vnd.ms-excel",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ppt: "application/vnd.ms-powerpoint",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  zip: "application/zip",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  webp: "image/webp",
+  txt: "text/plain",
+  csv: "text/csv",
+};
+
+export function mimeFromName(name: string): string | null {
+  const dot = name.lastIndexOf(".");
+  if (dot < 0) return null;
+  return EXTENSION_MIME[name.slice(dot + 1).toLowerCase()] ?? null;
+}
+
+/** ชนิด Asset ตัวแรกในรายการที่รับ MIME นี้ — ไม่มีชนิดไหนรับคืน null */
+export function pickAssetKind(kinds: readonly AssetKind[], mime: string): AssetKind | null {
+  return kinds.find((kind) => UPLOAD_RULES[kind].mimes.includes(mime)) ?? null;
+}
+
+/** นามสกุลที่ใช้ใน `accept` ของ input — ใส่คู่กับ MIME เพราะบางเครื่องไม่รู้จัก MIME ของ Office */
+export function acceptFor(kinds: readonly AssetKind[]): string {
+  const mimes = new Set(kinds.flatMap((kind) => UPLOAD_RULES[kind].mimes));
+  const extensions = Object.entries(EXTENSION_MIME)
+    .filter(([, mime]) => mimes.has(mime))
+    .map(([ext]) => `.${ext}`);
+  return [...mimes, ...extensions].join(",");
+}
+
 /** ขนาด part ของ multipart upload — 10 MB ตาม system-design §5.8 */
 export const MULTIPART_PART_SIZE = 10 * MB;
 

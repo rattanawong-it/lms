@@ -185,7 +185,7 @@ export const lessonSchema = z
     }
 
     if (data.type === LessonType.PDF && !data.assetId) {
-      ctx.addIssue({ code: "custom", path: ["assetId"], message: "อัปโหลดไฟล์ PDF ก่อน" });
+      ctx.addIssue({ code: "custom", path: ["assetId"], message: "อัปโหลดไฟล์เอกสารก่อน" });
     }
 
     if (data.type === LessonType.LIVE) {

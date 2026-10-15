@@ -493,7 +493,7 @@ model Lesson {
   content      Json?       // TEXT: Tiptap JSON
   videoSource  VideoSource?
   videoUrl     String?     // YouTube/Vimeo
-  assetId      String?     // VIDEO(UPLOAD)/PDF
+  assetId      String?     // VIDEO(UPLOAD)/PDF · บทเรียน PDF ผูก Asset PDF (อ่านในเว็บ) หรือ FILE (ดาวน์โหลด · FR-05.8)
   asset        Asset?      @relation("LessonAsset", fields: [assetId], references: [id])
   durationSec  Int?
   liveUrl      String?
@@ -1232,6 +1232,9 @@ flowchart TB
   <VideoPlayer /> | <PdfCanvasViewer /> | <RichTextRenderer />
 </ProtectedViewer>
 ```
+- **บทเรียนเอกสารที่ไม่ใช่ PDF (FR-05.8):** Word/Excel/PowerPoint/รูป/ข้อความ ไม่มีตัวแสดงผลในเว็บ ผู้สอนยอมรับว่าเป็นไฟล์ให้ดาวน์โหลด
+  → ไม่มีลายน้ำบนไฟล์ · `/api/lesson-media/[lessonId]` ตรวจ `getLessonAccess()` แล้ว redirect ไป signed URL ≤ 5 นาที (`attachment`) แบบเดียวกับไฟล์ประกอบ
+  · ชนิด Asset เลือกจากนามสกุลตามลำดับ `LESSON_DOCUMENT_KINDS` (PDF ก่อน FILE) ใน `lib/upload-limits.ts`
 - **Watermark:** ใช้ `<div>` ทับเต็มพื้นที่ `pointer-events:none` ข้อความซ้ำหลายจุด หมุน -25° ความโปร่ง 12–18% สุ่มตำแหน่งใหม่ทุก 20–30 วินาที ถ้ามีการลบ element ออกจาก DOM จะใช้ `MutationObserver` สร้างกลับมาใหม่
 - **Fullscreen:** ต้องให้ watermark อยู่ในวิดีโอด้วย จึงสั่ง fullscreen ที่ container แทนการใช้ `<video>` fullscreen เดิม
 - **Event reporting:** รวม event ส่งเป็นชุด (debounce 5 วินาที) ไปที่ `/api/events/screen` ด้วย `navigator.sendBeacon` และจำกัดความถี่ (rate limit) ต่อผู้ใช้

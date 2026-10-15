@@ -46,6 +46,7 @@ import { SortableItem, SortableList } from "@/features/courses/components/sortab
 import type { CurriculumSection } from "@/features/courses/queries";
 import { AssetKind, LessonType, VideoSource } from "@/generated/prisma/enums";
 import { submitForm } from "@/lib/form";
+import { LESSON_DOCUMENT_KINDS } from "@/lib/upload-limits";
 
 type Lesson = CurriculumSection["lessons"][number];
 
@@ -484,8 +485,9 @@ export function CurriculumEditor({
                   key={`pdf-${editingLesson?.id ?? "new"}`}
                   label="ไฟล์เอกสาร"
                   name="assetId"
-                  kind={AssetKind.PDF}
-                  hint="ผู้เรียนจะเห็นเอกสารนี้แบบอ่านอย่างเดียว ไม่มีปุ่มดาวน์โหลด (FR-05.3)"
+                  kind={LESSON_DOCUMENT_KINDS}
+                  pickLabel="เลือกไฟล์เอกสาร"
+                  hint="PDF แสดงแบบอ่านอย่างเดียว ไม่มีปุ่มดาวน์โหลด (FR-05.3) · Word, Excel, PowerPoint, รูป, ข้อความ ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)"
                   defaultValue={editingLesson?.asset ?? null}
                   error={fieldErrors.assetId}
                 />

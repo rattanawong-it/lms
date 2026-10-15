@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { UPLOAD_RULES, formatBytes } from "@/lib/upload-limits";
+import {
+  UPLOAD_RULES,
+  acceptFor,
+  formatBytes,
+  mimeFromName,
+  pickAssetKind,
+} from "@/lib/upload-limits";
 import { mediaSrc } from "@/lib/rich-text-doc";
 import {
   UploadCancelled,
@@ -46,11 +52,18 @@ export function AssetField({
   defaultValue = null,
   onUploaded,
   className,
+  pickLabel,
 }: {
   label: string;
   /** ชื่อของ input ซ่อนที่พารหัส Asset ไปกับฟอร์ม — ไม่ใส่ก็ได้ถ้าใช้ผ่าน onUploaded อย่างเดียว */
   name?: string;
-  kind: AssetKind;
+  /**
+   * ชนิดไฟล์ที่รับ · ส่งเป็นรายการเมื่อช่องเดียวรับได้หลายชนิด (เช่นบทเรียนเอกสาร: PDF หรือ Office)
+   * แล้วระบบเลือกชนิดจากนามสกุลไฟล์ตามลำดับในรายการ
+   */
+  kind: AssetKind | readonly AssetKind[];
+  /** ข้อความบนปุ่มเลือกไฟล์ — ตั้งต้นคือ "เลือก" + ชื่อชนิด */
+  pickLabel?: string;
   hint?: string;
   error?: string;
   defaultValue?: AssetValue | null;
@@ -58,7 +71,9 @@ export function AssetField({
   onUploaded?: (asset: AssetValue | null) => void;
   className?: string;
 }) {
-  const rule = UPLOAD_RULES[kind];
+  const kinds: readonly AssetKind[] = typeof kind === "string" ? [kind] : kind;
+  const primary = kinds[0];
+  const rule = UPLOAD_RULES[primary];
   const inputRef = React.useRef<HTMLInputElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
   const [asset, setAsset] = React.useState<AssetValue | null>(defaultValue);
@@ -68,12 +83,22 @@ export function AssetField({
   const uploading = percent !== null;
 
   async function start(file: File) {
+    // หลายชนิด → MIME จากนามสกุล (เบราว์เซอร์เดา Office/CSV ผิดบ่อย) แล้วเลือกชนิดที่รับ MIME นั้น
+    const mime = kinds.length > 1 ? (mimeFromName(file.name) ?? file.type) : file.type;
+    const target = kinds.length > 1 ? pickAssetKind(kinds, mime) : primary;
+    if (!target) {
+      toast.error("ไม่รองรับไฟล์ชนิดนี้");
+      if (inputRef.current) inputRef.current.value = "";
+      return;
+    }
+
     const controller = new AbortController();
     abortRef.current = controller;
     setPercent(0);
 
     try {
-      const uploaded: UploadedAsset = await uploadFile(file, kind, {
+      const uploaded: UploadedAsset = await uploadFile(file, target, {
+        mime,
         signal: controller.signal,
         onProgress: setPercent,
       });
@@ -116,7 +141,7 @@ export function AssetField({
         ref={inputRef}
         id={fieldId}
         type="file"
-        accept={rule.mimes.join(",")}
+        accept={kinds.length > 1 ? acceptFor(kinds) : rule.mimes.join(",")}
         className="sr-only"
         disabled={uploading}
         aria-describedby={error ? `${fieldId}-error` : undefined}
@@ -150,7 +175,7 @@ export function AssetField({
         </div>
       ) : asset ? (
         <div className="bg-card border-border flex items-center gap-2.5 rounded-[9px] border p-3">
-          {kind === AssetKind.IMAGE ? (
+          {primary === AssetKind.IMAGE ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={mediaSrc(asset.assetId)}
@@ -159,7 +184,7 @@ export function AssetField({
             />
           ) : (
             <span className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-md">
-              {KIND_ICON[kind]}
+              {KIND_ICON[primary]}
             </span>
           )}
           <span className="min-w-0 flex-1">
@@ -187,7 +212,7 @@ export function AssetField({
           className="h-11 w-full justify-start rounded-[9px] font-normal"
           onClick={() => inputRef.current?.click()}
         >
-          <Upload className="size-4" /> เลือก{rule.label}
+          <Upload className="size-4" /> {pickLabel ?? `เลือก${rule.label}`}
         </Button>
       )}
 
@@ -197,7 +222,12 @@ export function AssetField({
         </p>
       ) : (
         <p className="text-muted-foreground text-[11.5px]">
-          {hint ? `${hint} · ` : ""}ไม่เกิน {formatBytes(rule.maxSize)}
+          {hint ? `${hint} · ` : ""}
+          {kinds.length > 1
+            ? kinds
+                .map((k) => `${UPLOAD_RULES[k].label} ไม่เกิน ${formatBytes(UPLOAD_RULES[k].maxSize)}`)
+                .join(" · ")
+            : `ไม่เกิน ${formatBytes(rule.maxSize)}`}
         </p>
       )}
     </div>

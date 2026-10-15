@@ -212,6 +212,7 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 |---|---|---|
 | วิดีโอ | signed URL ≤ 5 นาที ตรงไป storage · ขอตอนกดเล่น | ไฟล์ถึง 2 GB ไม่ควรวิ่งผ่านเซิร์ฟเวอร์ · ไม่ฝังใน RSC payload |
 | PDF | `/api/lesson-media/[lessonId]` stream + Range | pdf.js ติด CORS ข้ามโดเมน · object key ไม่หลุด · ตรวจสิทธิ์ทุก request |
+| เอกสาร Office/รูป/ข้อความ (บทเรียน `PDF` ที่ผูก Asset `FILE`) | `/api/lesson-media/[lessonId]` → redirect ไป signed URL (`attachment`) | ไม่มีตัวแสดงผลในเว็บ ผู้เรียนดาวน์โหลดต้นฉบับ (FR-05.8) · ช่องอัปโหลดใช้ `kind={LESSON_DOCUMENT_KINDS}` |
 | ไฟล์ประกอบ | `/api/lesson-file/[attachmentId]` → redirect ไป signed URL | เฉพาะไฟล์ที่ผู้สอนติ๊กให้ดาวน์โหลด (FR-05.7) |
 
 **เนื้อหาบทเรียนต้องอยู่ใน `<ProtectedViewer>`** — ลายน้ำ, ปิดคลิกขวา/คัดลอก, เบลอเมื่อเสียโฟกัส และ `@media print`

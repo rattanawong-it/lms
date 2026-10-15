@@ -376,6 +376,7 @@ export async function getLearnLesson(courseId: string, lessonId: string) {
       liveEndAt: true,
       recordingUrl: true,
       assetId: true,
+      asset: { select: { kind: true, mime: true, originalName: true, size: true } },
       attachments: {
         orderBy: { id: "asc" },
         select: {
