@@ -328,6 +328,7 @@ model Lesson {
   type         LessonType
   position     Int
   isPreview    Boolean     @default(false)
+  allowDownload Boolean    @default(false) // PDF: ผู้สอนเปิดให้ดาวน์โหลดไฟล์ต้นฉบับ (FR-05.9)
   content      Json?       // TEXT: Tiptap JSON
   videoSource  VideoSource?
   videoUrl     String?     // YouTube/Vimeo

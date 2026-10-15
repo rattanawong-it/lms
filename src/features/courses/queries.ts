@@ -198,6 +198,7 @@ export type CurriculumSection = {
     type: string;
     position: number;
     isPreview: boolean;
+    allowDownload: boolean;
     videoSource: string | null;
     videoUrl: string | null;
     durationSec: number | null;
@@ -230,6 +231,7 @@ export async function getCurriculum(courseId: string): Promise<CurriculumSection
           type: true,
           position: true,
           isPreview: true,
+          allowDownload: true,
           videoSource: true,
           videoUrl: true,
           durationSec: true,

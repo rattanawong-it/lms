@@ -20,6 +20,9 @@ import { UPLOAD_RULES } from "@/lib/upload-limits";
  * FR-05.8 — บทเรียนเอกสารที่เป็นไฟล์ Office/รูป/ข้อความ (Asset `FILE`) ไม่มีตัวแสดงผลในเว็บ
  * ผู้สอนเลือกให้ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ → redirect ไป signed URL อายุ 5 นาที
  * แบบเดียวกับไฟล์ประกอบ (`/api/lesson-file`) หลังตรวจสิทธิ์ชุดเดียวกัน
+ *
+ * FR-05.9 — `?download=1` ดาวน์โหลด PDF ต้นฉบับ เฉพาะบทเรียนที่ผู้สอนเปิด `allowDownload`
+ * (ไม่เปิด = 403 เหมือนไฟล์ประกอบที่ไม่ติ๊ก) · redirect ไป signed URL อายุ 5 นาที
  */
 export async function GET(
   request: Request,
@@ -36,6 +39,7 @@ export async function GET(
   const lesson = await db.lesson.findUnique({
     where: { id: lessonId },
     select: {
+      allowDownload: true,
       asset: { select: { key: true, kind: true, mime: true, status: true, originalName: true } },
     },
   });
@@ -59,6 +63,12 @@ export async function GET(
     notFound();
   }
 
+  if (new URL(request.url).searchParams.has("download")) {
+    if (!lesson?.allowDownload) forbidden();
+    const url = await presignGet(asset.key, { downloadName: asset.originalName });
+    return Response.redirect(url, 302);
+  }
+
   const range = request.headers.get("range");
   const object = await getObjectStream(asset.key, { range });
   if (!object) notFound();
@@ -68,7 +78,7 @@ export async function GET(
     headers: {
       // ใช้ชนิดที่ตรวจด้วย magic bytes ตอนอัปโหลด ไม่ใช่ค่าที่ storage แจ้งกลับมา
       "Content-Type": asset.mime,
-      // ไม่มี `attachment` — ไฟล์นี้ให้ดูในหน้าเรียนเท่านั้น ไม่ใช่ให้ดาวน์โหลด (FR-05.3)
+      // ไม่มี `attachment` — เส้นทางนี้ให้ pdf.js อ่าน · การดาวน์โหลดแยกไปที่ `?download=1` (FR-05.9)
       "Content-Disposition": "inline",
       "Accept-Ranges": "bytes",
       ...(object.contentRange ? { "Content-Range": object.contentRange } : {}),

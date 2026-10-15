@@ -112,6 +112,8 @@ export const lessonSchema = z
       .max(200, "ชื่อบทเรียนยาวเกินไป (ไม่เกิน 200 ตัวอักษร)"),
     type: z.enum(LessonType),
     isPreview: z.coerce.boolean().default(false),
+    /** FR-05.9 — มีผลเฉพาะบทเรียน PDF */
+    allowDownload: z.coerce.boolean().default(false),
     videoSource: z
       .enum(VideoSource)
       .nullish()

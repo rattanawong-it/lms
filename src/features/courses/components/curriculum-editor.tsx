@@ -487,10 +487,24 @@ export function CurriculumEditor({
                   name="assetId"
                   kind={LESSON_DOCUMENT_KINDS}
                   pickLabel="เลือกไฟล์เอกสาร"
-                  hint="PDF แสดงแบบอ่านอย่างเดียว ไม่มีปุ่มดาวน์โหลด (FR-05.3) · Word, Excel, PowerPoint, รูป, ข้อความ ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)"
+                  hint="PDF แสดงแบบอ่านในเว็บ (FR-05.3) · Word, Excel, PowerPoint, รูป, ข้อความ ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)"
                   defaultValue={editingLesson?.asset ?? null}
                   error={fieldErrors.assetId}
                 />
+              ) : null}
+
+              {lessonType === LessonType.PDF ? (
+                <div className="flex items-start gap-2.5">
+                  <Checkbox
+                    id="allowDownload"
+                    name="allowDownload"
+                    defaultChecked={editingLesson?.allowDownload ?? false}
+                    className="mt-0.5"
+                  />
+                  <Label htmlFor="allowDownload" className="text-[13px] leading-relaxed font-normal">
+                    ให้ผู้เรียนดาวน์โหลด PDF ได้ — ไฟล์ที่ดาวน์โหลดไม่มีลายน้ำ (FR-05.9)
+                  </Label>
+                </div>
               ) : null}
 
               {lessonType === LessonType.TEXT ? (

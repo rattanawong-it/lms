@@ -366,6 +366,8 @@ function readLessonForm(formData: FormData) {
     title: formData.get("title"),
     type: formData.get("type"),
     isPreview: formData.get("isPreview") === "on" || formData.get("isPreview") === "true",
+    allowDownload:
+      formData.get("allowDownload") === "on" || formData.get("allowDownload") === "true",
     videoSource: formData.get("videoSource") === "none" ? null : formData.get("videoSource"),
     videoUrl: formData.get("videoUrl"),
     durationSec: formData.get("durationSec"),
@@ -415,11 +417,13 @@ function lessonWriteData(
   const isVideo = data.type === LessonType.VIDEO;
   const isLive = data.type === LessonType.LIVE;
   const isText = data.type === LessonType.TEXT;
+  const isDocument = data.type === LessonType.PDF;
 
   return {
     title: data.title,
     type: data.type,
     isPreview: data.isPreview,
+    allowDownload: isDocument ? data.allowDownload : false,
     videoSource: isVideo ? data.videoSource : null,
     videoUrl: isVideo && data.videoSource !== VideoSource.UPLOAD ? data.videoUrl : null,
     durationSec: isVideo ? data.durationSec : null,

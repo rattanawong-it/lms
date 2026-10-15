@@ -100,6 +100,46 @@ test.describe("ผู้สอนใส่เนื้อหาให้คอ�
     await expect(page.getByText("เอกสารประกอบ", { exact: true })).toBeVisible();
   });
 
+  test("ผู้สอนเปิดให้ดาวน์โหลด PDF ของบทเรียนได้ (FR-05.9)", async ({ page }) => {
+    test.slow();
+    await gotoSettings(page);
+    await page.getByRole("link", { name: "จัดสารบัญ" }).click();
+    await expect(page).toHaveURL(/\/teach\/courses\/[a-z0-9]+\/curriculum/);
+    const courseId = page.url().match(/\/teach\/courses\/([a-z0-9]+)\//)![1];
+
+    // ค่าตั้งต้นปิด → ไม่มีปุ่ม และเรียกตรงก็ถูกปฏิเสธ
+    await page.goto(`/learn/${courseId}`);
+    const drawer = page.getByRole("button", { name: /สารบัญบทเรียน/ });
+    if (await drawer.isVisible()) await drawer.click();
+    await page.getByRole("link", { name: "เอกสารประกอบ" }).click();
+    await expect(page.getByRole("heading", { name: "เอกสารประกอบ", level: 1 })).toBeVisible({
+      timeout: 30_000,
+    });
+    const lessonId = page.url().split("/").pop()!;
+    await expect(page.getByRole("link", { name: "ดาวน์โหลด PDF" })).toHaveCount(0);
+    const denied = await page.request.get(`/api/lesson-media/${lessonId}?download=1`, {
+      maxRedirects: 0,
+    });
+    expect(denied.status()).toBe(403);
+
+    await page.goto(`/teach/courses/${courseId}/curriculum`);
+    await page.getByRole("button", { name: "แก้ไขบทเรียน เอกสารประกอบ" }).click();
+    await page.getByLabel(/ให้ผู้เรียนดาวน์โหลด PDF ได้/).check();
+    await page.getByRole("button", { name: "บันทึก", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 15_000 });
+
+    await page.goto(`/learn/${courseId}/${lessonId}`);
+    const link = page.getByRole("link", { name: "ดาวน์โหลด PDF" });
+    await expect(link).toBeVisible({ timeout: 30_000 });
+    const response = await page.request.get((await link.getAttribute("href"))!, {
+      maxRedirects: 0,
+    });
+    expect(response.status()).toBe(302);
+    const location = response.headers()["location"];
+    expect(location).toContain("X-Amz-Signature=");
+    expect(decodeURIComponent(location)).toContain("attachment");
+  });
+
   test("บทเรียนเอกสาร Word ให้ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)", async ({ page }) => {
     test.slow();
     await gotoSettings(page);

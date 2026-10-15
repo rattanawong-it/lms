@@ -290,7 +290,19 @@ function LessonBody({
         return <DocumentDownload lessonId={lesson.id} file={lesson.asset} />;
       }
       return (
-        <PdfCanvasViewer src={`/api/lesson-media/${lesson.id}`} title={lesson.title} />
+        <>
+          <PdfCanvasViewer src={`/api/lesson-media/${lesson.id}`} title={lesson.title} />
+          {/* FR-05.9 — ผู้สอนเปิดให้ดาวน์โหลดไฟล์ต้นฉบับเป็นรายบทเรียน */}
+          {lesson.allowDownload ? (
+            <div className="mt-3 flex justify-end">
+              <Button asChild variant="outline" className="h-11">
+                <a href={`/api/lesson-media/${lesson.id}?download=1`}>
+                  <Download className="size-4" /> ดาวน์โหลด PDF
+                </a>
+              </Button>
+            </div>
+          ) : null}
+        </>
       );
 
     case LessonType.LIVE:
