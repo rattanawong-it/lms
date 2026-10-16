@@ -51,22 +51,26 @@ test("จัดกึ่งกลาง · สีตัวอักษร · จ
   expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
   await expect(editor.locator("img")).toHaveCount(0);
 
-  // พิมพ์ต่อท้าย → จัดกึ่งกลาง → ใส่สีแดง ด้วยปุ่มจริง
+  // พิมพ์ต่อท้าย → เลือกข้อความ ใส่สีแดง → จัดกึ่งกลาง ด้วยปุ่มจริง
   await editor.click();
   await editor.press("ControlOrMeta+End");
   await editor.press("Enter");
   await editor.pressSequentially("หัวข้อสีแดง");
-  await page.getByRole("button", { name: /^จัดตำแหน่ง/ }).click();
-  await page.getByRole("menuitem", { name: "กึ่งกลาง" }).click();
   await editor.press("Shift+Home");
+  await expect.poll(() => page.evaluate(() => window.getSelection()?.toString())).toBe("หัวข้อสีแดง");
   await page.getByRole("button", { name: "สีตัวอักษร" }).click();
   await page.getByRole("menuitem", { name: "แดง" }).click();
+  await expect(editor.locator('[data-color="red"]')).toHaveText("หัวข้อสีแดง");
+  await page.getByRole("button", { name: /^จัดตำแหน่ง/ }).click();
+  await page.getByRole("menuitem", { name: "กึ่งกลาง" }).click();
 
   // ตาราง 3×3 → เพิ่มแถวล่าง = 4 แถว (แถบเครื่องมือตารางโผล่เมื่อเคอร์เซอร์อยู่ในตาราง)
   await editor.press("ControlOrMeta+End");
   await page.getByRole("button", { name: "แทรกตาราง 3×3" }).click();
   await page.getByRole("button", { name: "แทรกแถวด้านล่าง" }).click();
   await expect(editor.locator("table tr")).toHaveCount(4);
+  // ปิดเมนูแล้วโฟกัสต้องกลับ editor — ข้อความที่เลือกไว้ต้องไม่ถูกตารางทับ
+  await expect(editor.getByText("หัวข้อสีแดง")).toBeVisible();
 
   await expect(page.getByText(/\d+ คำ · \d+ ตัวอักษร/)).toBeVisible();
 

@@ -212,6 +212,12 @@ export function RichTextToolbar({
 }) {
   const state = useToolbarState(editor);
   const chain = () => editor.chain().focus();
+  // Radix คืนโฟกัสให้ปุ่มเมนูเมื่อปิด — ผู้ใช้พิมพ์ต่อไม่ได้และ selection ค้างเป็นช่วง
+  // คำสั่งถัดไป (เช่นแทรกตาราง) จะทับข้อความที่เลือกไว้ จึงส่งโฟกัสกลับ editor เอง
+  const backToEditor = (event: Event) => {
+    event.preventDefault();
+    editor.commands.focus();
+  };
   const AlignIcon = ALIGN_ICON[state.align];
 
   return (
@@ -240,7 +246,7 @@ export function RichTextToolbar({
           <MenuButton label="สีตัวอักษร" active={state.textColor !== null}>
             <Baseline className={cn("size-4", state.textColor && TEXT_COLORS[state.textColor].className)} />
           </MenuButton>
-          <DropdownMenuContent container={portalContainer} className="w-40">
+          <DropdownMenuContent container={portalContainer} onCloseAutoFocus={backToEditor} className="w-40">
             {(Object.keys(TEXT_COLORS) as TextColor[]).map((color) => (
               <DropdownMenuItem key={color} onSelect={() => chain().setTextColor(color).run()}>
                 <span className={cn("size-3.5 rounded-full", TEXT_COLORS[color].swatch)} aria-hidden />
@@ -258,7 +264,7 @@ export function RichTextToolbar({
           <MenuButton label="ไฮไลต์" active={state.highlight !== null}>
             <Highlighter className="size-4" />
           </MenuButton>
-          <DropdownMenuContent container={portalContainer} className="w-40">
+          <DropdownMenuContent container={portalContainer} onCloseAutoFocus={backToEditor} className="w-40">
             {(Object.keys(HIGHLIGHT_COLORS) as HighlightColor[]).map((color) => (
               <DropdownMenuItem key={color} onSelect={() => chain().setHighlight({ color }).run()}>
                 <span className={cn("size-3.5 rounded-sm", HIGHLIGHT_COLORS[color].swatch)} aria-hidden />
@@ -290,7 +296,7 @@ export function RichTextToolbar({
           <MenuButton label={`จัดตำแหน่ง: ${ALIGN_LABEL[state.align]}`} active={state.align !== "left"}>
             <AlignIcon className="size-4" />
           </MenuButton>
-          <DropdownMenuContent container={portalContainer} className="w-40">
+          <DropdownMenuContent container={portalContainer} onCloseAutoFocus={backToEditor} className="w-40">
             {TEXT_ALIGNS.map((align) => {
               const Icon = ALIGN_ICON[align];
               return (
@@ -321,7 +327,7 @@ export function RichTextToolbar({
           <MenuButton label="กล่องเน้นข้อความ" active={state.callout !== null}>
             <MessageSquareWarning className="size-4" />
           </MenuButton>
-          <DropdownMenuContent container={portalContainer} className="w-44">
+          <DropdownMenuContent container={portalContainer} onCloseAutoFocus={backToEditor} className="w-44">
             {(Object.keys(CALLOUT_TONES) as CalloutTone[]).map((tone) => (
               <DropdownMenuItem
                 key={tone}
