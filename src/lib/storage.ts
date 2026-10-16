@@ -46,7 +46,7 @@ export const READ_URL_TTL_SECONDS = 5 * 60;
 /** อายุ signed URL สำหรับ "เขียน" — ยาวกว่าเพราะไฟล์ใหญ่ใช้เวลาอัปโหลด */
 const WRITE_URL_TTL_SECONDS = 60 * 60;
 
-export { buildObjectKey } from "@/lib/object-key";
+export { buildAvatarKey, buildObjectKey } from "@/lib/object-key";
 
 // ───────────── อัปโหลดไฟล์เล็ก (ทีเดียวจบ) ─────────────
 

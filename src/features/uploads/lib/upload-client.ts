@@ -22,6 +22,8 @@ export type UploadOptions = {
   signal?: AbortSignal;
   /** M08 — ไฟล์ส่งงานของงานนี้ (server ตรวจสิทธิ์ตามงาน ไม่ใช่ตามบทบาท) */
   assignmentId?: string;
+  /** FR-01.5 — รูปโปรไฟล์ของตัวเอง (server ยอมให้ทุกบทบาท แต่รับเฉพาะรูปเล็ก) */
+  purpose?: "avatar";
   /** ใช้แทน `file.type` ที่เบราว์เซอร์เดา — ไฟล์ส่งงานตัดสิน MIME จากนามสกุลที่ผู้สอนอนุญาต */
   mime?: string;
 };
@@ -135,7 +137,7 @@ export async function uploadFile(
   kind: AssetKind,
   options: UploadOptions = {},
 ): Promise<UploadedAsset> {
-  const { onProgress, signal, assignmentId } = options;
+  const { onProgress, signal, assignmentId, purpose } = options;
   const mime = options.mime ?? file.type;
 
   // ตรวจด้วยกติกาชุดเดียวกับฝั่ง server ก่อน เพื่อบอกผู้ใช้ทันทีโดยไม่ต้องรอไป-กลับ
@@ -149,6 +151,7 @@ export async function uploadFile(
     size: file.size,
     originalName: file.name,
     assignmentId,
+    purpose,
   });
 
   const assetId = presign.assetId;

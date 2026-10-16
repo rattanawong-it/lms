@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildObjectKey, safeExtension } from "@/lib/object-key";
+import { AVATAR_KEY_PREFIX, buildAvatarKey, buildObjectKey, safeExtension } from "@/lib/object-key";
 import { AssetKind } from "@/generated/prisma/enums";
 
 const at = new Date("2026-09-20T00:00:00Z");
@@ -52,5 +52,14 @@ describe("buildObjectKey", () => {
     const a = buildObjectKey(AssetKind.VIDEO, "same.mp4");
     const b = buildObjectKey(AssetKind.VIDEO, "same.mp4");
     expect(a).not.toBe(b);
+  });
+});
+
+describe("buildAvatarKey (FR-01.5)", () => {
+  it("แยกไว้ใต้ avatar/ เพื่อให้ลบไฟล์เดิมได้โดยไม่แตะภาพปก/รูปบทความ", () => {
+    const key = buildAvatarKey("avatar.webp", at, uuid);
+    expect(key).toBe("avatar/2026/09/11111111-2222-3333-4444-555555555555.webp");
+    expect(key.startsWith(AVATAR_KEY_PREFIX)).toBe(true);
+    expect(buildObjectKey(AssetKind.IMAGE, "avatar.webp", at, uuid).startsWith(AVATAR_KEY_PREFIX)).toBe(false);
   });
 });

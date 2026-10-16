@@ -23,6 +23,14 @@ export function safeExtension(originalName: string): string {
   return /^[a-z0-9]{1,8}$/.test(ext) ? `.${ext}` : "";
 }
 
+/** รูปโปรไฟล์ (FR-01.5) แยก prefix — ลบไฟล์เดิมได้เฉพาะ key ที่ขึ้นต้นด้วยค่านี้ จะได้ไม่ลบภาพปก/รูปบทความ */
+export const AVATAR_KEY_PREFIX = "avatar/";
+
+/** รูปแบบ: `avatar/<ปี>/<เดือน>/<uuid><.ext>` */
+export function buildAvatarKey(originalName: string, now = new Date(), uuid: () => string = randomUUID): string {
+  return AVATAR_KEY_PREFIX + buildObjectKey(AssetKind.IMAGE, originalName, now, uuid).slice(KIND_PREFIX.IMAGE.length + 1);
+}
+
 /** รูปแบบ: `<kind>/<ปี>/<เดือน>/<uuid><.ext>` */
 export function buildObjectKey(
   kind: AssetKind,

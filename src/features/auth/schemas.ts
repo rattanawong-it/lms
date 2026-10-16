@@ -76,6 +76,9 @@ export const profileSchema = z.object({
 });
 export type ProfileInput = z.input<typeof profileSchema>;
 
+/** FR-01.5 · รูปโปรไฟล์ — Asset ที่เพิ่งอัปโหลดผ่าน presign `purpose: "avatar"` */
+export const avatarSchema = z.object({ assetId: z.cuid("รหัสรูปภาพไม่ถูกต้อง") });
+
 /** ช่อง checkbox ส่ง "on" มาเมื่อติ๊ก และไม่ส่งอะไรมาเลยเมื่อไม่ติ๊ก */
 const checkbox = z
   .union([z.literal("on"), z.literal("true"), z.literal("false")])

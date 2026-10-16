@@ -202,9 +202,12 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
 
+**รูปโปรไฟล์ (FR-01.5)** — `User.image` เป็น URL Google หรือ `/api/media/<assetId>` (`features/account/lib/avatar.ts`) · ตั้ง/ลบผ่าน `setAvatar()`/`removeAvatar()` เท่านั้น
+(เรียก `auth.api.updateUser` ให้ cookie cache อัปเดต · `/api/auth/update-user` ทาง HTTP ถูกปิด) · ไฟล์อยู่ใต้ key `avatar/` และลบได้ด้วย `deleteAvatarFile()` เท่านั้น
+
 **ไฟล์อัปโหลด** — client ขอ presign → อัปโหลดตรงไป storage → `POST /api/upload/complete`
 ฝั่ง server ตรวจ `checkUpload()` (ชนิด+ขนาด) และ magic bytes เสมอ · ไฟล์ > 20 MB ใช้ multipart (ชิ้นละ 10 MB)
-อัปโหลดทั่วไปเฉพาะผู้สอนขึ้นไป · ผู้เรียนอัปโหลดได้เฉพาะไฟล์ส่งงาน (presign ส่ง `assignmentId` → `authorizeSubmissionUpload()`)
+อัปโหลดทั่วไปเฉพาะผู้สอนขึ้นไป · ผู้เรียนอัปโหลดได้เฉพาะไฟล์ส่งงาน (presign ส่ง `assignmentId` → `authorizeSubmissionUpload()`) และรูปโปรไฟล์ (`purpose: "avatar"` · รูป ≤ 1 MB)
 และ MIME ของไฟล์ส่งงานมาจากนามสกุล (`submissionMime()`) ไม่ใช่ `file.type` ที่เบราว์เซอร์เดา
 
 **ไฟล์บทเรียนของผู้เรียน** — ทุกเส้นทางต้องผ่าน `getLessonAccess()` (ตรวจ enrollment + กติกาเรียนตามลำดับ) ก่อนเสมอ

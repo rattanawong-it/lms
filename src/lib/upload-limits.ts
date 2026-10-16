@@ -60,6 +60,14 @@ export const UPLOAD_RULES: Record<AssetKind, UploadRule> = {
  * - Word/Excel/PowerPoint/รูป/ข้อความ/ZIP → Asset `FILE` ผู้เรียนดาวน์โหลดไฟล์ต้นฉบับ (FR-05.8)
  * ลำดับสำคัญ: PDF ต้องมาก่อน FILE เพราะ FILE ก็รับ `application/pdf` ด้วย
  */
+/**
+ * FR-01.5 รูปโปรไฟล์ — เบราว์เซอร์ย่อเป็น 512×512 ก่อนอัปโหลด ไฟล์ที่ส่งขึ้นจริงจึงเล็กมาก
+ * เพดานนี้ตรวจทั้งตอน presign และตอน `setAvatar()` (ขนาดจริงที่ storage)
+ */
+export const AVATAR_MAX_SIZE = 1 * MB;
+/** ไฟล์ต้นฉบับที่ยอมให้เบราว์เซอร์เปิดมาย่อ — รูปจากกล้องมือถือมักเกิน 5 MB */
+export const AVATAR_SOURCE_MAX_SIZE = 20 * MB;
+
 export const LESSON_DOCUMENT_KINDS = [AssetKind.PDF, AssetKind.FILE] as const;
 
 /**

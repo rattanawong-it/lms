@@ -16,6 +16,13 @@ import {
   setPasswordSchema,
 } from "@/features/auth/schemas";
 import { authErrorMessage } from "@/features/auth/lib/error-messages";
+import { avatarSchema } from "@/features/auth/schemas";
+import { avatarUrl } from "@/features/account/lib/avatar";
+import { deleteAvatarFile } from "@/features/account/lib/avatar-store";
+import { findReadyAsset } from "@/features/uploads/service";
+import { AVATAR_KEY_PREFIX } from "@/lib/object-key";
+import { AVATAR_MAX_SIZE } from "@/lib/upload-limits";
+import { AssetKind } from "@/generated/prisma/enums";
 
 /** M01 · FR-01.5 — แก้ไขโปรไฟล์ของตนเอง */
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
@@ -56,6 +63,74 @@ export async function updateProfile(formData: FormData): Promise<ActionResult> {
 
   revalidatePath("/settings/profile");
   return { ok: true, message: "บันทึกโปรไฟล์เรียบร้อย" };
+}
+
+/**
+ * ตั้ง `User.image` ผ่าน Better Auth ฝั่ง server — อัปเดต cookie cache ของ session ด้วย
+ * รูปที่แถบบนจึงเปลี่ยนทันที ไม่ต้องรอ cache 5 นาทีหมดอายุ
+ */
+async function writeAvatar(image: string | null) {
+  await auth.api.updateUser({ headers: await headers(), body: { image } });
+  revalidatePath("/", "layout");
+}
+
+/** M01 · FR-01.5 — ใช้รูปที่เพิ่งอัปโหลดเป็นรูปโปรไฟล์ (system-design §5.9) */
+export async function setAvatar(input: { assetId: string }): Promise<ActionResult> {
+  const user = await requireUser();
+
+  const parsed = avatarSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, message: "รหัสรูปภาพไม่ถูกต้อง" };
+
+  // ต้องเป็นรูปของตัวเองที่อัปโหลดเป็นรูปโปรไฟล์ — ไม่ยอมให้หยิบภาพปก/รูปของคนอื่นมาใช้
+  const asset = await findReadyAsset(parsed.data.assetId, AssetKind.IMAGE);
+  if (
+    !asset ||
+    asset.uploadedById !== user.id ||
+    !asset.key.startsWith(AVATAR_KEY_PREFIX) ||
+    asset.size > BigInt(AVATAR_MAX_SIZE)
+  ) {
+    return { ok: false, message: "ไม่พบรูปที่อัปโหลด กรุณาเลือกรูปใหม่" };
+  }
+
+  const before = await db.user.findUniqueOrThrow({ where: { id: user.id }, select: { image: true } });
+  const image = avatarUrl(asset.id);
+  if (before.image === image) return { ok: true, message: "เปลี่ยนรูปโปรไฟล์แล้ว" };
+
+  await writeAvatar(image);
+  await deleteAvatarFile(before.image, user.id);
+
+  await writeAudit({
+    actorId: user.id,
+    action: "user.avatar.update",
+    entity: "User",
+    entityId: user.id,
+    before: { image: before.image },
+    after: { image },
+  });
+
+  return { ok: true, message: "เปลี่ยนรูปโปรไฟล์แล้ว" };
+}
+
+/** M01 · FR-01.5 — ลบรูปโปรไฟล์ กลับไปแสดงตัวอักษรแรกของชื่อ */
+export async function removeAvatar(): Promise<ActionResult> {
+  const user = await requireUser();
+
+  const before = await db.user.findUniqueOrThrow({ where: { id: user.id }, select: { image: true } });
+  if (!before.image) return { ok: true, message: "ลบรูปโปรไฟล์แล้ว" };
+
+  await writeAvatar(null);
+  await deleteAvatarFile(before.image, user.id);
+
+  await writeAudit({
+    actorId: user.id,
+    action: "user.avatar.remove",
+    entity: "User",
+    entityId: user.id,
+    before: { image: before.image },
+    after: { image: null },
+  });
+
+  return { ok: true, message: "ลบรูปโปรไฟล์แล้ว" };
 }
 
 /** M01 · FR-01.6 — ยกเลิก session ของอุปกรณ์เครื่องอื่น */

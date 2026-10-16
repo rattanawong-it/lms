@@ -63,7 +63,8 @@ function buildCsp(nonce: string): string {
     // Radix, Tailwind และตัวเล่นสื่อของเราตั้งค่าผ่าน `style=""` ของ element ตรง ๆ
     // (เช่น แถบความคืบหน้าและขนาด canvas ของ PDF) — style attribute ต้องอนุญาตแยกจาก stylesheet
     "style-src-attr 'unsafe-inline'",
-    "img-src 'self' blob: data:",
+    // รูปโปรไฟล์จาก Google OAuth (FR-01.5 · CHANGELOG #50) — รูปที่ผู้ใช้อัปโหลดเองมาจาก /api/media
+    "img-src 'self' blob: data: https://*.googleusercontent.com",
     "font-src 'self'",
     // pdf.js สร้าง worker จากไฟล์ใน /_next/static และบางกรณีตกไปใช้ blob
     "worker-src 'self' blob:",

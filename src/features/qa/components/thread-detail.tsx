@@ -13,6 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,13 +121,19 @@ function Byline({
   createdAt,
   edited,
 }: {
-  author: { name: string };
+  author: { name: string; image: string | null };
   authorIsInstructor: boolean;
   createdAt: Date;
   edited: boolean;
 }) {
   return (
     <p className="text-muted-foreground flex flex-wrap items-center gap-x-1.5 text-[12.5px]">
+      <Avatar className="size-6" aria-hidden>
+        {author.image ? <AvatarImage src={author.image} alt="" /> : null}
+        <AvatarFallback className="bg-accent text-accent-foreground text-[11px] font-semibold">
+          {author.name.slice(0, 1)}
+        </AvatarFallback>
+      </Avatar>
       <span className="text-foreground font-medium">{author.name}</span>
       {authorIsInstructor ? (
         <Badge variant="secondary" className="bg-info-bg text-info-fg">

@@ -922,7 +922,7 @@ model Coupon {
 - **ID:** ใช้ `cuid()` ทุกตาราง ไม่เปิดเผย id แบบลำดับเลข
 - **Soft delete:** คอร์สใช้ `status = ARCHIVED` แทนการลบ ส่วนผู้ใช้ใช้ `banned` สำหรับระงับ และการลบบัญชีตาม PDPA ใช้วิธี anonymize
 - **Anonymize (FR-17.4 · S5):** ผู้ใช้ขอ (`deletionRequestedAt`) → SUPER_ADMIN คนอื่นอนุมัติ → `anonymizeUser()` ใน `features/privacy/lib/anonymize.ts`
-  · แทนชื่อเป็น "ผู้ใช้ที่ลบบัญชีแล้ว" อีเมลเป็น `deleted-<id>@deleted.invalid` ล้างเบอร์/รหัสนักศึกษา/รูป/`notifyPrefs` ตั้ง `banned` + `deletedAt`
+  · แทนชื่อเป็น "ผู้ใช้ที่ลบบัญชีแล้ว" อีเมลเป็น `deleted-<id>@deleted.invalid` ล้างเบอร์/รหัสนักศึกษา/รูป (ลบไฟล์รูปที่อัปโหลดเองด้วย — §5.9)/`notifyPrefs` ตั้ง `banned` + `deletedAt`
   · ลบ Session/Account/LineLink/Verification/Notification/ScreenEventLog · ลบไฟล์ PDF ใบประกาศเดิม (`pdfKey = null` แล้วสร้างใหม่เมื่อขอ)
   · ล้างชื่อ/อีเมล/เบอร์/รหัสใน `AuditLog.before/after` และ IP ของการกระทำของผู้ใช้ · คงการลงทะเบียน คะแนน งานที่ส่ง กระทู้ รีวิว ใบประกาศ (ไม่ระบุตัวตน)
   · บัญชีที่ `deletedAt` ไม่แสดงใน `/admin/users` และไม่นับในสถิติผู้ใช้
@@ -1190,6 +1190,33 @@ sequenceDiagram
   U->>S3: CompleteMultipartUpload
   U->>DB: Asset.status = READY
 ```
+
+### 5.9 รูปโปรไฟล์ (FR-01.5 · CHANGELOG #50)
+```mermaid
+sequenceDiagram
+  actor U as ผู้ใช้ (ทุกบทบาท)
+  participant B as เบราว์เซอร์ (canvas)
+  participant P as /api/upload
+  participant S3 as Object Storage
+  participant SA as setAvatar()
+  participant DB as PostgreSQL
+  U->>B: เลือกรูป PNG/JPEG/WebP
+  B->>B: ครอปกึ่งกลาง + ย่อ 512×512 → WebP
+  B->>P: presign(purpose=avatar, kind=IMAGE, ≤ 1 MB)
+  P->>DB: create Asset(UPLOADING)
+  B->>S3: PUT
+  B->>P: complete(assetId) → magic bytes → READY
+  B->>SA: setAvatar(assetId)
+  SA->>DB: ตรวจ Asset เป็นของผู้ใช้ · IMAGE · READY
+  SA->>DB: User.image = /api/media/<assetId> + AuditLog
+  SA->>S3: ลบไฟล์รูปเดิม (ถ้าเดิมเป็น /api/media/*)
+```
+- **ไม่เปลี่ยน schema** — เก็บเป็น URL ใน `User.image` เหมือนรูปจาก Google · รู้ว่ารูปเป็นของเราจาก prefix `/api/media/`
+- presign ปกติเฉพาะผู้สอนขึ้นไป · `purpose: "avatar"` เปิดให้ผู้ใช้ทุกคน แต่บังคับ `IMAGE` และเพดาน 1 MB
+- เสิร์ฟผ่าน `/api/media/[assetId]` (ไม่ตรวจสิทธิ์ · id เดาไม่ได้) — รูปโปรไฟล์ตั้งใจให้ผู้อื่นในระบบเห็นอยู่แล้ว
+- ลบรูป (`removeAvatar()`) = `User.image = null` + ลบไฟล์ · anonymize (§3.3) ลบไฟล์รูปด้วย
+- CSP `img-src` อนุญาต `https://*.googleusercontent.com` สำหรับรูปจาก Google OAuth (เดิมถูกบล็อก)
+- ตั้งรูปด้วย `auth.api.updateUser` ฝั่ง server (อัปเดต cookie cache ของ session ทันที) · `/api/auth/update-user` ทาง HTTP ปิดด้วย `disabledPaths`
 
 ---
 

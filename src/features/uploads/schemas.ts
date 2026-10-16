@@ -9,6 +9,8 @@ export const presignInputSchema = z.object({
   originalName: z.string().min(1, "ต้องระบุชื่อไฟล์").max(255, "ชื่อไฟล์ยาวเกินไป"),
   /** M08 — ไฟล์ส่งงานของผู้เรียน (ไม่มี = อัปโหลดทั่วไปของผู้สอน) */
   assignmentId: z.cuid("รหัสงานไม่ถูกต้อง").optional(),
+  /** FR-01.5 — รูปโปรไฟล์ของตัวเอง (ผู้ใช้ทุกบทบาท · รูปเท่านั้น) */
+  purpose: z.literal("avatar").optional(),
 });
 export type PresignInput = z.infer<typeof presignInputSchema>;
 

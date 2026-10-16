@@ -4,6 +4,7 @@ import { deleteObject } from "@/lib/storage";
 import { Prisma } from "@/generated/prisma/client";
 import { SCRUBBED, scrubStrings } from "@/features/audit/lib/json";
 import { DELETED_USER_NAME, deletedEmail } from "@/features/privacy/schemas";
+import { deleteAvatarFile } from "@/features/account/lib/avatar-store";
 
 /**
  * FR-17.4 — anonymize บัญชีหลัง SUPER_ADMIN อนุมัติคำขอลบ (system-design §3.3 · ไม่ลบแถว User)
@@ -11,6 +12,7 @@ import { DELETED_USER_NAME, deletedEmail } from "@/features/privacy/schemas";
  * | ข้อมูล | ทำอะไร | เหตุผล |
  * |---|---|---|
  * | ชื่อ · อีเมล · เบอร์ · รหัสนักศึกษา · รูป · การตั้งค่าแจ้งเตือน | แทน/ล้าง | ระบุตัวตนได้ตรง ๆ |
+ * | ไฟล์รูปโปรไฟล์ที่อัปโหลดเอง (FR-01.5) | ลบไฟล์ + แถว Asset | ภาพใบหน้า |
  * | Session · Account (รหัสผ่าน/โทเค็น Google) · LineLink · รหัสผูก LINE | ลบ | เข้าสู่ระบบ/ติดต่อไม่ได้อีก |
  * | การแจ้งเตือน · เหตุการณ์หน้าจอ (IP, user agent) | ลบ | ไม่มีประโยชน์ต่อสถิติของคอร์ส |
  * | PDF ใบประกาศใน storage | ลบไฟล์ + `pdfKey = null` | ฝังชื่อจริงไว้ — สร้างใหม่ด้วยชื่อ "ผู้ใช้ที่ลบบัญชีแล้ว" เมื่อมีคนขอ |
@@ -23,7 +25,7 @@ import { DELETED_USER_NAME, deletedEmail } from "@/features/privacy/schemas";
 export async function anonymizeUser(userId: string): Promise<{ auditScrubbed: number; certificatePdfs: number }> {
   const user = await db.user.findUniqueOrThrow({
     where: { id: userId },
-    select: { name: true, email: true, phone: true, externalId: true },
+    select: { name: true, email: true, phone: true, externalId: true, image: true },
   });
   const needles = [user.email, user.name, user.phone, user.externalId].filter((v): v is string => !!v);
 
@@ -71,6 +73,8 @@ export async function anonymizeUser(userId: string): Promise<{ auditScrubbed: nu
   for (const key of pdfKeys) {
     await deleteObject(key).catch((error) => console.error("[privacy] ลบ PDF ใบประกาศไม่สำเร็จ", key, error));
   }
+
+  await deleteAvatarFile(user.image, userId);
 
   return { auditScrubbed: await scrubAuditLog(userId, user.email, needles), certificatePdfs: pdfKeys.length };
 }

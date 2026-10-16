@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BadgeCheck, ShieldCheck } from "lucide-react";
+import { AvatarField } from "@/features/account/components/avatar-field";
 import { ProfileForm } from "@/features/account/components/profile-form";
 import { getMyProfile } from "@/features/account/queries";
 import { ROLE_LABEL } from "@/lib/rbac";
@@ -13,8 +14,11 @@ export default async function ProfilePage() {
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
-      <section className="bg-card border-border rounded-xl border p-5">
-        <h2 className="mb-4 text-[15px] font-semibold">ข้อมูลส่วนตัว</h2>
+      <section className="bg-card border-border min-w-0 rounded-xl border p-5">
+        <h2 className="mb-4 text-[15px] font-semibold">รูปโปรไฟล์</h2>
+        <AvatarField name={profile.name} image={profile.image} />
+
+        <h2 className="mt-6 mb-4 text-[15px] font-semibold">ข้อมูลส่วนตัว</h2>
         <ProfileForm
           defaults={{
             name: profile.name,

@@ -98,6 +98,10 @@ export const auth = betterAuth({
     },
   },
 
+  // ปิด `/update-user` ทาง HTTP — client ตั้งชื่อ/รูปเป็นค่าอะไรก็ได้โดยไม่ผ่าน Zod ของเรา
+  // ชื่อแก้ผ่าน `updateProfile()` · รูปผ่าน `setAvatar()` (เรียก `auth.api.updateUser` ฝั่ง server ซึ่งยังใช้ได้)
+  disabledPaths: ["/update-user"],
+
   // FR-01.7 จำกัดความถี่การ login
   rateLimit: {
     enabled: true,

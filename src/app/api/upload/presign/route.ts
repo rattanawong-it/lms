@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { buildObjectKey, createMultipart, presignPut, presignUploadPart } from "@/lib/storage";
+import { buildAvatarKey, buildObjectKey, createMultipart, presignPut, presignUploadPart } from "@/lib/storage";
 import {
+  AVATAR_MAX_SIZE,
   MULTIPART_PART_SIZE,
   MULTIPART_THRESHOLD,
   checkUpload,
@@ -18,7 +19,8 @@ import { AssetKind } from "@/generated/prisma/enums";
  * ไฟล์เล็กกว่า MULTIPART_THRESHOLD อัปโหลดทีเดียวจบ ที่เหลือใช้ multipart ตาม §5.8
  *
  * มี `assignmentId` = ไฟล์ส่งงาน (M08) — ผู้ใช้คนไหนก็ขอได้ แต่ต้องผ่านด่านของงานนั้น
- * ไม่มี = อัปโหลดทั่วไป เฉพาะผู้สอนขึ้นไป
+ * `purpose: "avatar"` = รูปโปรไฟล์ของตัวเอง (FR-01.5) — ผู้ใช้คนไหนก็ขอได้ แต่ต้องเป็นรูปไม่เกิน 1 MB
+ * ไม่มีทั้งสองอย่าง = อัปโหลดทั่วไป เฉพาะผู้สอนขึ้นไป
  */
 export async function POST(request: Request) {
   const signedIn = await requireSignedIn();
@@ -29,10 +31,16 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง", 400).response;
   }
 
-  const { kind, mime, size, originalName, assignmentId } = parsed.data;
+  const { kind, mime, size, originalName, assignmentId, purpose } = parsed.data;
+  const avatar = purpose === "avatar";
+  if (avatar && assignmentId) return jsonError("ข้อมูลไม่ถูกต้อง", 400).response;
 
-  const actor = assignmentId ? signedIn : await requireUploader();
+  const actor = assignmentId || avatar ? signedIn : await requireUploader();
   if (isFailure(actor)) return actor.response;
+  if (avatar) {
+    if (kind !== AssetKind.IMAGE) return jsonError("รูปโปรไฟล์ต้องเป็นไฟล์รูปภาพ", 400).response;
+    if (size > AVATAR_MAX_SIZE) return jsonError("รูปโปรไฟล์ต้องมีขนาดไม่เกิน 1 MB", 400).response;
+  }
   if (assignmentId) {
     if (kind !== AssetKind.FILE) return jsonError("ไฟล์ส่งงานต้องเป็นชนิดไฟล์ทั่วไป", 400).response;
     const allowed = await authorizeSubmissionUpload(actor, assignmentId, { name: originalName, mime, size });
@@ -44,7 +52,7 @@ export async function POST(request: Request) {
   const check = checkUpload(kind, mime, size);
   if (!check.ok) return jsonError(check.message, 400).response;
 
-  const key = buildObjectKey(kind, originalName);
+  const key = avatar ? buildAvatarKey(originalName) : buildObjectKey(kind, originalName);
   const asset = await db.asset.create({
     data: {
       key,
