@@ -6,17 +6,28 @@
  * node/mark/attr ที่ไม่รู้จักถูกทิ้ง ไม่ใช่ปล่อยผ่าน และผลลัพธ์คือสิ่งที่เขียนลง DB
  *
  * ไฟล์นี้ต้องไม่ import อะไรที่เป็น server-only — unit test เรียกตรง ๆ ได้
+ * ค่าที่ยอมรับของสี/ตำแหน่ง/ขนาด (FR-05.10) อยู่ใน `rich-text-styles.ts` ชุดเดียวกับตัว render
  */
+import {
+  CALLOUT_TONES,
+  HIGHLIGHT_COLORS,
+  IMAGE_ALIGNS,
+  IMAGE_WIDTHS,
+  TEXT_ALIGNS,
+  TEXT_COLORS,
+  pick,
+} from "@/lib/rich-text-styles";
 
 export type RichMark =
-  | { type: "bold" | "italic" | "underline" | "strike" | "code" }
-  | { type: "link"; attrs: { href: string } };
+  | { type: "bold" | "italic" | "underline" | "strike" | "code" | "superscript" | "subscript" }
+  | { type: "link"; attrs: { href: string } }
+  | { type: "textColor" | "highlight"; attrs: { color: string } };
 
 export type RichNode = {
   type: string;
   text?: string;
   marks?: RichMark[];
-  attrs?: Record<string, string | number | null>;
+  attrs?: Record<string, string | number | boolean | null>;
   content?: RichNode[];
 };
 
@@ -38,8 +49,8 @@ const EMBED_HOSTS = [
   "player.vimeo.com",
 ];
 
-type MarkType = "bold" | "italic" | "underline" | "strike" | "code" | "link";
-const MARK_TYPES: readonly MarkType[] = ["bold", "italic", "underline", "strike", "code", "link"];
+type SimpleMark = "bold" | "italic" | "underline" | "strike" | "code" | "superscript" | "subscript";
+const SIMPLE_MARKS: readonly SimpleMark[] = ["bold", "italic", "underline", "strike", "code", "superscript", "subscript"];
 
 /** ลิงก์ที่ยอมรับ — http/https หรือ path ภายในระบบ (กัน javascript: และ data:) */
 export function safeLinkHref(value: unknown): string | null {
@@ -85,7 +96,6 @@ function cleanMarks(value: unknown): RichMark[] | undefined {
   for (const raw of value) {
     const mark = asRecord(raw);
     const type = mark.type;
-    if (typeof type !== "string" || !MARK_TYPES.includes(type as MarkType)) continue;
 
     if (type === "link") {
       const href = safeLinkHref(asRecord(mark.attrs).href);
@@ -93,17 +103,35 @@ function cleanMarks(value: unknown): RichMark[] | undefined {
       if (href) out.push({ type: "link", attrs: { href } });
       continue;
     }
-    out.push({ type: type as Exclude<MarkType, "link"> });
+    // FR-05.10 — สีเป็นชื่อจากชุดที่กำหนดเท่านั้น ค่า CSS อื่นทิ้งทั้ง mark
+    if (type === "textColor" || type === "highlight") {
+      const raw = asRecord(mark.attrs).color;
+      const color = type === "textColor" ? pick(TEXT_COLORS, raw) : pick(HIGHLIGHT_COLORS, raw);
+      if (color) out.push({ type, attrs: { color } });
+      continue;
+    }
+    if (typeof type === "string" && SIMPLE_MARKS.includes(type as SimpleMark)) {
+      out.push({ type: type as SimpleMark });
+    }
   }
 
   return out.length > 0 ? out : undefined;
 }
 
-type AttrCleaner = (attrs: Record<string, unknown>) => Record<string, string | number | null> | null;
+type AttrCleaner = (attrs: Record<string, unknown>) => Record<string, string | number | boolean | null> | null;
 
-/** node ที่รับได้และวิธีเตรียม attrs ของแต่ละชนิด — นอกรายการนี้ถูกทิ้งทั้งหมด */
-const BLOCK_SPECS: Record<string, { attrs?: AttrCleaner; leaf?: boolean }> = {
-  paragraph: {},
+/** การจัดตำแหน่ง (FR-05.10) — เก็บเฉพาะเมื่อไม่ใช่ค่าตั้งต้น เอกสารเดิมจึงไม่เปลี่ยน */
+const alignAttrs = (attrs: Record<string, unknown>): Record<string, string> => {
+  const textAlign = pick(TEXT_ALIGNS, attrs.textAlign);
+  return textAlign && textAlign !== "left" ? { textAlign } : {};
+};
+
+/**
+ * node ที่รับได้และวิธีเตรียม attrs ของแต่ละชนิด — นอกรายการนี้ถูกทิ้งทั้งหมด
+ * `keepEmpty` = block ที่ schema ของ editor ยอมให้ว่าง (ทิ้งแล้วโหลดกลับเข้า editor ไม่ได้)
+ */
+const BLOCK_SPECS: Record<string, { attrs?: AttrCleaner; leaf?: boolean; keepEmpty?: boolean }> = {
+  paragraph: { attrs: alignAttrs, keepEmpty: true },
   blockquote: {},
   bulletList: {},
   orderedList: {},
@@ -114,8 +142,16 @@ const BLOCK_SPECS: Record<string, { attrs?: AttrCleaner; leaf?: boolean }> = {
   hardBreak: { leaf: true },
 
   heading: {
-    attrs: (attrs) => ({ level: intInRange(attrs.level, 1, 3) ?? 2 }),
+    attrs: (attrs) => ({ level: intInRange(attrs.level, 1, 3) ?? 2, ...alignAttrs(attrs) }),
   },
+
+  // FR-05.10 — เช็คลิสต์ (แสดงอย่างเดียว) · กล่องเน้น · กล่องพับ
+  taskList: {},
+  taskItem: { attrs: (attrs) => ({ checked: attrs.checked === true }) },
+  callout: { attrs: (attrs) => ({ tone: pick(CALLOUT_TONES, attrs.tone) ?? "info" }) },
+  details: {},
+  detailsSummary: { keepEmpty: true },
+  detailsContent: {},
   codeBlock: {
     attrs: (attrs) => ({
       language:
@@ -129,7 +165,13 @@ const BLOCK_SPECS: Record<string, { attrs?: AttrCleaner; leaf?: boolean }> = {
     attrs: (attrs) => {
       const src = typeof attrs.src === "string" && MEDIA_SRC.test(attrs.src) ? attrs.src : null;
       if (!src) return null; // รูปที่ชี้ออกนอกระบบ → ทิ้งทั้ง node
-      return { src, alt: typeof attrs.alt === "string" ? attrs.alt.slice(0, 200) : "" };
+      return {
+        src,
+        alt: typeof attrs.alt === "string" ? attrs.alt.slice(0, 200) : "",
+        // FR-05.10 — ขนาด/ตำแหน่งจากชุดที่กำหนด · ไม่ระบุ = แบบเดิม (กว้างตามรูป ชิดซ้าย)
+        ...(pick(IMAGE_WIDTHS, attrs.width) ? { width: attrs.width as string } : {}),
+        ...(pick(IMAGE_ALIGNS, attrs.align) ? { align: attrs.align as string } : {}),
+      };
     },
   },
   youtube: {
@@ -192,11 +234,11 @@ function cleanNode(raw: unknown, depth: number, budget: Budget): RichNode | null
   const content = spec.leaf ? [] : cleanNodes(node.content, depth + 1, budget);
 
   // block ที่ไม่ใช่ leaf และไม่เหลือเนื้อหาข้างใน → ทิ้ง ยกเว้นย่อหน้าว่างที่ใช้เว้นบรรทัด
-  if (!spec.leaf && content.length === 0 && type !== "paragraph") return null;
+  if (!spec.leaf && content.length === 0 && !spec.keepEmpty) return null;
 
   return {
     type,
-    ...(attrs ? { attrs } : {}),
+    ...(attrs && Object.keys(attrs).length > 0 ? { attrs } : {}),
     ...(content.length > 0 ? { content } : {}),
   };
 }
@@ -234,6 +276,11 @@ export function parseRichTextField(value: FormDataEntryValue | null): RichTextDo
   } catch {
     return null;
   }
+}
+
+/** รูปที่ชี้ไปที่ route ของระบบหรือไม่ — editor ใช้ทิ้งรูปจากโดเมนนอกตั้งแต่ตอนวาง/แก้ HTML */
+export function isMediaSrc(value: unknown): boolean {
+  return typeof value === "string" && MEDIA_SRC.test(value);
 }
 
 /** URL ของรูปในเนื้อหา — ใช้ร่วมกันทั้ง editor, ตัวตรวจ และตัว render */

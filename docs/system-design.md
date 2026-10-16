@@ -1326,6 +1326,33 @@ flowchart LR
 
 ---
 
+### 8.4 Rich text editor (FR-05.4 · FR-05.10 · CHANGELOG #51)
+
+เนื้อหาเก็บเป็น **Tiptap JSON** เสมอ — ทุกความสามารถใหม่ต้องเพิ่มครบ 3 จุดในคอมมิตเดียวกัน
+1. `components/editor/rich-text-editor.tsx` — extension + ปุ่ม
+2. `lib/rich-text-doc.ts` — allowlist ฝั่ง server (node/mark/attr ที่ไม่รู้จักถูกทิ้ง)
+3. `components/shared/rich-text.tsx` — render เป็น React element (ไม่มี `dangerouslySetInnerHTML`)
+
+| ความสามารถ | ใน JSON | ค่าที่ยอมรับ |
+|---|---|---|
+| จัดตำแหน่ง | `attrs.textAlign` บน paragraph/heading | `left` `center` `right` `justify` |
+| สีตัวอักษร / ไฮไลต์ | mark `textColor.color` · mark `highlight.color` | **ชื่อสีจากชุดที่กำหนด** (เช่น `red`, `blue`) ไม่ใช่ค่า CSS อิสระ — render เป็น class ที่มีคู่สีโหมดมืดและผ่าน contrast AA |
+| ตัวยก/ตัวห้อย | mark `superscript` / `subscript` | — |
+| ตาราง | `tableCell/tableHeader.colspan/rowspan` (มีอยู่แล้ว) | 1–20 |
+| เช็คลิสต์ | `taskList` › `taskItem.checked` | boolean (แสดงอย่างเดียว ผู้อ่านติ๊กไม่ได้) |
+| กล่องเน้น | node `callout.tone` | `info` `warning` `success` |
+| กล่องพับ | `details` › `detailsSummary` + `detailsContent` | render เป็น `<details>/<summary>` |
+| รูป | `image.width` · `image.align` | `sm` `md` `full` · `left` `center` `right` |
+
+- **โหมดแก้โค้ด HTML:** แปลงเนื้อหาเป็น HTML ให้แก้ แล้ว `setContent(html)` ให้ Tiptap parse กลับตาม schema — แท็ก/attribute ที่ไม่รองรับ (`<script>`, `style`, `on*`) หายไปเอง
+  และ JSON ที่ได้ยังผ่าน allowlist ฝั่ง server อีกชั้น · **ไม่มีการฝัง HTML ดิบลงหน้าผู้เรียน**
+- **วางจาก Word/เว็บ:** ใช้ parser ของ Tiptap ตามปกติ — คงหัวข้อ ตัวหนา/เอียง ลิสต์ ตาราง ลิงก์ การจัดตำแหน่ง · ตัดฟอนต์/ขนาด/สีที่ไม่อยู่ในชุด
+- โหมดเต็มจอและตัวนับคำเป็นสถานะของ editor อย่างเดียว ไม่บันทึกลง JSON
+- package ใหม่ (เวอร์ชันเดียวกับ Tiptap 3.31.3): `@tiptap/extension-text-align` `-highlight` `-subscript` `-superscript` `-list` (TaskList) `-details`
+  · สีตัวอักษร (`textColor`) และกล่องเน้น (`callout`) เป็น extension ที่เขียนเองใน `components/editor/extensions.ts` · ตัวนับคำใช้ `Intl.Segmenter` (ตัดคำไทยได้ ต่างจาก CharacterCount ที่นับตามช่องว่าง)
+- editor รับรูปเฉพาะ `/api/media/*` ตั้งแต่ตอน parse (`SizedImage`) — รูปจากเว็บอื่นที่วาง/แก้ใน HTML หายเหมือนฝั่ง server
+- โหมดเต็มจอใช้ Fullscreen API (editor มักอยู่ใน dialog ที่ใช้ transform — `position: fixed` ไม่เต็มจอ) · เมนู/กล่องโต้ตอบส่ง `container` ให้ portal อยู่ในกรอบเต็มจอ
+
 ## 9. Non-Functional Design
 
 | NFR | แนวทาง |

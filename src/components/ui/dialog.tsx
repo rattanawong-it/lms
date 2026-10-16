@@ -51,12 +51,15 @@ function DialogContent({
   className,
   children,
   showCloseButton = true,
+  container,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
   showCloseButton?: boolean
+  /** วาง portal ในกล่องที่กำหนด — ใช้เมื่อกล่องแม่อยู่ในโหมดเต็มจอ (Fullscreen API) */
+  container?: HTMLElement | null
 }) {
   return (
-    <DialogPortal>
+    <DialogPortal container={container ?? undefined}>
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"

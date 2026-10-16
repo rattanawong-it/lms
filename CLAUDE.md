@@ -202,6 +202,10 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 **Client vs Server** — client component ห้าม import โมดูลที่มี `server-only` (เช่น `rbac.ts`, `db.ts`)
 ส่วนที่ client ต้องใช้ร่วมให้ไปอยู่ `roles.ts` แล้ว `rbac.ts` re-export ต่อ
 
+**Rich text (FR-05.4 · FR-05.10)** — เก็บเป็น Tiptap JSON · ความสามารถใหม่ต้องแก้ครบ 3 จุดในคอมมิตเดียว: extension/ปุ่มใน `components/editor/`
+→ allowlist `lib/rich-text-doc.ts` → ตัว render `components/shared/rich-text.tsx` (system-design §8.4) · สี/ขนาด/ตำแหน่ง/โทนเก็บเป็น**ชื่อ** จาก `lib/rich-text-styles.ts`
+แล้วแปลงเป็น class ตอนแสดง — ห้ามเก็บค่า CSS จากผู้ใช้ · ห้าม `dangerouslySetInnerHTML` (โหมด HTML ของ editor parse กลับเป็น JSON เสมอ)
+
 **รูปโปรไฟล์ (FR-01.5)** — `User.image` เป็น URL Google หรือ `/api/media/<assetId>` (`features/account/lib/avatar.ts`) · ตั้ง/ลบผ่าน `setAvatar()`/`removeAvatar()` เท่านั้น
 (เรียก `auth.api.updateUser` ให้ cookie cache อัปเดต · `/api/auth/update-user` ทาง HTTP ถูกปิด) · ไฟล์อยู่ใต้ key `avatar/` และลบได้ด้วย `deleteAvatarFile()` เท่านั้น
 

@@ -1,5 +1,18 @@
 import * as React from "react";
+import { Info, CircleCheck, TriangleAlert } from "lucide-react";
 import { safeLinkHref } from "@/lib/rich-text-doc";
+import {
+  CALLOUT_TONES,
+  HIGHLIGHT_COLORS,
+  IMAGE_ALIGNS,
+  IMAGE_WIDTHS,
+  TEXT_ALIGNS,
+  TEXT_ALIGN_CLASS,
+  TEXT_COLORS,
+  pick,
+  type CalloutTone,
+} from "@/lib/rich-text-styles";
+import { cn } from "@/lib/utils";
 
 /**
  * แสดงเนื้อหา Tiptap JSON เป็น React element ตาม allowlist (NFR §9 Security)
@@ -10,7 +23,7 @@ import { safeLinkHref } from "@/lib/rich-text-doc";
  * เนื้อหาถูกกรองมาแล้วตั้งแต่ตอนบันทึกด้วย `lib/rich-text-doc.ts`
  * แต่ตัว render ยังตรวจซ้ำเอง เพราะข้อมูลเก่าใน DB อาจมาจากรุ่นก่อนหน้า
  */
-type Mark = { type: string; attrs?: { href?: string } };
+type Mark = { type: string; attrs?: { href?: string; color?: string } };
 type Node = {
   type?: string;
   text?: string;
@@ -19,11 +32,16 @@ type Node = {
     level?: number;
     src?: string;
     alt?: string;
-    width?: number;
+    /** youtube = พิกเซล · image = ชื่อขนาด (FR-05.10) */
+    width?: number | string;
     height?: number;
     colspan?: number;
     rowspan?: number;
     language?: string | null;
+    textAlign?: string;
+    checked?: boolean;
+    tone?: string;
+    align?: string;
   };
   content?: Node[];
 };
@@ -75,6 +93,22 @@ function applyMarks(text: string, marks: Mark[] | undefined, key: string): React
       case "code":
         node = <code className="bg-muted rounded px-1 py-0.5 text-[0.9em]">{node}</code>;
         break;
+      case "superscript":
+        node = <sup>{node}</sup>;
+        break;
+      case "subscript":
+        node = <sub>{node}</sub>;
+        break;
+      case "textColor": {
+        const color = pick(TEXT_COLORS, mark.attrs?.color);
+        if (color) node = <span className={TEXT_COLORS[color].className}>{node}</span>;
+        break;
+      }
+      case "highlight": {
+        const color = pick(HIGHLIGHT_COLORS, mark.attrs?.color);
+        if (color) node = <mark className={cn("rounded-sm px-0.5 text-inherit", HIGHLIGHT_COLORS[color].className)}>{node}</mark>;
+        break;
+      }
       case "link": {
         const href = safeLinkHref(mark.attrs?.href);
         node = href ? (
@@ -94,6 +128,18 @@ function applyMarks(text: string, marks: Mark[] | undefined, key: string): React
   return <React.Fragment key={key}>{node}</React.Fragment>;
 }
 
+/** class การจัดตำแหน่งของย่อหน้า/หัวข้อ — ค่าที่ไม่รู้จักถือเป็นชิดซ้าย */
+function alignClass(node: Node): string | undefined {
+  const align = pick(TEXT_ALIGNS, node.attrs?.textAlign);
+  return align && align !== "left" ? TEXT_ALIGN_CLASS[align] : undefined;
+}
+
+const CALLOUT_ICON: Record<CalloutTone, React.ComponentType<{ className?: string }>> = {
+  info: Info,
+  warning: TriangleAlert,
+  success: CircleCheck,
+};
+
 function renderNodes(nodes: Node[] | undefined, keyPrefix: string): React.ReactNode[] {
   const out: React.ReactNode[] = [];
 
@@ -107,7 +153,7 @@ function renderNodes(nodes: Node[] | undefined, keyPrefix: string): React.ReactN
 
       case "paragraph":
         out.push(
-          <p key={key} className="text-[14px] leading-[1.75]">
+          <p key={key} className={cn("text-[14px] leading-[1.75]", alignClass(node))}>
             {renderNodes(node.content, key)}
           </p>,
         );
@@ -117,7 +163,7 @@ function renderNodes(nodes: Node[] | undefined, keyPrefix: string): React.ReactN
         const level = Math.min(3, Math.max(1, node.attrs?.level ?? 2));
         const Tag = `h${level + 1}` as "h2" | "h3" | "h4";
         out.push(
-          <Tag key={key} className={HEADING_CLASS[level]}>
+          <Tag key={key} className={cn(HEADING_CLASS[level], alignClass(node))}>
             {renderNodes(node.content, key)}
           </Tag>,
         );
@@ -143,6 +189,66 @@ function renderNodes(nodes: Node[] | undefined, keyPrefix: string): React.ReactN
       case "listItem":
         out.push(<li key={key}>{renderNodes(node.content, key)}</li>);
         break;
+
+      case "taskList":
+        out.push(
+          <ul key={key} className="my-2 space-y-1 text-[14px] leading-[1.75]">
+            {renderNodes(node.content, key)}
+          </ul>,
+        );
+        break;
+
+      case "taskItem": {
+        const checked = node.attrs?.checked === true;
+        out.push(
+          <li key={key} className="flex items-start gap-2">
+            {/* แสดงสถานะที่ผู้สอนตั้งไว้ — ผู้อ่านติ๊กเองไม่ได้ */}
+            <input
+              type="checkbox"
+              checked={checked}
+              readOnly
+              disabled
+              aria-label={checked ? "ทำแล้ว" : "ยังไม่ทำ"}
+              className="accent-primary mt-[0.45em] size-4 shrink-0"
+            />
+            <div className={cn("min-w-0 flex-1", checked && "text-muted-foreground line-through")}>
+              {renderNodes(node.content, key)}
+            </div>
+          </li>,
+        );
+        break;
+      }
+
+      case "callout": {
+        const tone = pick(CALLOUT_TONES, node.attrs?.tone) ?? "info";
+        const Icon = CALLOUT_ICON[tone];
+        out.push(
+          <div
+            key={key}
+            role="note"
+            aria-label={CALLOUT_TONES[tone].label}
+            className={cn("my-3 flex gap-2.5 rounded-lg border-l-4 px-4 py-3", CALLOUT_TONES[tone].className)}
+          >
+            <Icon className="mt-[0.3em] size-4 shrink-0" aria-hidden />
+            <div className="min-w-0 flex-1">{renderNodes(node.content, key)}</div>
+          </div>,
+        );
+        break;
+      }
+
+      case "details": {
+        const summary = node.content?.find((child) => child.type === "detailsSummary");
+        const body = node.content?.find((child) => child.type === "detailsContent");
+        out.push(
+          <details key={key} className="border-line my-3 rounded-lg border px-4 py-2">
+            <summary className="cursor-pointer py-1 text-[14px] font-semibold">
+              {renderNodes(summary?.content, `${key}-s`)}
+            </summary>
+            <div className="pt-1 pb-1">{renderNodes(body?.content, `${key}-c`)}</div>
+          </details>,
+        );
+        break;
+      }
 
       case "blockquote":
         out.push(
@@ -175,6 +281,8 @@ function renderNodes(nodes: Node[] | undefined, keyPrefix: string): React.ReactN
         // และ route /api/media ตั้ง Cache-Control ให้เบราว์เซอร์แคชเองอยู่แล้ว
         const src = node.attrs?.src;
         if (src && MEDIA_SRC.test(src)) {
+          const width = pick(IMAGE_WIDTHS, node.attrs?.width);
+          const align = pick(IMAGE_ALIGNS, node.attrs?.align);
           out.push(
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -182,7 +290,12 @@ function renderNodes(nodes: Node[] | undefined, keyPrefix: string): React.ReactN
               src={src}
               alt={node.attrs?.alt ?? ""}
               loading="lazy"
-              className="border-line my-3 h-auto max-w-full rounded-lg border"
+              className={cn(
+                "border-line my-3 h-auto max-w-full rounded-lg border",
+                (width || align) && "block",
+                width && IMAGE_WIDTHS[width].className,
+                align && IMAGE_ALIGNS[align].className,
+              )}
             />,
           );
         }
