@@ -1237,10 +1237,10 @@ flowchart TB
     b4["@media print → ซ่อนเนื้อหา"]
   end
   subgraph L3["ชั้น 3: ยับยั้ง (Client)"]
-    c1[ดักคีย์ PrintScreen / Ctrl+P,S,U / F12 / Win+Shift+S]
+    c1[ดักคีย์ตาม event.code: Ctrl/Cmd+P,S,U · F12 · DevTools ทุกเบราว์เซอร์]
     c2[blur / visibilitychange → เบลอเนื้อหา]
     c3[DevTools heuristic → ซ่อนเนื้อหา]
-    c4[ล้าง clipboard เมื่อกด PrintScreen]
+    c4[PrintScreen → ล้าง clipboard + จอดำ 1.5 วิ · Win/Cmd+Shift ค้าง → จอดำล่วงหน้า]
   end
   subgraph L4["ชั้น 4: ตามรอย"]
     d1[Dynamic watermark: ชื่อ · อีเมล · เวลา]

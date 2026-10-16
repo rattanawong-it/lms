@@ -92,6 +92,42 @@ test.describe("ผู้เรียนเปิดบทเรียนที�
     await expect(page.getByText("เนื้อหาถูกซ่อนไว้ชั่วคราว")).toHaveCount(0);
   });
 
+  test("คีย์ลัดถูกยกเลิกแม้ใช้แป้นภาษาไทย และจอดำเมื่อพยายามจับภาพ (FR-15.2)", async ({ page }) => {
+    await openTextLesson(page);
+    type KeyInit = { key: string; code: string; ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean };
+    const fire = (type: "keydown" | "keyup", init: KeyInit) =>
+      page.evaluate(
+        ({ t, i }) => {
+          const event = new KeyboardEvent(t, { bubbles: true, cancelable: true, ...i });
+          document.dispatchEvent(event);
+          return event.defaultPrevented;
+        },
+        { t: type, i: init },
+      );
+
+    // แป้นไทย: Ctrl+P ได้ key = "ย" แต่ code ยังเป็น KeyP
+    expect(await fire("keydown", { key: "ย", code: "KeyP", ctrlKey: true })).toBe(true);
+    // พิมพ์ภาษาไทยปกติต้องไม่ถูกขวาง
+    expect(await fire("keydown", { key: "ย", code: "KeyP" })).toBe(false);
+
+    const blackout = page.locator("[data-blackout]");
+    const body = page.locator("[data-protected] > div").first();
+
+    // Win+Shift (ขั้นแรกของ Win+Shift+S) → ดำทันที · ปล่อยปุ่ม → กลับมา
+    await fire("keydown", { key: "Shift", code: "ShiftLeft", metaKey: true, shiftKey: true });
+    await expect(blackout).toBeVisible();
+    await expect(body).toBeHidden();
+    await fire("keyup", { key: "Shift", code: "ShiftLeft", metaKey: true, shiftKey: false });
+    await expect(blackout).toHaveCount(0);
+    await expect(body).toBeVisible();
+
+    // PrintScreen ที่ Windows ส่งมาแค่ keyup → ดำราว 1.5 วินาทีแล้วกลับมาเอง
+    await fire("keyup", { key: "PrintScreen", code: "PrintScreen" });
+    await expect(blackout).toBeVisible();
+    await expect(blackout).toHaveCount(0, { timeout: 5_000 });
+    await expect(body).toBeVisible();
+  });
+
   test("สั่งพิมพ์แล้วไม่ได้เนื้อหาบทเรียนติดไปด้วย (FR-15.4)", async ({ page }) => {
     await openTextLesson(page);
 

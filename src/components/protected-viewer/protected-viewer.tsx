@@ -35,8 +35,11 @@ export function ProtectedViewer({
   const [hidden, setHidden] = React.useState(false);
   const [fullscreen, setFullscreen] = React.useState(false);
 
+  const [blackout, setBlackout] = React.useState(false);
+
   const onHide = React.useCallback((next: boolean) => setHidden(next), []);
-  useScreenGuard({ enabled, lessonId, onHide });
+  const onBlackout = React.useCallback((next: boolean) => setBlackout(next), []);
+  useScreenGuard({ enabled, lessonId, onHide, onBlackout });
 
   /**
    * FR-15.5 — ลายน้ำถูกลบทิ้งได้ง่ายมากจาก DevTools ด้วยคำสั่งบรรทัดเดียว
@@ -93,6 +96,8 @@ export function ProtectedViewer({
           "transition-[filter,opacity] duration-150",
           // FR-15.3 — เบลอทันทีเมื่อหน้าต่างเสียโฟกัส สลับแอป หรือน่าจะเปิด DevTools
           hidden && "pointer-events-none blur-xl opacity-40",
+          // FR-15.2 — จอดำต้องขึ้นทันที ไม่รอ transition (ภาพที่ OS จับระหว่างทางต้องไม่เห็นเนื้อหา)
+          blackout && "invisible transition-none",
           fullscreen && "w-full",
         )}
       >
@@ -101,10 +106,19 @@ export function ProtectedViewer({
 
       <Watermark ref={watermarkRef} name={watermark.name} id={watermark.id} />
 
-      {hidden ? (
+      {blackout ? (
         <p
           role="status"
-          className="bg-foreground/85 absolute inset-0 z-20 flex items-center justify-center px-6 text-center text-[13px] font-medium text-white"
+          data-blackout
+          className="absolute inset-0 z-30 flex items-center justify-center bg-black px-6 text-center text-[13px] font-medium text-white"
+        >
+          ไม่อนุญาตให้จับภาพหน้าจอเนื้อหาบทเรียน
+        </p>
+      ) : hidden ? (
+        // สีดำคงที่ — `bg-foreground` กลายเป็นสีอ่อนในโหมดมืดจนตัวอักษรขาวอ่านไม่ออก
+        <p
+          role="status"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-black/80 px-6 text-center text-[13px] font-medium text-white"
         >
           เนื้อหาถูกซ่อนไว้ชั่วคราว กลับมาที่หน้านี้เพื่อดูต่อ
         </p>
