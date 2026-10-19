@@ -5,6 +5,7 @@ import { SearchX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/shared/empty-state";
+import { PageHeader } from "@/components/shared/page-header";
 import { CatalogFilters } from "@/features/catalog/components/catalog-filters";
 import { CourseCard } from "@/features/catalog/components/course-card";
 import { catalogFilterOptions, listCourses } from "@/features/catalog/queries";
@@ -136,8 +137,9 @@ export default async function CoursesPage(props: PageProps<"/courses">) {
   const params = parseCatalogParams(raw);
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6">
-      <h1 className="mb-5 text-[26px] font-bold tracking-[-0.018em]">คลังคอร์ส</h1>
+    // ระยะและหัวเรื่องเท่ากับหน้าใน layout (learn) — สลับเมนูแล้วเนื้อหาไม่กระโดด
+    <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-10 sm:px-6">
+      <PageHeader title="คลังคอร์ส" />
 
       {/* key ทำให้เปลี่ยนตัวกรองแล้วเห็น skeleton ใหม่ แทนที่จะค้างผลเดิมไว้ */}
       <Suspense key={JSON.stringify(params)} fallback={<CatalogSkeleton />}>

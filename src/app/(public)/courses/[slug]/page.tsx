@@ -82,7 +82,7 @@ export default async function CourseDetailPage(props: PageProps<"/courses/[slug]
   const description = <RichText content={course.description} className="space-y-1" />;
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-[1280px] px-4 pt-5 pb-10 sm:px-6">
       {course.status !== CourseStatus.PUBLISHED ? (
         <p className="bg-warning-bg text-warning-fg mb-5 rounded-lg px-4 py-3 text-[13px] font-medium">
           คอร์สนี้ยังไม่เผยแพร่ (สถานะ {course.status}) คุณเห็นหน้านี้ได้เพราะเป็นผู้สอนหรือผู้ดูแลของคอร์ส

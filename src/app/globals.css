@@ -240,6 +240,14 @@
   html {
     @apply font-sans;
     -webkit-text-size-adjust: 100%;
+    /* จองที่ของ scrollbar ไว้เสมอ — สลับระหว่างหน้าสั้นกับหน้ายาวแล้วเนื้อหาไม่เลื่อนซ้ายขวา */
+    scrollbar-gutter: stable;
+  }
+
+  /* dialog ของ Radix (react-remove-scroll-bar) ชดเชยความกว้าง scrollbar ด้วย margin-right
+     แต่ gutter ด้านบนจองที่ไว้แล้ว ถ้าไม่ปิดหน้าจะขยับตอนเปิด dialog แทน */
+  html body[data-scroll-locked] {
+    margin-right: 0 !important;
   }
 
   body {
