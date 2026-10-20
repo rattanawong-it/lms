@@ -53,6 +53,7 @@ export function AssetField({
   onUploaded,
   className,
   pickLabel,
+  savesImmediately = false,
 }: {
   label: string;
   /** ชื่อของ input ซ่อนที่พารหัส Asset ไปกับฟอร์ม — ไม่ใส่ก็ได้ถ้าใช้ผ่าน onUploaded อย่างเดียว */
@@ -70,6 +71,11 @@ export function AssetField({
   /** แจ้งผู้เรียกเมื่ออัปโหลดเสร็จหรือถูกลบออก (null = ไม่มีไฟล์แล้ว) */
   onUploaded?: (asset: AssetValue | null) => void;
   className?: string;
+  /**
+   * ผู้เรียกบันทึกไฟล์เองทันทีใน `onUploaded` (และแจ้งผลเอง) — ไม่ต้องเตือนให้กดบันทึก
+   * ค่าตั้งต้นคือไฟล์ไปกับฟอร์ม ผู้ใช้ต้องกดบันทึกของฟอร์มก่อนจึงจะมีผล
+   */
+  savesImmediately?: boolean;
 }) {
   const kinds: readonly AssetKind[] = typeof kind === "string" ? [kind] : kind;
   const primary = kinds[0];
@@ -81,6 +87,8 @@ export function AssetField({
   const fieldId = React.useId();
 
   const uploading = percent !== null;
+  // เทียบกับค่าที่ server ส่งมา: หลังบันทึกแล้ว revalidate ค่า defaultValue จะตามมาเท่ากันเอง
+  const unsaved = !savesImmediately && (asset?.assetId ?? null) !== (defaultValue?.assetId ?? null);
 
   async function start(file: File) {
     // หลายชนิด → MIME จากนามสกุล (เบราว์เซอร์เดา Office/CSV ผิดบ่อย) แล้วเลือกชนิดที่รับ MIME นั้น
@@ -109,7 +117,11 @@ export function AssetField({
       };
       setAsset(value);
       onUploaded?.(value);
-      toast.success(`อัปโหลด ${uploaded.originalName} แล้ว`);
+      if (!savesImmediately) {
+        toast.success(`อัปโหลด ${uploaded.originalName} แล้ว`, {
+          description: "ยังไม่ได้บันทึก — กดปุ่มบันทึกของฟอร์มเพื่อยืนยันการเปลี่ยนแปลง",
+        });
+      }
     } catch (err) {
       if (err instanceof UploadCancelled) {
         toast.info(err.message);
@@ -215,6 +227,12 @@ export function AssetField({
           <Upload className="size-4" /> {pickLabel ?? `เลือก${rule.label}`}
         </Button>
       )}
+
+      {unsaved && !uploading ? (
+        <p role="status" className="text-warning-fg text-[12px] font-medium">
+          ยังไม่ได้บันทึก — กดปุ่มบันทึกของฟอร์มเพื่อยืนยันการเปลี่ยนแปลง
+        </p>
+      ) : null}
 
       {error ? (
         <p id={`${fieldId}-error`} role="alert" className="text-danger-fg text-[12px] font-medium">

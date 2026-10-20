@@ -141,6 +141,7 @@ export function AttachmentManager({
         label="เพิ่มไฟล์ประกอบ"
         kind={AssetKind.FILE}
         hint="เอกสาร Office, PDF, รูป, ไฟล์ข้อความ หรือ ZIP"
+        savesImmediately
         onUploaded={(asset) => {
           if (!asset) return;
           const form = new FormData();

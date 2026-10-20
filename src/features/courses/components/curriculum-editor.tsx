@@ -131,7 +131,8 @@ export function CurriculumEditor({
 
     startTransition(async () => {
       const result = await reorder({ courseId, kind: "section", ids });
-      if (!result.ok) toast.error(result.message);
+      if (result.ok) toast.success(result.message);
+      else toast.error(result.message);
       router.refresh();
     });
   }
@@ -147,7 +148,8 @@ export function CurriculumEditor({
 
     startTransition(async () => {
       const result = await reorder({ courseId, kind: "lesson", ids, sectionId });
-      if (!result.ok) toast.error(result.message);
+      if (result.ok) toast.success(result.message);
+      else toast.error(result.message);
       router.refresh();
     });
   }

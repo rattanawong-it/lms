@@ -213,6 +213,9 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 ฝั่ง server ตรวจ `checkUpload()` (ชนิด+ขนาด) และ magic bytes เสมอ · ไฟล์ > 20 MB ใช้ multipart (ชิ้นละ 10 MB)
 อัปโหลดทั่วไปเฉพาะผู้สอนขึ้นไป · ผู้เรียนอัปโหลดได้เฉพาะไฟล์ส่งงาน (presign ส่ง `assignmentId` → `authorizeSubmissionUpload()`) และรูปโปรไฟล์ (`purpose: "avatar"` · รูป ≤ 1 MB)
 และ MIME ของไฟล์ส่งงานมาจากนามสกุล (`submissionMime()`) ไม่ใช่ `file.type` ที่เบราว์เซอร์เดา
+· `<AssetField>` ในฟอร์มเตือน "ยังไม่ได้บันทึก" จนกว่า `defaultValue` จะตามทันหลังบันทึก — ที่ผูกไฟล์ทันทีใน `onUploaded` (และ toast ผลเอง) ให้ส่ง `savesImmediately`
+
+**แจ้งผลการบันทึก** — action ที่ผู้ใช้สั่งต้อง toast ทั้งสำเร็จ (`toast.success(result.message)`) และไม่สำเร็จ ไม่ใช่แจ้งเฉพาะตอนผิด (ยกเว้นการกระทำแฝง เช่นอ่านแจ้งเตือน)
 
 **ไฟล์บทเรียนของผู้เรียน** — ทุกเส้นทางต้องผ่าน `getLessonAccess()` (ตรวจ enrollment + กติกาเรียนตามลำดับ) ก่อนเสมอ
 | ชนิด | เส้นทาง | เหตุผล |
