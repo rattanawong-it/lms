@@ -57,10 +57,10 @@ export default async function SubmissionReviewPage(
         <h2 id="submission-content" className="text-[15px] font-semibold">
           สิ่งที่ส่ง
         </h2>
-        {submission.text ? (
-          <p data-submission-text className="bg-muted rounded-lg px-3 py-2 text-[13.5px] whitespace-pre-wrap">
-            {submission.text}
-          </p>
+        {submission.content ? (
+          <div data-submission-text className="bg-muted rounded-lg px-3 py-2 text-[13.5px]">
+            <RichText content={submission.content} className="space-y-2" />
+          </div>
         ) : (
           <p className="text-muted-foreground text-[13px]">(ไม่มีข้อความ)</p>
         )}

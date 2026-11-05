@@ -81,6 +81,7 @@ export async function getAssignmentEditor(courseId: string, assignmentId: string
           dueAt: true,
           allowLate: true,
           maxScore: true,
+          submissionMode: true,
           allowedTypes: true,
           maxFileMb: true,
           _count: { select: { submissions: true } },
@@ -193,7 +194,7 @@ export async function getSubmissionReview(courseId: string, assignmentId: string
       id: true,
       userId: true,
       attemptNo: true,
-      text: true,
+      content: true,
       isLate: true,
       status: true,
       score: true,
@@ -288,6 +289,7 @@ export async function getLessonAssignment(lessonId: string) {
       dueAt: true,
       allowLate: true,
       maxScore: true,
+      submissionMode: true,
       allowedTypes: true,
       maxFileMb: true,
     },
@@ -301,7 +303,7 @@ export async function getLessonAssignment(lessonId: string) {
         select: {
           id: true,
           attemptNo: true,
-          text: true,
+          content: true,
           isLate: true,
           status: true,
           score: true,
@@ -330,7 +332,7 @@ export async function getLessonAssignment(lessonId: string) {
     submissions: submissions.map((s) => ({
       id: s.id,
       attemptNo: s.attemptNo,
-      text: s.text,
+      content: s.content,
       isLate: s.isLate,
       status: s.status,
       // คะแนนแสดงเมื่อตรวจแล้วเท่านั้น · ความเห็นแสดงทั้งตอนตรวจแล้วและตอนส่งกลับ

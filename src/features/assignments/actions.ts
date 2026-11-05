@@ -56,6 +56,7 @@ export async function saveAssignment(formData: FormData): Promise<SaveAssignment
     dueAt: formData.get("dueAt"),
     allowLate: formData.get("allowLate"),
     maxScore: formData.get("maxScore"),
+    submissionMode: formData.get("submissionMode") ?? undefined,
     allowedTypes: formData.getAll("allowedTypes"),
     maxFileMb: formData.get("maxFileMb"),
   });
@@ -102,6 +103,7 @@ export async function saveAssignment(formData: FormData): Promise<SaveAssignment
     dueAt: data.dueAt,
     allowLate: data.allowLate,
     maxScore: data.maxScore,
+    submissionMode: data.submissionMode,
     allowedTypes: data.allowedTypes,
     maxFileMb: data.maxFileMb,
   };
@@ -121,6 +123,7 @@ export async function saveAssignment(formData: FormData): Promise<SaveAssignment
       dueAt: data.dueAt?.toISOString() ?? null,
       allowLate: data.allowLate,
       maxScore: data.maxScore,
+      submissionMode: data.submissionMode,
       allowedTypes: data.allowedTypes,
       maxFileMb: data.maxFileMb,
     },
@@ -162,7 +165,7 @@ export async function deleteAssignment(formData: FormData): Promise<ActionResult
 /* ─────────────────────────── ผู้เรียน (FR-08.2 / FR-08.3) ─────────────────────────── */
 
 /**
- * ส่งงาน — ข้อความและ/หรือไฟล์ · ส่งใหม่ได้ตามกติกาใน `lib/rules.ts` โดยเพิ่ม attemptNo ไม่ทับของเดิม
+ * ส่งงาน — ข้อความและ/หรือไฟล์ตาม `submissionMode` (#53) · ส่งใหม่ได้ตามกติกาใน `lib/rules.ts` โดยเพิ่ม attemptNo ไม่ทับของเดิม
  * ตรวจสิทธิ์ผ่าน `getLessonAccess()` ของบทที่งานผูกอยู่จริง · `isLate` คำนวณที่ server ตอนส่ง
  */
 export async function submitAssignment(formData: FormData): Promise<ActionResult> {
@@ -178,6 +181,7 @@ export async function submitAssignment(formData: FormData): Promise<ActionResult
       lessonId: true,
       dueAt: true,
       allowLate: true,
+      submissionMode: true,
       allowedTypes: true,
       maxFileMb: true,
     },
@@ -189,14 +193,14 @@ export async function submitAssignment(formData: FormData): Promise<ActionResult
   if (!access.enrollmentId) return { ok: false, message: "ผู้สอนและผู้ดูแลดูได้แต่ส่งงานไม่ได้" };
   if (!access.unlocked) return { ok: false, message: "ต้องเรียนบทก่อนหน้าให้จบก่อน" };
 
-  const parsed = submitAssignmentSchema.safeParse({
-    text: formData.get("text"),
+  const parsed = submitAssignmentSchema(assignment.submissionMode).safeParse({
+    content: formData.get("content"),
     assetIds: formData.getAll("assetIds"),
   });
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง", fieldErrors: zodToFieldErrors(parsed.error) };
   }
-  const { text, assetIds } = parsed.data;
+  const { content, assetIds } = parsed.data;
 
   // ไฟล์ต้องเป็นของผู้ส่งเอง อัปโหลดเสร็จแล้ว และตรงกติกาของงาน (presign เชื่อขนาดที่ client แจ้ง จึงตรวจซ้ำตรงนี้)
   const assets = assetIds.length
@@ -235,7 +239,7 @@ export async function submitAssignment(formData: FormData): Promise<ActionResult
           assignmentId: assignment.id,
           userId: access.userId,
           attemptNo: (latest?.attemptNo ?? 0) + 1,
-          text,
+          content: content ?? Prisma.DbNull,
           isLate: state.late,
           submittedAt: now,
           files: { create: assets.map((a) => ({ assetId: a.id })) },

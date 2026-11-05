@@ -96,7 +96,7 @@ const actions = {
 
   /** student ส่งงานแล้ว + ผู้สอนเลื่อนกำหนดส่งออกไปอีก 1 ชม. */
   async submitAndPostpone(f: Fixture) {
-    await db.submission.create({ data: { assignmentId: f.assignmentId, userId: f.studentId, text: "ส่งแล้ว" } });
+    await db.submission.create({ data: { assignmentId: f.assignmentId, userId: f.studentId, content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "ส่งแล้ว" }] }] } } });
     await db.assignment.update({ where: { id: f.assignmentId }, data: { dueAt: new Date(Date.now() + 6 * HOUR) } });
     return { ok: true };
   },

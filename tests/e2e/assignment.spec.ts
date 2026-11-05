@@ -45,6 +45,9 @@ async function openFromQueue(page: Page, project: string) {
 }
 
 const form = (page: Page) => page.getByRole("form", { name: "ส่งงาน" });
+/** กล่องคำตอบเป็น rich text ชุดผู้เรียน (CHANGELOG #53) */
+const answerBox = (page: Page, label = "คำตอบ / ข้อความถึงผู้สอน") =>
+  form(page).locator(`[contenteditable="true"][aria-label="${label}"]`);
 
 test.describe("ผู้สอนสร้างงาน", () => {
   test.use({ storageState: STATE_FILE.instructor });
@@ -138,7 +141,12 @@ test.describe("ส่งงาน → ส่งกลับ → ส่งให�
 
     await form(page).getByLabel("เลือกไฟล์ที่จะส่ง").setInputFiles(PDF);
     await expect(form(page).locator("[data-attached-file]")).toContainText(PDF.name, { timeout: 30_000 });
-    await form(page).getByLabel("คำตอบ / ข้อความถึงผู้สอน").fill(ANSWER);
+    // ชุดผู้เรียนไม่มีปุ่มแทรกรูป/วิดีโอ แต่จัดรูปแบบได้
+    await expect(form(page).getByRole("button", { name: "แทรกรูป" })).toHaveCount(0);
+    await expect(form(page).getByRole("button", { name: "ฝังวิดีโอ" })).toHaveCount(0);
+    await answerBox(page).click();
+    await form(page).getByRole("button", { name: "ตัวหนา" }).click();
+    await answerBox(page).pressSequentially(ANSWER);
     await form(page).getByRole("button", { name: "ส่งงาน" }).click();
     await expect(page.getByText("ส่งงานแล้ว", { exact: true })).toBeVisible({ timeout: 30_000 });
 
@@ -158,6 +166,7 @@ test.describe("ส่งงาน → ส่งกลับ → ส่งให�
 
     await openFromQueue(page, p);
     await expect(page.locator("[data-submission-text]")).toHaveText(ANSWER);
+    await expect(page.locator("[data-submission-text] strong")).toHaveText(ANSWER);
     const fileLink = page.getByRole("link", { name: `เปิดไฟล์ ${PDF.name}` });
     const href = await fileLink.getAttribute("href");
     // ผู้สอนของคอร์ส → redirect ไป signed URL
@@ -189,7 +198,8 @@ test.describe("ส่งงาน → ส่งกลับ → ส่งให�
 
     // ไฟล์และข้อความเดิมติดมาให้ แก้เฉพาะส่วนที่ต้องแก้
     await expect(form(page).locator("[data-attached-file]")).toContainText(PDF.name);
-    await form(page).getByLabel("คำตอบ / ข้อความถึงผู้สอน").fill(`${ANSWER} พร้อมบทสรุป`);
+    await expect(answerBox(page)).toHaveText(ANSWER);
+    await answerBox(page).fill(`${ANSWER} พร้อมบทสรุป`);
     await form(page).getByRole("button", { name: "ส่งงานอีกครั้ง" }).click();
     await expect(page.getByText("ส่งงานครั้งที่ 2 แล้ว")).toBeVisible({ timeout: 30_000 });
     await expect(page.locator("[data-submission]")).toHaveCount(2);
@@ -216,5 +226,32 @@ test.describe("ส่งงาน → ส่งกลับ → ส่งให�
 
     await page.goto("/dashboard");
     await expect(page.locator("[data-due-assignment]").filter({ hasText: assignmentTitle(p) })).toHaveCount(0);
+  });
+});
+
+test.describe("ช่องทางส่งงาน (CHANGELOG #53)", () => {
+  test("ผู้สอนเปลี่ยนเป็นข้อความอย่างเดียว → ผู้เรียนอัปโหลดไฟล์เข้างานนี้ไม่ได้", async ({ browser, page }, info) => {
+    const p = info.project.name;
+    const context = await browser.newContext({ storageState: STATE_FILE.instructor });
+    const teacher = await context.newPage();
+    const coursePath = await openCourse(teacher, p);
+    await teacher.goto(`${coursePath}/assignments`);
+    await teacher.locator("[data-assignment]").filter({ hasText: assignmentTitle(p) }).getByRole("link", { name: "แก้ไข" }).click();
+    await expect(teacher.getByLabel("ชื่องาน", { exact: true })).toHaveValue(assignmentTitle(p), { timeout: 30_000 });
+    const assignmentId = new URL(teacher.url()).pathname.split("/").at(-1);
+    await teacher.getByRole("radio", { name: /ข้อความอย่างเดียว/ }).check();
+    await expect(teacher.getByText("ชนิดไฟล์ที่ผู้เรียนแนบได้")).toBeHidden();
+    await teacher.getByRole("button", { name: "บันทึกงาน" }).click();
+    await expect(teacher.getByText("บันทึกงานแล้ว")).toBeVisible({ timeout: 15_000 });
+    await context.close();
+
+    await openLesson(page, p);
+    await expect(page.getByText("ส่งเป็นข้อความอย่างเดียว")).toBeVisible();
+    // งานถูกตรวจแล้ว ฟอร์มปิด — ด่านอัปโหลดยังต้องปฏิเสธด้วยเหตุผลของโหมดก่อน
+    const presign = await page.request.post("/api/upload/presign", {
+      data: { kind: "FILE", mime: "application/pdf", size: 100, originalName: "x.pdf", assignmentId },
+    });
+    expect(presign.status()).toBe(400);
+    expect((await presign.json()).message).toBe("งานนี้รับเฉพาะข้อความ");
   });
 });

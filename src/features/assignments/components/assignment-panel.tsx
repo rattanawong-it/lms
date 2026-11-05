@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { CalendarClock, Download, FileUp, Loader2, MessageSquare, Paperclip, Send, Target, X } from "lucide-react";
+import { CalendarClock, Download, FileUp, Loader2, MessageSquare, Paperclip, PenLine, Send, Target, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { RichTextField } from "@/components/editor/rich-text-field";
+import { RichText } from "@/components/shared/rich-text";
 import { Progress } from "@/components/ui/progress";
 import { AssetKind, SubmissionStatus } from "@/generated/prisma/enums";
 import { formatDateTime } from "@/lib/dates";
@@ -16,7 +17,13 @@ import { cn } from "@/lib/utils";
 import { UploadCancelled, UploadError, uploadFile } from "@/features/uploads/lib/upload-client";
 import { submitAssignment } from "@/features/assignments/actions";
 import { SUBMISSION_STATUS_BADGE, submissionFileError, submissionMime } from "@/features/assignments/lib/rules";
-import { MAX_SUBMISSION_FILES, SUBMISSION_TEXT_MAX } from "@/features/assignments/schemas";
+import {
+  MAX_SUBMISSION_FILES,
+  SUBMISSION_MODE_LABEL,
+  SUBMISSION_TEXT_MAX,
+  acceptsFiles,
+  acceptsText,
+} from "@/features/assignments/schemas";
 import type { LessonAssignment } from "@/features/assignments/queries";
 
 type AttachedFile = { assetId: string; originalName: string; sizeLabel: string };
@@ -35,7 +42,8 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
   const [files, setFiles] = React.useState<AttachedFile[]>(() => (data.resubmit && latest ? latest.files : []));
   const [uploading, setUploading] = React.useState<Uploading[]>([]);
   const inputRef = React.useRef<HTMLInputElement>(null);
-  const textId = React.useId();
+  const withText = acceptsText(assignment.submissionMode);
+  const withFiles = acceptsFiles(assignment.submissionMode);
   const accept = assignment.allowedTypes.map((t) => `.${t}`).join(",");
 
   async function addFiles(list: FileList | null) {
@@ -74,7 +82,7 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
   }
 
   function submit(formData: FormData) {
-    for (const f of files) formData.append("assetIds", f.assetId);
+    if (withFiles) for (const f of files) formData.append("assetIds", f.assetId);
     startTransition(async () => {
       const result = await submitAssignment(formData);
       if (result.ok) {
@@ -82,7 +90,7 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
         setError(null);
         router.refresh();
       } else {
-        setError(result.fieldErrors?.text ?? result.fieldErrors?.files ?? null);
+        setError(result.fieldErrors?.content ?? result.fieldErrors?.files ?? null);
         toast.error(result.message);
       }
     });
@@ -113,8 +121,9 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
           <Target className="size-4" aria-hidden /> คะแนนเต็ม {formatScore(assignment.maxScore)}
         </li>
         <li className="flex items-center gap-1.5">
-          <Paperclip className="size-4" aria-hidden /> {assignment.allowedTypes.map((t) => `.${t}`).join(" ")} · ไม่เกิน{" "}
-          {assignment.maxFileMb} MB ต่อไฟล์
+          {withFiles ? <Paperclip className="size-4" aria-hidden /> : <PenLine className="size-4" aria-hidden />}
+          ส่งเป็น{SUBMISSION_MODE_LABEL[assignment.submissionMode].label}
+          {withFiles ? ` · ${assignment.allowedTypes.map((t) => `.${t}`).join(" ")} ไม่เกิน ${assignment.maxFileMb} MB ต่อไฟล์` : ""}
         </li>
       </ul>
 
@@ -157,21 +166,19 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
             </p>
           ) : null}
 
-          <div className="space-y-[7px]">
-            <Label htmlFor={textId} className="text-[12.5px] font-medium">
-              คำตอบ / ข้อความถึงผู้สอน
-            </Label>
-            <textarea
-              id={textId}
-              name="text"
-              rows={5}
-              maxLength={SUBMISSION_TEXT_MAX}
-              defaultValue={data.resubmit ? (latest?.text ?? "") : ""}
-              aria-invalid={Boolean(error) || undefined}
-              className="border-input bg-card focus-visible:ring-ring w-full rounded-[9px] border px-3 py-2.5 text-[14px] leading-relaxed outline-none focus-visible:ring-2"
+          {withText ? (
+            <RichTextField
+              name="content"
+              label={withFiles ? "คำตอบ / ข้อความถึงผู้สอน" : "คำตอบ"}
+              media={false}
+              minHeight={160}
+              defaultValue={data.resubmit ? (latest?.content ?? undefined) : undefined}
+              placeholder="พิมพ์คำตอบ จัดหัวข้อ รายการ หรือตารางได้"
+              hint={`ยาวได้ไม่เกิน ${SUBMISSION_TEXT_MAX.toLocaleString("th-TH")} ตัวอักษร${withFiles ? " · รูปภาพให้แนบเป็นไฟล์" : ""}`}
             />
-          </div>
+          ) : null}
 
+          {withFiles ? (
           <div className="space-y-2">
             <p className="text-[12.5px] font-medium">ไฟล์แนบ</p>
             {files.length > 0 || uploading.length > 0 ? (
@@ -218,6 +225,7 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
               <FileUp className="size-4" /> แนบไฟล์
             </Button>
           </div>
+          ) : null}
 
           {error ? (
             <p role="alert" className="text-danger-fg text-[12px] font-medium">
@@ -246,6 +254,14 @@ export function AssignmentPanel({ data }: { data: LessonAssignment }) {
                     {SUBMISSION_STATUS_BADGE[s.status].label}
                   </Badge>
                 </div>
+                {s.content ? (
+                  <details className="group">
+                    <summary className="text-primary inline-flex min-h-11 cursor-pointer items-center text-[12.5px] hover:underline">
+                      ดูคำตอบที่ส่ง
+                    </summary>
+                    <RichText content={s.content} className="border-line mt-1 space-y-2 rounded-lg border px-3 py-2 text-[13.5px]" />
+                  </details>
+                ) : null}
                 {s.files.length ? (
                   <ul className="flex flex-wrap gap-x-3">
                     {s.files.map((f) => (

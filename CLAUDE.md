@@ -158,6 +158,8 @@ action ที่รับ id ลูก (เช่น `lessonId`, `enrollmentId`)
 
 **งานที่ต้องส่ง (M08)** — กติกาส่ง/ส่งซ้ำ/ส่งช้าอยู่ใน `submitState()` (`features/assignments/lib/rules.ts`) ใช้ทั้งหน้าจอ ด่านอัปโหลด และ action
 · เมื่อมีการส่งหลายครั้ง นับ/ตรวจเฉพาะ**ครั้งล่าสุดของแต่ละคน** (`latestPerStudent()`) — ครั้งก่อนเป็นประวัติ
+· ช่องทางส่งอยู่ที่ `Assignment.submissionMode` (`TEXT`/`FILE`/`TEXT_OR_FILE`) ถามด้วย `acceptsText()`/`acceptsFiles()` ใน `schemas.ts` ทั้งหน้าจอ action และด่านอัปโหลด
+· คำตอบเก็บใน `Submission.content` เป็น Tiptap JSON ชุดผู้เรียน — editor `media={false}` + server `parseRichTextField(…, { media: false })` (ไม่มีรูป/YouTube) · แสดงด้วย `<RichText>`
 
 **สมุดคะแนน (M09)** — คะแนนต้นทาง (ส่งข้อสอบ/ตรวจอัตนัย/ส่งงาน/ตรวจงาน) เปลี่ยนเมื่อไรต้องเรียก `afterScoreChange()`
 จาก `features/gradebook/lib/sync.ts` · ห้ามเขียน `Grade` ตรง ๆ นอก `sync.ts` และ `gradebook/actions.ts`

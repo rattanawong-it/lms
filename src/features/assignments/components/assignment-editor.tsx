@@ -11,12 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Field } from "@/components/shared/field";
 import { RichTextField } from "@/components/editor/rich-text-field";
 import { toBangkokInput } from "@/lib/dates";
+import { cn } from "@/lib/utils";
+import { SubmissionMode } from "@/generated/prisma/enums";
 import { submitForm } from "@/lib/form";
 import { saveAssignment } from "@/features/assignments/actions";
 import {
   DEFAULT_FILE_TYPES,
   MAX_SUBMISSION_FILE_MB,
   SUBMISSION_FILE_TYPE_KEYS,
+  SUBMISSION_MODE_LABEL,
+  SUBMISSION_MODES,
+  acceptsFiles,
 } from "@/features/assignments/schemas";
 import type { AssignmentEditorData } from "@/features/assignments/queries";
 
@@ -35,7 +40,8 @@ export function AssignmentEditor({ data }: { data: AssignmentEditorData }) {
   const { assignment, lessons, course } = data;
   const [pending, startTransition] = React.useTransition();
   const [errors, setErrors] = React.useState<Record<string, string>>({});
-  const allowed = new Set(assignment?.allowedTypes ?? DEFAULT_FILE_TYPES);
+  const allowed = new Set(assignment?.allowedTypes.length ? assignment.allowedTypes : DEFAULT_FILE_TYPES);
+  const [mode, setMode] = React.useState<SubmissionMode>(assignment?.submissionMode ?? SubmissionMode.TEXT_OR_FILE);
 
   function submit(formData: FormData) {
     startTransition(async () => {
@@ -65,7 +71,7 @@ export function AssignmentEditor({ data }: { data: AssignmentEditorData }) {
         {assignment && assignment.submissionCount > 0 ? (
           <p className="bg-warning-bg text-warning-fg flex gap-2 rounded-lg px-3 py-2.5 text-[12.5px]">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
-            มีผู้ส่งงานแล้ว {assignment.submissionCount} ครั้ง — การแก้กำหนดส่งหรือชนิดไฟล์มีผลกับการส่งครั้งถัดไป งานที่ส่งแล้วไม่เปลี่ยน
+            มีผู้ส่งงานแล้ว {assignment.submissionCount} ครั้ง — การแก้กำหนดส่ง ช่องทางส่ง หรือชนิดไฟล์มีผลกับการส่งครั้งถัดไป งานที่ส่งแล้วไม่เปลี่ยน
           </p>
         ) : null}
 
@@ -142,9 +148,40 @@ export function AssignmentEditor({ data }: { data: AssignmentEditorData }) {
 
       <section aria-labelledby="assignment-files" className="bg-card border-border space-y-4 rounded-xl border p-4 sm:p-5">
         <h2 id="assignment-files" className="text-[15px] font-semibold">
-          ไฟล์ที่รับ
+          ช่องทางส่งงาน
         </h2>
 
+        <fieldset className="space-y-2">
+          <legend className="sr-only">ช่องทางส่งงาน</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {SUBMISSION_MODES.map((value) => (
+              <label
+                key={value}
+                className={cn(
+                  "border-border flex min-h-11 cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5",
+                  mode === value && "border-primary bg-primary/5",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="submissionMode"
+                  value={value}
+                  checked={mode === value}
+                  onChange={() => setMode(value)}
+                  className="accent-primary mt-0.5 size-4 shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className="block text-[13.5px] font-medium">{SUBMISSION_MODE_LABEL[value].label}</span>
+                  <span className="text-muted-foreground block text-[11.5px]">{SUBMISSION_MODE_LABEL[value].hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <FieldError message={errors.submissionMode} />
+        </fieldset>
+
+        {/* โหมดข้อความอย่างเดียวซ่อนไว้แต่ยังส่งค่าเดิม — สลับกลับแล้วไม่ต้องติ๊กใหม่ */}
+        <div hidden={!acceptsFiles(mode)} className="space-y-4">
         <fieldset className="space-y-2">
           <legend className="mb-1 text-[12.5px] font-medium">ชนิดไฟล์ที่ผู้เรียนแนบได้</legend>
           <div className="grid grid-cols-2 gap-x-3 sm:grid-cols-4">
@@ -170,9 +207,10 @@ export function AssignmentEditor({ data }: { data: AssignmentEditorData }) {
             max={MAX_SUBMISSION_FILE_MB}
             defaultValue={assignment?.maxFileMb ?? 20}
             required
-            hint={`สูงสุด ${MAX_SUBMISSION_FILE_MB} MB · ผู้เรียนส่งข้อความแทนไฟล์ได้เสมอ`}
+            hint={`สูงสุด ${MAX_SUBMISSION_FILE_MB} MB`}
             error={errors.maxFileMb}
           />
+        </div>
         </div>
       </section>
 

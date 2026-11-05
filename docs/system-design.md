@@ -261,6 +261,11 @@ enum SubmissionStatus {
   GRADED
   RETURNED
 }
+enum SubmissionMode {   // CHANGELOG #53 — ช่องทางส่งงานที่ผู้สอนเปิด
+  TEXT
+  FILE
+  TEXT_OR_FILE
+}
 enum GradeSource {
   QUIZ
   ASSIGNMENT
@@ -671,7 +676,8 @@ model Assignment {
   dueAt         DateTime?
   allowLate     Boolean   @default(true)
   maxScore      Decimal   @db.Decimal(8, 2)
-  allowedTypes  String[]  // ["pdf","docx","zip"]
+  submissionMode SubmissionMode @default(TEXT_OR_FILE)  // #53
+  allowedTypes  String[]  // ["pdf","docx","zip"] · ว่างได้เมื่อ submissionMode = TEXT
   maxFileMb     Int       @default(20)
   submissions   Submission[]
   gradeItem     GradeItem?
@@ -684,7 +690,7 @@ model Submission {
   assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   attemptNo    Int              @default(1)
-  text         String?
+  content      Json?            // #53 Tiptap JSON (allowlist ชุดผู้เรียน) — เดิม `text String?` แปลงใน migration
   files        SubmissionFile[]
   isLate       Boolean          @default(false)
   status       SubmissionStatus @default(SUBMITTED)
@@ -1112,13 +1118,17 @@ sequenceDiagram
   U-->>S: presigned PUT URL
   S->>S3: PUT file
   S->>U: complete(assetId) → HEAD object ตรวจขนาด → READY
-  S->>SA: submit(assignmentId, text, assetIds)
-  SA->>DB: create Submission (isLate = now > dueAt)
+  S->>SA: submit(assignmentId, content, assetIds)
+  SA->>DB: ตรวจ submissionMode · create Submission (isLate = now > dueAt)
   SA->>N: แจ้งผู้สอน
   I->>SA: grade(submissionId, score, feedback)
   SA->>DB: update Submission + upsert Grade + AuditLog
   SA->>N: แจ้งผู้เรียน (in-app / email / LINE)
 ```
+
+**ช่องทางส่ง (CHANGELOG #53):** `Assignment.submissionMode` — `TEXT` ไม่รับไฟล์ (presign ผ่าน `authorizeSubmissionUpload()` ปฏิเสธ · ฟอร์มซ่อนช่องไฟล์ · ไม่บังคับ `allowedTypes`)
+· `FILE` ไม่รับข้อความ (ต้องมีไฟล์อย่างน้อย 1) · `TEXT_OR_FILE` อย่างน้อยหนึ่งอย่าง (ค่าเริ่มต้น = พฤติกรรมเดิม) · กติกาอยู่ใน `lib/rules.ts` ใช้ทั้งหน้าจอและ action
+· เปลี่ยนโหมดหลังมีคนส่งแล้วได้ — งานที่ส่งไปก่อนไม่ถูกแก้ ผู้สอนยังเห็นทั้งข้อความและไฟล์เดิม
 
 ### 5.6 ออกใบประกาศนียบัตร
 ```mermaid
@@ -1352,6 +1362,9 @@ flowchart LR
   · สีตัวอักษร (`textColor`) และกล่องเน้น (`callout`) เป็น extension ที่เขียนเองใน `components/editor/extensions.ts` · ตัวนับคำใช้ `Intl.Segmenter` (ตัดคำไทยได้ ต่างจาก CharacterCount ที่นับตามช่องว่าง)
 - editor รับรูปเฉพาะ `/api/media/*` ตั้งแต่ตอน parse (`SizedImage`) — รูปจากเว็บอื่นที่วาง/แก้ใน HTML หายเหมือนฝั่ง server
 - โหมดเต็มจอใช้ Fullscreen API (editor มักอยู่ใน dialog ที่ใช้ transform — `position: fixed` ไม่เต็มจอ) · เมนู/กล่องโต้ตอบส่ง `container` ให้ portal อยู่ในกรอบเต็มจอ
+- **ชุดผู้เรียน (งานที่ส่ง · CHANGELOG #53):** editor ตัวเดียวกันแบบ `media={false}` — ไม่มีปุ่มแทรกรูป/YouTube และไม่โหลด extension ทั้งสอง
+  ฝั่ง server ใช้ `parseRichTextDoc(value, { media: false })` ตัด node `image`/`youtube` ทิ้ง (ผู้เรียนอัปโหลดไฟล์ทั่วไปไม่ได้ และไม่ฝัง iframe ในงานส่ง)
+  · เพดาน `SUBMISSION_TEXT_MAX` = 20,000 ตัวอักษร นับเฉพาะข้อความในเอกสาร · แสดงด้วย `<RichText>` ทั้งหน้าผู้เรียนและหน้าตรวจงาน
 
 ## 9. Non-Functional Design
 

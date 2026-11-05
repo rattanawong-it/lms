@@ -75,7 +75,7 @@ const actions = {
         instructions: { type: "doc", content: [] },
         maxScore: 10,
         allowedTypes: ["pdf"],
-        submissions: { create: { userId: temps[1]!.id, text: "ส่งแล้ว", status: SubmissionStatus.SUBMITTED } },
+        submissions: { create: { userId: temps[1]!.id, content: { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "ส่งแล้ว" }] }] }, status: SubmissionStatus.SUBMITTED } },
       },
     });
 

@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import type { SessionUser } from "@/lib/roles";
 import { EnrollmentStatus } from "@/generated/prisma/enums";
 import { submissionFileError, submissionMime, submitState } from "@/features/assignments/lib/rules";
+import { acceptsFiles } from "@/features/assignments/schemas";
 
 /** อัปโหลดไฟล์ส่งงานได้ไม่เกิน 30 ไฟล์ต่อ 10 นาทีต่อคน — กันการยัดไฟล์ขยะเข้าระบบ */
 const UPLOAD_QUOTA = { windowSec: 600, max: 30 };
@@ -14,7 +15,7 @@ export type SubmissionUploadCheck = { ok: true } | { ok: false; status: number; 
  * M08 · phase-2-plan ขั้น 4 — ผู้เรียนอัปโหลดได้ **เฉพาะในบริบทของงานที่ตนลงทะเบียนอยู่**
  * ไม่ได้เปิดสิทธิ์อัปโหลดทั่วไปให้ STUDENT
  *
- * ตรวจ: งานผูกกับบทเรียนแล้ว · ลงทะเบียนคอร์สนั้นและยังไม่หมดอายุ · งานยังเปิดรับ
+ * ตรวจ: งานผูกกับบทเรียนแล้ว · งานรับไฟล์ (#53) · ลงทะเบียนคอร์สนั้นและยังไม่หมดอายุ · งานยังเปิดรับ
  * · นามสกุล/ขนาดตามที่ผู้สอนกำหนด · MIME ต้องตรงกับนามสกุล · rate limit
  * ไฟล์ถูกตรวจซ้ำอีกรอบตอนกดส่งงาน (`submitAssignment`) เพราะ presign เชื่อขนาดที่ client แจ้ง
  */
@@ -25,9 +26,20 @@ export async function authorizeSubmissionUpload(
 ): Promise<SubmissionUploadCheck> {
   const assignment = await db.assignment.findUnique({
     where: { id: assignmentId },
-    select: { id: true, courseId: true, lessonId: true, dueAt: true, allowLate: true, allowedTypes: true, maxFileMb: true },
+    select: {
+      id: true,
+      courseId: true,
+      lessonId: true,
+      dueAt: true,
+      allowLate: true,
+      submissionMode: true,
+      allowedTypes: true,
+      maxFileMb: true,
+    },
   });
   if (!assignment || !assignment.lessonId) return { ok: false, status: 404, message: "ไม่พบงานที่ต้องส่ง" };
+  // CHANGELOG #53 — งานที่รับเฉพาะข้อความไม่เปิดให้อัปโหลดไฟล์เลย
+  if (!acceptsFiles(assignment.submissionMode)) return { ok: false, status: 400, message: "งานนี้รับเฉพาะข้อความ" };
 
   const enrollment = await db.enrollment.findUnique({
     where: { userId_courseId: { userId: user.id, courseId: assignment.courseId } },

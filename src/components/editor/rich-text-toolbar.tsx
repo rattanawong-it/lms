@@ -195,6 +195,7 @@ function useToolbarState(editor: Editor) {
 export function RichTextToolbar({
   editor,
   uploading,
+  media,
   fullscreen,
   portalContainer,
   onPickImage,
@@ -203,6 +204,8 @@ export function RichTextToolbar({
 }: {
   editor: Editor;
   uploading: boolean;
+  /** false = ซ่อนปุ่มแทรกรูป/ฝังวิดีโอ */
+  media: boolean;
   fullscreen: boolean;
   /** กล่องที่เต็มจออยู่ — เมนูต้องเปิดข้างใน ไม่งั้นมองไม่เห็น */
   portalContainer: HTMLElement | null;
@@ -378,12 +381,16 @@ export function RichTextToolbar({
             <Link2Off className="size-4" />
           </ToolbarButton>
         ) : null}
-        <ToolbarButton label="แทรกรูป" disabled={uploading} onClick={onPickImage}>
-          {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
-        </ToolbarButton>
-        <ToolbarButton label="ฝังวิดีโอ" onClick={() => onOpenDialog("youtube")}>
-          <MonitorPlay className="size-4" />
-        </ToolbarButton>
+        {media ? (
+          <>
+            <ToolbarButton label="แทรกรูป" disabled={uploading} onClick={onPickImage}>
+              {uploading ? <Loader2 className="size-4 animate-spin" /> : <ImagePlus className="size-4" />}
+            </ToolbarButton>
+            <ToolbarButton label="ฝังวิดีโอ" onClick={() => onOpenDialog("youtube")}>
+              <MonitorPlay className="size-4" />
+            </ToolbarButton>
+          </>
+        ) : null}
         <ToolbarButton
           label="แทรกตาราง 3×3"
           onClick={() => chain().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}

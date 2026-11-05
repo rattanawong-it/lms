@@ -195,8 +195,16 @@ const BLOCK_SPECS: Record<string, { attrs?: AttrCleaner; leaf?: boolean; keepEmp
 };
 BLOCK_SPECS.tableCell = BLOCK_SPECS.tableHeader;
 
-/** งบประมาณระหว่างเดินต้นไม้ — นับ node ที่ผ่านแล้วเพื่อหยุดเมื่อถึงเพดาน */
-type Budget = { nodes: number };
+/** งบประมาณระหว่างเดินต้นไม้ — นับ node ที่ผ่านแล้วเพื่อหยุดเมื่อถึงเพดาน · `media: false` ทิ้งรูป/วิดีโอฝัง */
+type Budget = { nodes: number; media: boolean };
+
+/** node สื่อที่ผู้เรียนใส่ในงานส่งไม่ได้ (CHANGELOG #53) */
+const MEDIA_NODES = new Set(["image", "youtube"]);
+
+export type RichTextOptions = {
+  /** `false` = ชุดผู้เรียน (งานที่ส่ง) — ไม่รับรูปและวิดีโอฝัง · ค่าเริ่มต้น `true` */
+  media?: boolean;
+};
 
 function cleanNodes(value: unknown, depth: number, budget: Budget): RichNode[] {
   if (!Array.isArray(value) || depth > MAX_DEPTH) return [];
@@ -226,6 +234,7 @@ function cleanNode(raw: unknown, depth: number, budget: Budget): RichNode | null
 
   const spec = BLOCK_SPECS[type];
   if (!spec) return null;
+  if (!budget.media && MEDIA_NODES.has(type)) return null;
 
   const attrs = spec.attrs?.(asRecord(node.attrs));
   if (spec.attrs && attrs === null) return null;
@@ -259,23 +268,53 @@ function hasContent(nodes: RichNode[]): boolean {
  * แปลงค่าที่รับมาให้เป็นเอกสารที่ปลอดภัย
  * คืน `null` เมื่อไม่ใช่เอกสาร หรือไม่เหลือเนื้อหาเลย (ผู้ใช้ล้างเนื้อหาทิ้ง)
  */
-export function parseRichTextDoc(value: unknown): RichTextDoc | null {
+export function parseRichTextDoc(value: unknown, options: RichTextOptions = {}): RichTextDoc | null {
   const doc = asRecord(value);
   if (doc.type !== "doc") return null;
 
-  const content = cleanNodes(doc.content, 1, { nodes: 0 });
+  const content = cleanNodes(doc.content, 1, { nodes: 0, media: options.media ?? true });
   if (content.length === 0 || !hasContent(content)) return null;
   return { type: "doc", content };
 }
 
 /** อ่านค่าจากฟอร์ม (สตริง JSON) แล้วส่งต่อให้ตัวตรวจ — JSON เสียถือว่าไม่มีเนื้อหา */
-export function parseRichTextField(value: FormDataEntryValue | null): RichTextDoc | null {
+export function parseRichTextField(value: FormDataEntryValue | null, options: RichTextOptions = {}): RichTextDoc | null {
   if (typeof value !== "string" || !value.trim()) return null;
   try {
-    return parseRichTextDoc(JSON.parse(value));
+    return parseRichTextDoc(JSON.parse(value), options);
   } catch {
     return null;
   }
+}
+
+/** จำนวนตัวอักษรของข้อความทั้งเอกสาร (ไม่นับโครงสร้าง JSON) — ใช้กับเพดานความยาวของงานที่ส่ง */
+export function richTextLength(doc: RichTextDoc): number {
+  let total = 0;
+  const walk = (nodes: RichNode[]) => {
+    for (const node of nodes) {
+      if (node.text) total += node.text.length;
+      if (node.content) walk(node.content);
+    }
+  };
+  walk(doc.content);
+  return total;
+}
+
+/** ข้อความล้วนของเอกสาร — ย่อหน้า/หัวข้อ/แถวคั่นด้วยขึ้นบรรทัด (ใช้กับไฟล์ส่งออก PDPA) */
+export function richTextToLines(doc: RichTextDoc): string {
+  const lines: string[] = [];
+  const isInline = (n: RichNode) => n.type === "text" || n.type === "hardBreak";
+  const inline = (nodes: RichNode[]) => nodes.map((n) => (n.type === "text" ? (n.text ?? "") : "\n")).join("");
+  const block = (nodes: RichNode[]) => {
+    for (const node of nodes) {
+      const children = node.content ?? [];
+      if (children.length > 0 && children.every(isInline)) lines.push(inline(children));
+      else if (children.length > 0) block(children);
+      else if (node.type === "paragraph") lines.push("");
+    }
+  };
+  block(doc.content);
+  return lines.join("\n").trim();
 }
 
 /** รูปที่ชี้ไปที่ route ของระบบหรือไม่ — editor ใช้ทิ้งรูปจากโดเมนนอกตั้งแต่ตอนวาง/แก้ HTML */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SubmissionStatus } from "@/generated/prisma/enums";
+import { SubmissionMode, SubmissionStatus } from "@/generated/prisma/enums";
 import {
   extensionOf,
   gradeScoreError,
@@ -115,11 +115,66 @@ describe("schema (ข้อความไทย)", () => {
     expect(issues({ maxScore: "1.234" })).toContain("คะแนนละเอียดได้ไม่เกิน 2 ตำแหน่ง");
   });
 
+  it("ตั้งค่างาน: โหมดข้อความอย่างเดียวไม่ต้องเลือกชนิดไฟล์ (CHANGELOG #53)", () => {
+    expect(assignmentSettingsSchema.parse(base).submissionMode).toBe(SubmissionMode.TEXT_OR_FILE);
+    const textOnly = assignmentSettingsSchema.safeParse({ ...base, submissionMode: "TEXT", allowedTypes: [] });
+    expect(textOnly.success).toBe(true);
+    const fileOnly = assignmentSettingsSchema.safeParse({ ...base, submissionMode: "FILE", allowedTypes: [] });
+    expect(fileOnly.error?.issues[0]?.message).toBe("เลือกชนิดไฟล์ที่รับอย่างน้อย 1 ชนิด");
+    expect(assignmentSettingsSchema.safeParse({ ...base, submissionMode: "BOTH" }).error?.issues[0]?.message).toBe(
+      "เลือกช่องทางส่งงาน",
+    );
+  });
+
+  const doc = (...nodes: object[]) => JSON.stringify({ type: "doc", content: nodes });
+  const para = (text: string) => ({ type: "paragraph", content: [{ type: "text", text }] });
+  const ASSET = "ckabcdefghijklmnopqrstuvw";
+
   it("ส่งงาน: ต้องมีข้อความหรือไฟล์", () => {
-    expect(submitAssignmentSchema.safeParse({ text: "  ", assetIds: [] }).error?.issues[0]?.message).toBe(
+    const schema = submitAssignmentSchema(SubmissionMode.TEXT_OR_FILE);
+    expect(schema.safeParse({ content: doc({ type: "paragraph" }), assetIds: [] }).error?.issues[0]?.message).toBe(
       "พิมพ์คำตอบหรือแนบไฟล์อย่างน้อยหนึ่งอย่าง",
     );
-    expect(submitAssignmentSchema.parse({ text: " คำตอบ ", assetIds: [] })).toEqual({ text: "คำตอบ", assetIds: [] });
+    expect(schema.parse({ content: doc(para("คำตอบ")), assetIds: [] })).toEqual({
+      content: { type: "doc", content: [para("คำตอบ")] },
+      assetIds: [],
+    });
+    expect(schema.parse({ content: "", assetIds: [ASSET] }).content).toBeNull();
+  });
+
+  it("ส่งงาน: ช่องทางตามที่ผู้สอนตั้ง", () => {
+    const text = submitAssignmentSchema(SubmissionMode.TEXT);
+    expect(text.safeParse({ content: "", assetIds: [] }).error?.issues[0]?.message).toBe("พิมพ์คำตอบก่อนส่ง");
+    expect(text.safeParse({ content: doc(para("ก")), assetIds: [ASSET] }).error?.issues[0]?.message).toBe(
+      "งานนี้รับเฉพาะข้อความ",
+    );
+    const file = submitAssignmentSchema(SubmissionMode.FILE);
+    expect(file.safeParse({ content: "", assetIds: [] }).error?.issues[0]?.message).toBe("แนบไฟล์อย่างน้อย 1 ไฟล์");
+    expect(file.safeParse({ content: doc(para("ก")), assetIds: [ASSET] }).error?.issues[0]?.message).toBe(
+      "งานนี้รับเฉพาะไฟล์",
+    );
+  });
+
+  it("ส่งงาน: ตัดรูป/YouTube ทิ้ง · จำกัดความยาวที่ข้อความ", () => {
+    const schema = submitAssignmentSchema(SubmissionMode.TEXT);
+    const parsed = schema.parse({
+      content: doc(
+        para("คำตอบ"),
+        { type: "image", attrs: { src: "/api/media/ckabcdefghijklmnopqrstuvw" } },
+        { type: "youtube", attrs: { src: "https://www.youtube.com/embed/abc" } },
+      ),
+      assetIds: [],
+    });
+    expect(parsed.content).toEqual({ type: "doc", content: [para("คำตอบ")] });
+    // มีแต่รูป = ไม่มีคำตอบ
+    expect(
+      schema.safeParse({ content: doc({ type: "image", attrs: { src: "/api/media/ckabcdefghijklmnopqrstuvw" } }), assetIds: [] })
+        .error?.issues[0]?.message,
+    ).toBe("พิมพ์คำตอบก่อนส่ง");
+    const long = Array.from({ length: 3 }, () => para("ก".repeat(7_000)));
+    expect(schema.safeParse({ content: doc(...long), assetIds: [] }).error?.issues[0]?.message).toBe(
+      "ข้อความยาวได้ไม่เกิน 20,000 ตัวอักษร",
+    );
   });
 
   it("ตรวจงาน: ให้คะแนนต้องมีคะแนน · ส่งกลับต้องมีความเห็น", () => {

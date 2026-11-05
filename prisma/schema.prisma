@@ -93,6 +93,12 @@ enum SubmissionStatus {
   GRADED
   RETURNED
 }
+// CHANGELOG #53 — ช่องทางส่งงานที่ผู้สอนเปิด
+enum SubmissionMode {
+  TEXT
+  FILE
+  TEXT_OR_FILE
+}
 enum GradeSource {
   QUIZ
   ASSIGNMENT
@@ -509,7 +515,8 @@ model Assignment {
   dueAt         DateTime?
   allowLate     Boolean   @default(true)
   maxScore      Decimal   @db.Decimal(8, 2)
-  allowedTypes  String[]  // ["pdf","docx","zip"]
+  submissionMode SubmissionMode @default(TEXT_OR_FILE) // #53
+  allowedTypes  String[]  // ["pdf","docx","zip"] · ว่างได้เมื่อ submissionMode = TEXT
   maxFileMb     Int       @default(20)
   submissions   Submission[]
   gradeItem     GradeItem?
@@ -522,7 +529,7 @@ model Submission {
   assignment   Assignment       @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
   user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   attemptNo    Int              @default(1)
-  text         String?
+  content      Json?            // #53 Tiptap JSON ชุดผู้เรียน (ไม่มีรูป/YouTube)
   files        SubmissionFile[]
   isLate       Boolean          @default(false)
   status       SubmissionStatus @default(SUBMITTED)

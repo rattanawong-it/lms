@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mediaSrc, parseRichTextDoc, parseRichTextField } from "@/lib/rich-text-doc";
+import { mediaSrc, parseRichTextDoc, parseRichTextField, richTextLength, richTextToLines } from "@/lib/rich-text-doc";
 
 /**
  * FR-05.4 · NFR §9 — ด่านตรวจ Tiptap JSON ฝั่ง server
@@ -128,5 +128,29 @@ describe("parseRichTextField", () => {
     expect(parseRichTextField("")).toBeNull();
     expect(parseRichTextField("{ไม่ใช่ json}")).toBeNull();
     expect(parseRichTextField(null)).toBeNull();
+  });
+});
+
+describe("ชุดผู้เรียน — งานที่ส่ง (CHANGELOG #53)", () => {
+  it("media: false ตัดรูปและ YouTube ทิ้ง ค่าเริ่มต้นยังรับ", () => {
+    const input = doc(
+      paragraph("คำตอบ"),
+      { type: "image", attrs: { src: ASSET_SRC } },
+      { type: "youtube", attrs: { src: "https://www.youtube-nocookie.com/embed/abc" } },
+    );
+    expect(parseRichTextDoc(input, { media: false })).toEqual(doc(paragraph("คำตอบ")));
+    expect(parseRichTextDoc(input)?.content).toHaveLength(3);
+  });
+
+  it("นับความยาวเฉพาะข้อความ · แปลงเป็นข้อความล้วนบรรทัดละย่อหน้า", () => {
+    const parsed = parseRichTextDoc(
+      doc(
+        { type: "heading", attrs: { level: 2 }, content: [{ type: "text", text: "หัวข้อ" }] },
+        { type: "bulletList", content: [{ type: "listItem", content: [paragraph("ข้อหนึ่ง")] }] },
+        paragraph("จบ"),
+      ),
+    )!;
+    expect(richTextLength(parsed)).toBe("หัวข้อข้อหนึ่งจบ".length);
+    expect(richTextToLines(parsed)).toBe("หัวข้อ\nข้อหนึ่ง\nจบ");
   });
 });

@@ -1,4 +1,5 @@
 import "server-only";
+import { parseRichTextDoc, richTextToLines } from "@/lib/rich-text-doc";
 import { db } from "@/lib/db";
 import { toScore } from "@/lib/decimal";
 
@@ -76,7 +77,7 @@ export async function buildPersonalDataExport(userId: string) {
       orderBy: { submittedAt: "asc" },
       select: {
         attemptNo: true,
-        text: true,
+        content: true,
         isLate: true,
         status: true,
         score: true,
@@ -166,14 +167,20 @@ export async function buildPersonalDataExport(userId: string) {
       score: toScore(score),
       maxScore: toScore(maxScore),
     })),
-    submissions: submissions.map(({ assignment, files, score, ...s }) => ({
+    submissions: submissions.map(({ assignment, files, score, content, ...s }) => {
+      const doc = parseRichTextDoc(content);
+      return {
       course: assignment.course.title,
       assignment: assignment.title,
       ...s,
+      // ข้อความล้วนให้อ่านง่าย + เอกสารต้นฉบับ (Tiptap JSON · CHANGELOG #53)
+      text: doc ? richTextToLines(doc) : null,
+      content: doc,
       score: toScore(score),
       // รายชื่อไฟล์เท่านั้น (phase-3-plan ขั้น 7) — ตัวไฟล์ดาวน์โหลดได้จากหน้างานของคอร์ส
       files: files.map((f) => ({ name: f.asset.originalName, mime: f.asset.mime, size: Number(f.asset.size) })),
-    })),
+      };
+    }),
     grades: grades.map((g) => ({
       course: g.gradeItem.course.title,
       item: g.gradeItem.title,

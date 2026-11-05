@@ -72,6 +72,9 @@ const EXTENSIONS = [
   Callout,
 ];
 
+/** ชุดผู้เรียน (งานที่ส่ง · CHANGELOG #53) — ไม่มีรูปและวิดีโอฝัง วางรูปเข้ามาก็ถูกทิ้งตั้งแต่ตอน parse */
+const EXTENSIONS_NO_MEDIA = EXTENSIONS.filter((ext) => ext !== SizedImage && ext.name !== "youtube");
+
 /** ตัวนับคำ/ตัวอักษร — ตัดคำไทยด้วย Intl.Segmenter (CharacterCount ของ Tiptap นับตามช่องว่าง) */
 function WordCount({ editor }: { editor: Editor }) {
   const text = useEditorState({ editor, selector: ({ editor: e }) => e.getText() });
@@ -92,6 +95,7 @@ export function RichTextEditor({
   label,
   hint,
   error,
+  media = true,
 }: {
   /** ชื่อ input ซ่อนที่พา JSON ไปกับฟอร์ม */
   name: string;
@@ -101,6 +105,8 @@ export function RichTextEditor({
   label?: string;
   hint?: string;
   error?: string;
+  /** `false` = ไม่มีปุ่มแทรกรูป/ฝังวิดีโอ (ผู้เรียนส่งงาน) — server ตัดซ้ำด้วย `{ media: false }` */
+  media?: boolean;
 }) {
   const [json, setJson] = React.useState<string>(() =>
     defaultValue ? JSON.stringify(defaultValue) : "",
@@ -116,7 +122,7 @@ export function RichTextEditor({
   const editor = useEditor({
     // Next render ฝั่ง server ก่อนเสมอ — ถ้าให้ Tiptap render ทันทีจะเกิด hydration mismatch
     immediatelyRender: false,
-    extensions: EXTENSIONS,
+    extensions: media ? EXTENSIONS : EXTENSIONS_NO_MEDIA,
     content: (defaultValue as object) ?? "",
     editorProps: {
       attributes: {
@@ -202,17 +208,19 @@ export function RichTextEditor({
       ) : null}
 
       <input type="hidden" name={name} value={json} />
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp"
-        className="sr-only"
-        aria-label="เลือกรูปที่จะแทรกในเนื้อหา"
-        onChange={(event) => {
-          const file = event.currentTarget.files?.[0];
-          if (file) void insertImage(file, editor);
-        }}
-      />
+      {media ? (
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="sr-only"
+          aria-label="เลือกรูปที่จะแทรกในเนื้อหา"
+          onChange={(event) => {
+            const file = event.currentTarget.files?.[0];
+            if (file) void insertImage(file, editor);
+          }}
+        />
+      ) : null}
 
       <div
         ref={setFrame}
@@ -227,6 +235,7 @@ export function RichTextEditor({
         <RichTextToolbar
           editor={editor}
           uploading={uploading}
+          media={media}
           fullscreen={fullscreen}
           portalContainer={fullscreen ? frame : null}
           onPickImage={() => imageInputRef.current?.click()}
