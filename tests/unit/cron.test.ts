@@ -22,6 +22,7 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("@/lib/notify", () => ({ notify }));
 vi.mock("@/lib/audit", () => ({ writeAudit: vi.fn() }));
+vi.mock("@/features/uploads/lib/orphans", () => ({ findOrphanAssets: vi.fn(), purgeAssets: vi.fn() }));
 
 const { runDueReminders, runLiveReminders } = await import("@/features/cron/jobs");
 

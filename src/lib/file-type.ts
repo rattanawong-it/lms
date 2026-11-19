@@ -73,7 +73,7 @@ const OLE_BASED = new Set([
 ]);
 
 /** ชนิดที่ไม่มีลายเซ็นให้ตรวจ — ยอมรับได้เมื่อ sniff ไม่เจออะไรเลย */
-const SIGNATURE_LESS = new Set(["text/plain", "text/csv"]);
+const SIGNATURE_LESS = new Set(["text/plain", "text/csv", "application/sql", "text/x-python"]);
 
 export function mimeMatchesContent(declared: string, head: Uint8Array): boolean {
   const detected = sniffMime(head);

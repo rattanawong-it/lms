@@ -1,4 +1,4 @@
-import { Download, FileArchive, FileImage, FileSpreadsheet, FileText, Presentation } from "lucide-react";
+import { Download, FileArchive, FileCode, FileImage, FileSpreadsheet, FileText, Presentation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBytes } from "@/lib/upload-limits";
 
@@ -24,6 +24,8 @@ const DOCUMENT_TYPE: Record<string, { label: string; icon: typeof FileText }> = 
   "image/webp": { label: "รูปภาพ", icon: FileImage },
   "text/plain": { label: "ข้อความ", icon: FileText },
   "text/csv": { label: "CSV", icon: FileSpreadsheet },
+  "application/sql": { label: "SQL", icon: FileCode },
+  "text/x-python": { label: "Python", icon: FileCode },
 };
 
 export function DocumentDownload({

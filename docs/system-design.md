@@ -1178,6 +1178,11 @@ sequenceDiagram
 **ที่ทำจริง (Phase 3 ขั้น 3 — cron):** route เดียว `app/api/cron/[job]` เรียก `features/cron/jobs.ts`
 · `reminders` ทุกชั่วโมง (งาน `dueAt` ใน 24 ชม. · ผู้ที่ยังไม่ส่งหรือถูกส่งกลับให้แก้) · `live` ทุก 15 นาที (บทเรียน `LIVE` เริ่มใน 1 ชม.)
   ผู้รับ = enrollment `ACTIVE` ที่ยังไม่หมดอายุของคอร์ส `PUBLISHED` · `cleanup` วันละครั้ง (§8 NFR-05)
+· **`cleanup` เก็บกวาดไฟล์ด้วย (CHANGELOG #55):** `features/uploads/lib/orphans.ts` หา Asset ที่ไม่มีที่ใดอ้างถึง — relation (`Lesson.assetId` · `LessonAttachment` · `SubmissionFile`)
+  · `Course.coverKey` · รหัส Asset ในข้อความ/JSON (rich text ทุกช่อง · `User.image` · `Course.certificateTemplate` · `SystemSetting.value`) ด้วย `strpos` ใน SQL เดียว
+  · ลบเมื่อ `READY` ไม่มีใครใช้เกิน 30 วัน หรือ `UPLOADING`/`FAILED` เกิน 1 วัน · รอบละ ≤ 200 ไฟล์ เก่าสุดก่อน · ลบ object ก่อนแล้วค่อยลบแถว (ลบ object ไม่ได้ = เก็บแถวไว้ลองรอบหน้า)
+  · audit `cron.cleanup` เก็บรายการ key ที่ลบ · `?dryRun=1` (`pnpm cron cleanup --dry-run`) นับอย่างเดียว · ที่อ้างถึง Asset แบบใหม่ต้องเพิ่มใน `findOrphanAssets()` ไม่งั้นไฟล์ถูกลบ
+  · multipart ที่ค้าง (ไม่มี `uploadId` ใน DB) ปล่อยให้ lifecycle ของ bucket ยกเลิกเอง (R2 ค่าเริ่มต้น 7 วัน)
 · **กันแจ้งซ้ำด้วย DB ไม่ใช่การเช็คก่อนเขียน:** `notify({ dedupeKey })` → `createManyAndReturn({ skipDuplicates })` บน unique `[userId, dedupeKey]`
   แล้วส่งอีเมล/LINE เฉพาะแถวที่สร้างใหม่ · key ผูกเวลา (`due:<id>:<dueAt>`, `live:<id>:<liveStartAt>`) เลื่อนเวลาแล้วแจ้งใหม่
 · ไม่ได้ตั้ง `CRON_SECRET` → 404 · token ผิด → 401 (เทียบ hash แบบ timing-safe) · รับ GET/POST · ตอบ `{ job, items, notified }`

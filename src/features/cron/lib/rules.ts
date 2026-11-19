@@ -15,6 +15,16 @@ export const LIVE_SOON_WINDOW_MS = 1 * HOUR_MS;
 
 /** NFR-05 — เก็บ log การใช้งาน/หน้าจอไว้ 1 ปี */
 export const LOG_RETENTION_MS = 365 * DAY_MS;
+/**
+ * CHANGELOG #55 — ไฟล์ที่ไม่มีที่ใดอ้างถึงแล้ว (ถูกแทนที่/ลบออกจากบทเรียน/อัปโหลดแต่ไม่เคยบันทึก)
+ * ผ่อนผัน 30 วันก่อนลบ — ผู้สอนอัปโหลดค้างไว้ในฟอร์มแล้วกลับมาบันทึกทีหลังได้
+ */
+export const ORPHAN_ASSET_GRACE_MS = 30 * DAY_MS;
+/** ไฟล์ที่อัปโหลดไม่จบ (`UPLOADING`) หรือไม่ผ่านการตรวจ (`FAILED`) เก็บไว้ 1 วัน */
+export const STALE_UPLOAD_MS = 1 * DAY_MS;
+/** ลบได้ไม่เกินกี่ไฟล์ต่อรอบ — รอบถัดไปเก็บที่เหลือ (งบเวลาของ function) */
+export const ASSET_CLEANUP_BATCH = 200;
+
 /** การแจ้งเตือนที่อ่านแล้วเก็บไว้ 180 วัน (ที่ยังไม่อ่านเก็บตลอด) */
 export const READ_NOTIFICATION_RETENTION_MS = 180 * DAY_MS;
 

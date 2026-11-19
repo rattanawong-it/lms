@@ -62,6 +62,8 @@ describe("บทเรียนเอกสาร — PDF หรือไฟล�
       "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     );
     expect(mimeFromName("data.csv")).toBe("text/csv");
+    expect(mimeFromName("schema.SQL")).toBe("application/sql");
+    expect(mimeFromName("main.py")).toBe("text/x-python");
     expect(mimeFromName("old.doc")).toBe("application/msword");
     expect(mimeFromName("ไม่มีนามสกุล")).toBeNull();
     expect(mimeFromName("run.exe")).toBeNull();
@@ -69,7 +71,7 @@ describe("บทเรียนเอกสาร — PDF หรือไฟล�
 
   it("PDF ไปตัวอ่านในเว็บ ส่วน Office/รูป/ข้อความเป็นไฟล์ดาวน์โหลด", () => {
     expect(pickAssetKind(LESSON_DOCUMENT_KINDS, "application/pdf")).toBe(AssetKind.PDF);
-    for (const name of ["a.docx", "a.xls", "a.pptx", "a.png", "a.txt", "a.csv"]) {
+    for (const name of ["a.docx", "a.xls", "a.pptx", "a.png", "a.txt", "a.csv", "a.sql", "a.py"]) {
       expect(pickAssetKind(LESSON_DOCUMENT_KINDS, mimeFromName(name)!)).toBe(AssetKind.FILE);
     }
     expect(pickAssetKind(LESSON_DOCUMENT_KINDS, "video/mp4")).toBeNull();

@@ -32,7 +32,7 @@ export const UPLOAD_RULES: Record<AssetKind, UploadRule> = {
     mimes: ["image/png", "image/jpeg", "image/webp"],
     label: "รูปภาพ",
   },
-  // ไฟล์ประกอบบทเรียน (FR-05.7) — เอกสาร Office, PDF, รูป, ข้อความ และไฟล์บีบอัด
+  // ไฟล์ประกอบบทเรียน (FR-05.7) — เอกสาร Office, PDF, รูป, ข้อความ, ซอร์สโค้ด (.sql/.py) และไฟล์บีบอัด
   FILE: {
     maxSize: 25 * MB,
     mimes: [
@@ -49,6 +49,9 @@ export const UPLOAD_RULES: Record<AssetKind, UploadRule> = {
       "image/webp",
       "text/plain",
       "text/csv",
+      // CHANGELOG #54 — ซอร์สโค้ดสำหรับวิชาฐานข้อมูล/เขียนโปรแกรม (ไฟล์ข้อความ ไม่มีลายเซ็นให้ตรวจ)
+      "application/sql",
+      "text/x-python",
     ],
     label: "ไฟล์ประกอบ",
   },
@@ -90,6 +93,8 @@ const EXTENSION_MIME: Record<string, string> = {
   webp: "image/webp",
   txt: "text/plain",
   csv: "text/csv",
+  sql: "application/sql",
+  py: "text/x-python",
 };
 
 export function mimeFromName(name: string): string | null {

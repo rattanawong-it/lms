@@ -80,6 +80,10 @@ describe("mimeMatchesContent (NFR-03 ไม่เชื่อ Content-Type จ�
   it("ยอมรับไฟล์ข้อความที่ไม่มีลายเซ็น แต่เฉพาะชนิดข้อความเท่านั้น", () => {
     expect(mimeMatchesContent("text/csv", PLAIN)).toBe(true);
     expect(mimeMatchesContent("text/plain", PLAIN)).toBe(true);
+    expect(mimeMatchesContent("application/sql", PLAIN)).toBe(true);
+    expect(mimeMatchesContent("text/x-python", PLAIN)).toBe(true);
+    // ไฟล์ ZIP ที่ตั้งชื่อเป็น .py ต้องไม่ผ่าน
+    expect(mimeMatchesContent("text/x-python", ZIP)).toBe(false);
     expect(mimeMatchesContent("application/pdf", PLAIN)).toBe(false);
   });
 });

@@ -91,8 +91,8 @@ export function AssetField({
   const unsaved = !savesImmediately && (asset?.assetId ?? null) !== (defaultValue?.assetId ?? null);
 
   async function start(file: File) {
-    // หลายชนิด → MIME จากนามสกุล (เบราว์เซอร์เดา Office/CSV ผิดบ่อย) แล้วเลือกชนิดที่รับ MIME นั้น
-    const mime = kinds.length > 1 ? (mimeFromName(file.name) ?? file.type) : file.type;
+    // MIME จากนามสกุลก่อน (เบราว์เซอร์เดา Office/CSV ผิดบ่อย · .sql/.py บน Windows ได้ค่าว่าง) แล้วเลือกชนิดที่รับ MIME นั้น
+    const mime = mimeFromName(file.name) ?? file.type;
     const target = kinds.length > 1 ? pickAssetKind(kinds, mime) : primary;
     if (!target) {
       toast.error("ไม่รองรับไฟล์ชนิดนี้");

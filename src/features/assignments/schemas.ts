@@ -25,6 +25,8 @@ export const SUBMISSION_FILE_TYPES = {
   webp: "image/webp",
   txt: "text/plain",
   csv: "text/csv",
+  sql: "application/sql",
+  py: "text/x-python",
 } as const satisfies Record<string, (typeof UPLOAD_RULES.FILE.mimes)[number]>;
 
 export type SubmissionFileType = keyof typeof SUBMISSION_FILE_TYPES;

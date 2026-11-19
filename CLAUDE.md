@@ -250,7 +250,7 @@ touch target ≥ 44px · keyboard navigation และ contrast ตาม WCAG A
 - **Vercel ใช้ build cache แล้ว pnpm ข้าม `postinstall`** → ไม่มี Prisma client และ Turbopack panic (`not a char boundary` ในภาษาไทย) แทน error จริง · `build` จึงรัน `prisma generate` เอง
 - **Vercel Hobby** — cron ใน `vercel.json` ได้แค่วันละครั้ง (`reminders`/`live`/`orders` ใช้ตัวเรียกภายนอก) · rate limit ในหน่วยความจำนับแยกต่อ instance · ฟอนต์ PDF ต้องอยู่ใน `outputFileTracingIncludes` (system-design §10)
 - **pdf.js worker กับ Turbopack** ต้องทดสอบบน `next build` ไม่ใช่แค่ `next dev`
-- **ไฟล์ที่ถูกแทนที่** (เปลี่ยนปก/เปลี่ยนวิดีโอ) ยังค้างใน storage — ยังไม่มีงานเก็บกวาด อย่าลืมเมื่อถึงคิว
+- **ไฟล์ที่ไม่มีใครใช้ถูกลบโดย cron `cleanup` หลัง 30 วัน** (`features/uploads/lib/orphans.ts`) — ที่ใหม่ที่เก็บรหัส Asset/object key (คอลัมน์ JSON ใหม่ที่มีรูป, ช่องโลโก้ใหม่) **ต้องเพิ่มใน `findOrphanAssets()` ด้วย** ไม่งั้นไฟล์ที่ยังใช้อยู่ถูกลบทิ้ง
 - **`/api/media/[assetId]` รับเฉพาะรูปภาพ** — วิดีโอ/PDF ของบทเรียนไปตามตารางใน §5 ไม่ใช่เส้นทางนี้
 - **pdf.js v6 วาง `destroy()` ไว้ที่ loading task ไม่ใช่ที่ `PDFDocumentProxy`** เรียกผิดตัวแล้ว throw ตอน unmount
   จน client navigation พังทั้งหน้า (`PDFDocumentProxy` มีแต่ `cleanup()`)

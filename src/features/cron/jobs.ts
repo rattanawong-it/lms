@@ -7,8 +7,11 @@ import { CourseStatus, EnrollmentStatus, LessonType, NotificationType } from "@/
 import {
   DUE_SOON_WINDOW_MS,
   LIVE_SOON_WINDOW_MS,
+  ASSET_CLEANUP_BATCH,
   LOG_RETENTION_MS,
+  ORPHAN_ASSET_GRACE_MS,
   READ_NOTIFICATION_RETENTION_MS,
+  STALE_UPLOAD_MS,
   activeLearners,
   dueDedupeKey,
   liveDedupeKey,
@@ -16,6 +19,7 @@ import {
   pendingSubmitters,
   soonRange,
 } from "@/features/cron/lib/rules";
+import { findOrphanAssets, purgeAssets } from "@/features/uploads/lib/orphans";
 
 /**
  * FR-12.3 · NFR-05 — งานตามเวลา เรียกจาก `/api/cron/*` เท่านั้น (ผ่าน `CRON_SECRET` แล้ว ไม่มีผู้ใช้)
@@ -104,33 +108,69 @@ export async function runLiveReminders(now: Date = new Date()): Promise<Reminder
   return { items: lessons.length, notified };
 }
 
-export type CleanupResult = { screenEvents: number; auditLogs: number; notifications: number };
+export type CleanupResult = {
+  screenEvents: number;
+  auditLogs: number;
+  notifications: number;
+  /** CHANGELOG #55 — ไฟล์ที่ไม่มีที่ใดอ้างถึง (ลบแล้ว หรือที่จะลบเมื่อ `dryRun`) */
+  assets: number;
+  assetBytes: number;
+  assetFailed: number;
+  dryRun: boolean;
+};
 
 /**
  * `/api/cron/cleanup` (วันละครั้ง) — NFR-05 เก็บ log 1 ปี · แจ้งเตือนที่อ่านแล้วเก็บ 180 วัน
+ * · ไฟล์ที่ไม่มีที่ใดอ้างถึงเกิน 30 วัน / อัปโหลดไม่จบเกิน 1 วัน (CHANGELOG #55 · `features/uploads/lib/orphans.ts`)
  * บันทึก audit ของการลบเอง (ไม่มีผู้กระทำ) เพื่อให้ตรวจย้อนได้ว่าข้อมูลหายไปเพราะอะไร
+ * `dryRun` = นับอย่างเดียว ไม่ลบและไม่บันทึก audit (`?dryRun=1`)
  */
-export async function runCleanup(now: Date = new Date()): Promise<CleanupResult> {
+export async function runCleanup(now: Date = new Date(), { dryRun = false }: { dryRun?: boolean } = {}): Promise<CleanupResult> {
   const logCutoff = olderThan(now, LOG_RETENTION_MS);
   const readCutoff = olderThan(now, READ_NOTIFICATION_RETENTION_MS);
+  const assetCutoff = olderThan(now, ORPHAN_ASSET_GRACE_MS);
+  const uploadCutoff = olderThan(now, STALE_UPLOAD_MS);
 
-  const [screenEvents, auditLogs, notifications] = await db.$transaction([
-    db.screenEventLog.deleteMany({ where: { createdAt: { lt: logCutoff } } }),
-    db.auditLog.deleteMany({ where: { createdAt: { lt: logCutoff } } }),
-    db.notification.deleteMany({ where: { readAt: { lt: readCutoff } } }),
-  ]);
-  const result = {
-    screenEvents: screenEvents.count,
-    auditLogs: auditLogs.count,
-    notifications: notifications.count,
+  const logWhere = { createdAt: { lt: logCutoff } };
+  const readWhere = { readAt: { lt: readCutoff } };
+  const [screenEvents, auditLogs, notifications] = dryRun
+    ? await db.$transaction([
+        db.screenEventLog.count({ where: logWhere }),
+        db.auditLog.count({ where: logWhere }),
+        db.notification.count({ where: readWhere }),
+      ])
+    : (
+        await db.$transaction([
+          db.screenEventLog.deleteMany({ where: logWhere }),
+          db.auditLog.deleteMany({ where: logWhere }),
+          db.notification.deleteMany({ where: readWhere }),
+        ])
+      ).map((r) => r.count);
+
+  const orphans = await findOrphanAssets(assetCutoff, uploadCutoff, ASSET_CLEANUP_BATCH);
+  const purge = dryRun ? { deleted: orphans, failed: 0 } : await purgeAssets(orphans);
+  const result: CleanupResult = {
+    screenEvents: screenEvents!,
+    auditLogs: auditLogs!,
+    notifications: notifications!,
+    assets: purge.deleted.length,
+    assetBytes: purge.deleted.reduce((sum, a) => sum + Number(a.size), 0),
+    assetFailed: purge.failed,
+    dryRun,
   };
 
-  if (result.screenEvents + result.auditLogs + result.notifications > 0) {
+  if (!dryRun && result.screenEvents + result.auditLogs + result.notifications + result.assets + result.assetFailed > 0) {
     await writeAudit({
       actorId: null,
       action: "cron.cleanup",
       entity: "System",
-      after: { ...result, logCutoff: logCutoff.toISOString(), readCutoff: readCutoff.toISOString() },
+      after: {
+        ...result,
+        assetKeys: purge.deleted.map((a) => a.key),
+        logCutoff: logCutoff.toISOString(),
+        readCutoff: readCutoff.toISOString(),
+        assetCutoff: assetCutoff.toISOString(),
+      },
     });
   }
   return result;

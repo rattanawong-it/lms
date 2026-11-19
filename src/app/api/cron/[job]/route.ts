@@ -8,18 +8,19 @@ import { runOrderExpiry } from "@/features/commerce/lib/expire";
  *
  *   /api/cron/reminders  ทุกชั่วโมง   งานใกล้ครบกำหนด (DUE_SOON)
  *   /api/cron/live       ทุก 15 นาที  คาบเรียนสดใกล้เริ่ม (LIVE_SOON)
- *   /api/cron/cleanup    วันละครั้ง    ลบ log เก่าตาม NFR-05
+ *   /api/cron/cleanup    วันละครั้ง    ลบ log เก่าตาม NFR-05 + ไฟล์ที่ไม่มีที่ใดอ้างถึง (#55) · `?dryRun=1` นับอย่างเดียว
  *   /api/cron/orders     ทุก 15 นาที  ปิดคำสั่งซื้อที่หมดอายุ (ถามผลผู้ให้บริการก่อน · M18)
  *
  * ไม่มี session — ผู้เรียก (Vercel Cron / crontab ของสถาบัน / `pnpm cron <ชื่อ>`) พิสูจน์ตัวด้วย `CRON_SECRET`
  * ไม่ได้ตั้ง `CRON_SECRET` → 404 เหมือนไม่มีเส้นทางนี้ · รับทั้ง GET (Vercel Cron) และ POST
  */
-const JOBS = {
-  reminders: runDueReminders,
-  live: runLiveReminders,
-  cleanup: runCleanup,
-  orders: runOrderExpiry,
-} as const;
+type JobOptions = { dryRun: boolean };
+const JOBS: Record<string, (options: JobOptions) => Promise<object>> = {
+  reminders: () => runDueReminders(),
+  live: () => runLiveReminders(),
+  cleanup: ({ dryRun }) => runCleanup(new Date(), { dryRun }),
+  orders: () => runOrderExpiry(),
+};
 
 async function handle(request: Request, { params }: { params: Promise<{ job: string }> }) {
   const { job } = await params;
@@ -29,7 +30,8 @@ async function handle(request: Request, { params }: { params: Promise<{ job: str
   }
 
   try {
-    const result = await JOBS[job as keyof typeof JOBS]();
+    const dryRun = new URL(request.url).searchParams.get("dryRun") === "1";
+    const result = await JOBS[job]!({ dryRun });
     return Response.json({ job, ...result });
   } catch (error) {
     console.error(`[cron] ${job} ล้มเหลว`, error);

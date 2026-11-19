@@ -4,7 +4,8 @@ config({ quiet: true });
 
 /**
  * เรียก cron ตอนพัฒนาโดยไม่ต้องมี scheduler (phase-3-plan ขั้น 3)
- *   pnpm cron reminders | live | cleanup
+ *   pnpm cron reminders | live | cleanup | orders
+ *   pnpm cron cleanup --dry-run   นับว่าจะลบอะไรบ้างโดยไม่ลบจริง
  * ต้องเปิด dev server ไว้ และตั้ง CRON_SECRET ใน .env
  * ตอน deploy ให้ scheduler (Vercel Cron / crontab) เรียก URL เดียวกันพร้อม header เดียวกัน
  */
@@ -23,7 +24,9 @@ if (!secret) {
 }
 
 async function main() {
-  const res = await fetch(new URL(`/api/cron/${job}`, baseUrl), {
+  const url = new URL(`/api/cron/${job}`, baseUrl);
+  if (process.argv.includes("--dry-run")) url.searchParams.set("dryRun", "1");
+  const res = await fetch(url, {
     method: "POST",
     headers: { authorization: `Bearer ${secret}` },
   });
